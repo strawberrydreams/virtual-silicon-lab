@@ -2,6 +2,8 @@ import { createStore } from 'zustand/vanilla'
 import type { Project } from '../domain/project'
 import { createProject } from '../domain/projectFactory'
 import { createHeroChip } from '../domain/heroChip'
+import type { PresetId } from '../presets/presetCatalog'
+import { createPresetProject } from '../presets/presetFactory'
 import type { ProjectRepository } from '../storage/projectRepository'
 
 type ProjectState = {
@@ -9,6 +11,7 @@ type ProjectState = {
   load: () => Promise<void>
   create: (name: string) => Promise<Project>
   createHero: () => Promise<Project>
+  remixPreset: (presetId: PresetId) => Promise<Project>
   duplicate: (id: string) => Promise<Project>
   remove: (id: string) => Promise<void>
   get: (id: string) => Promise<Project | undefined>
@@ -33,6 +36,12 @@ export function createProjectStore(
     },
     async createHero() {
       const project = createHeroChip(createId(), now())
+      await repository.save(project)
+      set({ projects: [project, ...get().projects] })
+      return project
+    },
+    async remixPreset(presetId) {
+      const project = createPresetProject(presetId, createId(), now())
       await repository.save(project)
       set({ projects: [project, ...get().projects] })
       return project

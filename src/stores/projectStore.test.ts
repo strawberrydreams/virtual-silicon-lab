@@ -39,4 +39,19 @@ describe('project store', () => {
     expect(store.getState().projects[0].id).toBe(hero.id)
     expect(await repository.get(hero.id)).toMatchObject({ id: hero.id, theme: 'keynote' })
   })
+
+  it('persists an independent preset remix and lists it first', async () => {
+    const repository = createMemoryRepository()
+    let n = 0
+    const store = createProjectStore(repository, () => 1000, () => `remix-${n++}`)
+
+    const first = await store.getState().remixPreset('neon-district-n9')
+    const second = await store.getState().remixPreset('neon-district-n9')
+
+    expect(first).toMatchObject({ id: 'remix-0', theme: 'neon', die: { shape: 'hexagon' } })
+    expect(second.id).toBe('remix-1')
+    expect(second.blocks[0].id).not.toBe(first.blocks[0].id)
+    expect(store.getState().projects.map((project) => project.id)).toEqual(['remix-1', 'remix-0'])
+    expect(await repository.get(first.id)).toEqual(first)
+  })
 })
