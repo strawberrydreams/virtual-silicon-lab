@@ -1,26 +1,51 @@
-import { Route, Routes } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Navigate, Route, Routes, useParams } from 'react-router-dom'
+import type { Project } from '../domain/project'
+import { EditorPage } from '../features/editor/EditorPage'
 import { ProjectDashboard } from '../features/projects/ProjectDashboard'
+import { ProjectStoreProvider, useProjectStore } from '../stores/projectStoreContext'
+
+function DashboardRoute() {
+  const store = useProjectStore()
+  return (
+    <ProjectDashboard
+      projects={store.projects}
+      createProject={store.create}
+      duplicateProject={store.duplicate}
+      removeProject={store.remove}
+    />
+  )
+}
+
+function EditorRoute() {
+  const { projectId = '' } = useParams()
+  const store = useProjectStore()
+  const [project, setProject] = useState<Project>()
+
+  useEffect(() => {
+    void store.get(projectId).then(setProject)
+  }, [projectId])
+
+  if (project === undefined) return <p className="p-8">Loading project...</p>
+
+  return (
+    <EditorPage
+      project={project}
+      saveProject={async (nextProject) => {
+        setProject(await store.save(nextProject))
+      }}
+    />
+  )
+}
 
 export function App() {
   return (
-    <Routes>
-      <Route
-        path="/"
-        element={
-          <ProjectDashboard
-            projects={[]}
-            createProject={async () => {
-              throw new Error('Project store adapter is wired in Task 8')
-            }}
-            duplicateProject={async () => {
-              throw new Error('Project store adapter is wired in Task 8')
-            }}
-            removeProject={async () => {
-              throw new Error('Project store adapter is wired in Task 8')
-            }}
-          />
-        }
-      />
-    </Routes>
+    <ProjectStoreProvider>
+      <Routes>
+        <Route path="/" element={<DashboardRoute />} />
+        <Route path="/editor/:projectId" element={<EditorRoute />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </ProjectStoreProvider>
   )
 }

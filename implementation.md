@@ -84,6 +84,13 @@
 - 다음 작업은 Foundation 계획의 Task 5 `Add Project Store And CRUD Commands`다.
 - 체크포인트 기준 검증 명령은 `npm test`와 `npm run build`다.
 
+## 2026-06-02 - Foundation Task 8 진행
+
+### 빌드 관찰
+
+- Konva와 editor route를 runtime에 연결한 뒤 production bundle이 약 549kB로 증가해 Vite의 500kB chunk 경고가 발생한다.
+- Foundation vertical slice에서는 기능 검증을 우선한다. route 단위 code splitting은 MVP 성능 점검에서 초기 로딩이 문제가 될 때 도입한다.
+
 ## 2026-06-02 - 계획 검토 반영
 
 ### 테스트 인프라 결함 수정 (Foundation 계획)

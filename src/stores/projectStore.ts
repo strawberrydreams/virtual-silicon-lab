@@ -9,6 +9,8 @@ type ProjectState = {
   create: (name: string) => Promise<Project>
   duplicate: (id: string) => Promise<Project>
   remove: (id: string) => Promise<void>
+  get: (id: string) => Promise<Project | undefined>
+  save: (project: Project) => Promise<Project>
 }
 
 export function createProjectStore(
@@ -45,6 +47,20 @@ export function createProjectStore(
     async remove(id) {
       await repository.remove(id)
       set({ projects: get().projects.filter((project) => project.id !== id) })
+    },
+    async get(id) {
+      return get().projects.find((project) => project.id === id) ?? repository.get(id)
+    },
+    async save(project) {
+      const saved = { ...project, updatedAt: now() }
+      await repository.save(saved)
+      set({
+        projects: [
+          saved,
+          ...get().projects.filter((candidate) => candidate.id !== saved.id),
+        ],
+      })
+      return saved
     },
   }))
 }
