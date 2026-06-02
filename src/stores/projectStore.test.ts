@@ -27,4 +27,16 @@ describe('project store', () => {
     await store.getState().remove(created.id)
     expect(store.getState().projects).toEqual([duplicated])
   })
+
+  it('persists the hero chip and lists it first', async () => {
+    const repository = createMemoryRepository()
+    let n = 0
+    const store = createProjectStore(repository, () => 1000, () => `id-${n++}`)
+
+    const hero = await store.getState().createHero()
+    expect(hero.theme).toBe('keynote')
+    expect(hero.blocks).toHaveLength(6)
+    expect(store.getState().projects[0].id).toBe(hero.id)
+    expect(await repository.get(hero.id)).toMatchObject({ id: hero.id, theme: 'keynote' })
+  })
 })
