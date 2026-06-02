@@ -34,6 +34,40 @@ Two additional review findings remain release-hardening debt and are deliberatel
 
 Record both in `implementation.md`; schedule them before M6 release QA.
 
+## Code Review Findings (M0–M4) — Resolution Map
+
+A holistic code review after M4 produced the findings below. The **Important** items are already
+absorbed by the prerequisite/refactor tasks; the **Minor** and **Nit** items are resolved up front
+in **Task 0** so M5 builds on a clean base.
+
+**Important** (already covered by existing tasks — do not duplicate)
+
+- **[I1] `Export PNG` captures the live editor stage at its current zoom/pan**, so a zoomed or
+  panned view exports a clipped/offset image. → Resolved by **Task 3 Step 3** (delete the M3 smoke
+  export) plus the dedicated offscreen stages in **Phase C**, which never inherit editor viewport state.
+- **[I2] `ChipStage.tsx` (~307 lines) mixes view state, die, grid, blocks, texture, decorations,
+  and export in one file.** → Resolved by **Task 3**, which extracts `ChipArtwork`
+  (`DieShape` / `GridLines` / `DecorationNode` / `BlockArtwork`) into its own module.
+
+**Minor** (resolved in **Task 0**, below)
+
+- **[M1]** `projectStore.createHero` is dead code after M4 replaced the dashboard "Load Hero Chip"
+  button with the preset gallery (AURORA now loads via `remixPreset('aurora-c1')`). Remove it.
+- **[M2]** `resolveBlockStyle` glow ignores `block.colorOverride`, so a magenta-override block
+  glows the theme accent (cyan) instead of magenta. Make the glow follow `colorOverride`.
+- **[M4]** Preset blueprint names use an ASCII hyphen (`N-9 - Reality...`) while `createHeroChip`
+  uses an em-dash. Unify on the em-dash.
+- **[M5]** Preset immutability is only tested for `neon-district-n9`; add the same guarantee for the
+  `aurora-c1` (hero) path.
+
+**Nits**
+
+- **[N1]** Memory-cell `key={index}` — accepted (cells are static per block render); no action.
+- **[N2]** `DecorationBlueprint`'s `sciFiObject` variant is unused by any preset — accepted (kept
+  for exhaustive union safety); no action.
+- **[N3]** Block label/texture lagged the body during drag. → Resolved by **Task 3**: `BlockArtwork`
+  groups shape, texture, and label into one draggable group.
+
 ## Decisions Locked For M5
 
 - **Output dimensions**
@@ -88,6 +122,116 @@ CLAUDE.md                               MODIFY milestone status and next resume 
 ---
 
 # Phase A - Reliability Prerequisites
+
+### Task 0: Resolve standing code-review cleanups (M1, M2, M4, M5)
+
+Front-load the Minor code-review findings so the rest of M5 builds on a clean base. The Nits need
+no code change (see the resolution map: [N1]/[N2] accepted, [N3] handled by Task 3).
+
+**Files:**
+- Modify: `src/themes/resolveStyle.ts`, `src/themes/resolveStyle.test.ts` ([M2])
+- Modify: `src/presets/presetFactory.ts`, `src/presets/presetFactory.test.ts` ([M4], [M5])
+- Modify: `src/stores/projectStore.ts`, `src/stores/projectStore.test.ts` ([M1])
+
+- [ ] **Step 1: [M2] Write the failing glow test**
+
+Add to the existing `describe('resolveBlockStyle', ...)` in `src/themes/resolveStyle.test.ts` (reuse the file's `block()` helper and `tokens`):
+
+```ts
+it('uses colorOverride for the glow color when present', () => {
+  const styled = resolveBlockStyle(block({ category: 'fantasy', colorOverride: '#ff2bd6' }), tokens, false)
+  expect(styled.shadowColor).toBe('#ff2bd6')
+})
+```
+
+- [ ] **Step 2: Run the focused test to verify it fails**
+
+Run: `npx vitest run src/themes/resolveStyle.test.ts`
+
+Expected: FAIL — `shadowColor` is currently `tokens.accents[0]`, not the override.
+
+- [ ] **Step 3: [M2] Make the glow follow colorOverride**
+
+In `src/themes/resolveStyle.ts`, change the `shadowColor` line in `resolveBlockStyle`:
+
+```ts
+shadowColor: block.colorOverride ?? (isFantasy ? tokens.accents[0] : tokens.glow.shadowColor),
+```
+
+The existing "signature accent glow" test still passes (it uses a fantasy block with no override).
+
+- [ ] **Step 4: [M5] Add an aurora-c1 immutability guard**
+
+Add to `src/presets/presetFactory.test.ts`:
+
+```ts
+it('creates independent aurora-c1 remixes', () => {
+  const first = createPresetProject('aurora-c1', 'a', 100)
+  const second = createPresetProject('aurora-c1', 'b', 200)
+  first.blocks[0].x = 999
+  first.spec.features.push('Mutation')
+  expect(second.blocks[0].x).not.toBe(999)
+  expect(second.spec.features).not.toContain('Mutation')
+})
+```
+
+This passes immediately (`createHeroChip` builds fresh literals each call); it is a regression guard
+that the hero path stays as independent as the blueprint path.
+
+- [ ] **Step 5: [M4] Unify preset names on the em-dash**
+
+In `src/presets/presetFactory.ts`, change each blueprint `name` separator from ` - ` to ` — `:
+
+```ts
+'NEON DISTRICT N-9 — Reality Routing Array'
+'FIELD UNIT M-7 — Temporal Control Module'
+'LUCID-88 — Dream Synthesis Disc'
+'MONOLITH I/O — Signal Discipline Array'
+'SOLAR FLARE X — Emotion Telemetry Engine'
+```
+
+No test asserts the suffix punctuation, so this is a safe cosmetic change.
+
+- [ ] **Step 6: [M1] Remove the dead `createHero` command**
+
+In `src/stores/projectStore.ts`: delete the `createHero: () => Promise<Project>` line from
+`ProjectState`, delete the `async createHero() { ... }` method, and remove the now-unused
+`import { createHeroChip } from '../domain/heroChip'`. In `src/stores/projectStore.test.ts`: delete
+the `it('persists the hero chip and lists it first', ...)` test.
+
+Confirm nothing else references it:
+
+```bash
+grep -rn "createHero\b" src | grep -v createHeroChip
+```
+
+Expected: no matches. (`createHeroChip` itself stays — it is used by `presetFactory` for `aurora-c1`.)
+
+- [ ] **Step 7: Run verification**
+
+Run:
+
+```bash
+npx vitest run src/themes/resolveStyle.test.ts src/presets/presetFactory.test.ts src/stores/projectStore.test.ts
+npm test -- --run
+npm run build
+```
+
+Expected: focused and full suites pass; build succeeds with only the known chunk-size warning.
+
+- [ ] **Step 8: Commit**
+
+```bash
+git add src/themes/resolveStyle.ts src/themes/resolveStyle.test.ts src/presets/presetFactory.ts src/presets/presetFactory.test.ts src/stores/projectStore.ts src/stores/projectStore.test.ts
+git commit -m "chore: resolve M0-M4 code review cleanups"
+```
+
+> **[M3] (visual, deferred to a browser step):** the neon hue-budget check is folded into the
+> **Task 2 / Task 3 browser verification**. When the editor is up, open NEON DISTRICT N-9 and confirm
+> it reads within the M0 neon accent budget (`docs/reference/visual-direction.md`: ≤2 accent hues per
+> chip — cyan + magenta dominant, violet only as a quiet fantasy stroke). With [M2] fixed, the
+> magenta/cyan `colorOverride` blocks now glow their own hue; if a third hue still competes, align a
+> fantasy block's `colorOverride` to a hue already in use and record the decision in `implementation.md`.
 
 ### Task 1: Flush pending autosave work before teardown
 
