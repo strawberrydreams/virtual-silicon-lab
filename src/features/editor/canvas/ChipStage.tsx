@@ -5,6 +5,8 @@ import type { Block, Die, Project } from '../../../domain/project'
 import { snapToGrid } from './geometry'
 import type { BlockTransform } from '../../../stores/editorStore'
 import { zoomAtPointer } from './viewport'
+import { resolveTheme, type ThemeTokens } from '../../../themes/themeTokens'
+import { dieFillProps } from '../../../themes/gradients'
 
 const STAGE_WIDTH = 960
 const STAGE_HEIGHT = 640
@@ -40,34 +42,32 @@ function clipForDie(context: Konva.Context, die: Die) {
   context.rect(0, 0, die.width, die.height)
 }
 
-function DieShape({ die }: { die: Die }) {
-  const fill = '#0b1d24'
-  const stroke = '#22d3ee'
+function DieShape({ die, tokens }: { die: Die; tokens: ThemeTokens }) {
+  const gradient = dieFillProps(die.shape, die.width, die.height, tokens.dieFill)
+  const common = {
+    ...gradient,
+    stroke: tokens.dieStroke,
+    strokeWidth: tokens.dieStrokeWidth,
+    shadowColor: tokens.glow.shadowColor,
+    shadowBlur: tokens.dieStrokeWidth * 6,
+    shadowOpacity: 0.25,
+  }
   if (die.shape === 'circle') {
-    return <Circle x={die.width / 2} y={die.height / 2} radius={die.width / 2} fill={fill} stroke={stroke} />
+    return <Circle x={die.width / 2} y={die.height / 2} radius={die.width / 2} {...common} />
   }
   if (die.shape === 'hexagon') {
-    return (
-      <RegularPolygon
-        x={die.width / 2}
-        y={die.height / 2}
-        sides={6}
-        radius={die.width / 2}
-        fill={fill}
-        stroke={stroke}
-      />
-    )
+    return <RegularPolygon x={die.width / 2} y={die.height / 2} sides={6} radius={die.width / 2} {...common} />
   }
-  return <Rect width={die.width} height={die.height} fill={fill} stroke={stroke} />
+  return <Rect width={die.width} height={die.height} {...common} />
 }
 
-function GridLines({ die }: { die: Die }) {
+function GridLines({ die, tokens }: { die: Die; tokens: ThemeTokens }) {
   const lines = []
   for (let x = GRID; x < die.width; x += GRID) {
-    lines.push(<Line key={`v-${x}`} points={[x, 0, x, die.height]} stroke="#0e2b34" strokeWidth={1} />)
+    lines.push(<Line key={`v-${x}`} points={[x, 0, x, die.height]} stroke={tokens.gridColor} strokeWidth={1} />)
   }
   for (let y = GRID; y < die.height; y += GRID) {
-    lines.push(<Line key={`h-${y}`} points={[0, y, die.width, y]} stroke="#0e2b34" strokeWidth={1} />)
+    lines.push(<Line key={`h-${y}`} points={[0, y, die.width, y]} stroke={tokens.gridColor} strokeWidth={1} />)
   }
   return <Group clipFunc={(context) => clipForDie(context, die)}>{lines}</Group>
 }
@@ -77,6 +77,7 @@ export function ChipStage({ project, selectedBlockId, onSelectBlock, onTransform
   const [position, setPosition] = useState({ x: 0, y: 0 })
   const blockRefs = useRef(new Map<string, Konva.Rect>())
   const transformerRef = useRef<Konva.Transformer>(null)
+  const tokens = resolveTheme(project.theme)
 
   useEffect(() => {
     const transformer = transformerRef.current
@@ -89,106 +90,111 @@ export function ChipStage({ project, selectedBlockId, onSelectBlock, onTransform
   const sorted = project.blocks.slice().sort((left, right) => left.zIndex - right.zIndex)
 
   return (
-    <Stage
-      width={STAGE_WIDTH}
-      height={STAGE_HEIGHT}
-      scaleX={scale}
-      scaleY={scale}
-      x={position.x}
-      y={position.y}
-      draggable
-      onWheel={(event) => {
-        event.evt.preventDefault()
-        const stage = event.target.getStage()
-        const pointer = stage?.getPointerPosition()
-        if (!stage || !pointer) return
-        const next = zoomAtPointer({
-          pointer,
-          stagePos: { x: stage.x(), y: stage.y() },
-          oldScale: scale,
-          deltaY: event.evt.deltaY,
-        })
-        setScale(next.scale)
-        setPosition(next.pos)
-      }}
-      onDragEnd={(event) => {
-        if (event.target === event.target.getStage()) {
-          setPosition({ x: event.target.x(), y: event.target.y() })
-        }
-      }}
-      onMouseDown={(event) => {
-        if (event.target === event.target.getStage()) onSelectBlock(null)
-      }}
-      className="border border-cyan-900"
+    <div
+      className="inline-block"
+      style={{ backgroundColor: tokens.background[tokens.background.length - 1].color }}
     >
-      <Layer>
-        <DieShape die={project.die} />
-        <GridLines die={project.die} />
-        {sorted.map((block: Block) => (
-          <Rect
-            key={block.id}
-            ref={(node) => {
-              if (node) blockRefs.current.set(block.id, node)
-              else blockRefs.current.delete(block.id)
-            }}
-            x={block.x}
-            y={block.y}
-            width={block.w}
-            height={block.h}
-            rotation={block.rotation}
-            fill={block.category === 'fantasy' ? '#312e81' : '#164e63'}
-            stroke={block.id === selectedBlockId ? '#f0abfc' : block.category === 'fantasy' ? '#a78bfa' : '#67e8f9'}
-            strokeWidth={block.id === selectedBlockId ? 2 : 1}
-            shadowColor={block.glow ? '#22d3ee' : undefined}
-            shadowBlur={block.glow ? 12 : 0}
-            draggable
-            onClick={() => onSelectBlock(block.id)}
-            onTap={() => onSelectBlock(block.id)}
-            onDragStart={() => onSelectBlock(block.id)}
-            onDragEnd={(event) => {
-              onTransformBlock(block.id, {
-                x: snapToGrid(event.target.x(), GRID),
-                y: snapToGrid(event.target.y(), GRID),
-                w: block.w,
-                h: block.h,
-                rotation: block.rotation,
-              })
-            }}
-            onTransformEnd={(event) => {
-              const node = event.target as Konva.Rect
-              const scaleX = node.scaleX()
-              const scaleY = node.scaleY()
-              node.scaleX(1)
-              node.scaleY(1)
-              onTransformBlock(block.id, {
-                x: node.x(),
-                y: node.y(),
-                w: Math.max(MIN_BLOCK, node.width() * scaleX),
-                h: Math.max(MIN_BLOCK, node.height() * scaleY),
-                rotation: node.rotation(),
-              })
-            }}
-          />
-        ))}
-        {sorted.map((block) => (
-          <Text
-            key={`${block.id}-label`}
-            x={block.x + 12}
-            y={block.y + 12}
-            rotation={block.rotation}
-            text={block.type}
-            fill="#ecfeff"
-            listening={false}
-          />
-        ))}
-        <Transformer
-          ref={transformerRef}
-          rotateEnabled
-          boundBoxFunc={(oldBox, newBox) =>
-            newBox.width < MIN_BLOCK || newBox.height < MIN_BLOCK ? oldBox : newBox
+      <Stage
+        width={STAGE_WIDTH}
+        height={STAGE_HEIGHT}
+        scaleX={scale}
+        scaleY={scale}
+        x={position.x}
+        y={position.y}
+        draggable
+        onWheel={(event) => {
+          event.evt.preventDefault()
+          const stage = event.target.getStage()
+          const pointer = stage?.getPointerPosition()
+          if (!stage || !pointer) return
+          const next = zoomAtPointer({
+            pointer,
+            stagePos: { x: stage.x(), y: stage.y() },
+            oldScale: scale,
+            deltaY: event.evt.deltaY,
+          })
+          setScale(next.scale)
+          setPosition(next.pos)
+        }}
+        onDragEnd={(event) => {
+          if (event.target === event.target.getStage()) {
+            setPosition({ x: event.target.x(), y: event.target.y() })
           }
-        />
-      </Layer>
-    </Stage>
+        }}
+        onMouseDown={(event) => {
+          if (event.target === event.target.getStage()) onSelectBlock(null)
+        }}
+        className="border border-cyan-900"
+      >
+        <Layer>
+          <DieShape die={project.die} tokens={tokens} />
+          <GridLines die={project.die} tokens={tokens} />
+          {sorted.map((block: Block) => (
+            <Rect
+              key={block.id}
+              ref={(node) => {
+                if (node) blockRefs.current.set(block.id, node)
+                else blockRefs.current.delete(block.id)
+              }}
+              x={block.x}
+              y={block.y}
+              width={block.w}
+              height={block.h}
+              rotation={block.rotation}
+              fill={block.category === 'fantasy' ? '#312e81' : '#164e63'}
+              stroke={block.id === selectedBlockId ? '#f0abfc' : block.category === 'fantasy' ? '#a78bfa' : '#67e8f9'}
+              strokeWidth={block.id === selectedBlockId ? 2 : 1}
+              shadowColor={block.glow ? '#22d3ee' : undefined}
+              shadowBlur={block.glow ? 12 : 0}
+              draggable
+              onClick={() => onSelectBlock(block.id)}
+              onTap={() => onSelectBlock(block.id)}
+              onDragStart={() => onSelectBlock(block.id)}
+              onDragEnd={(event) => {
+                onTransformBlock(block.id, {
+                  x: snapToGrid(event.target.x(), GRID),
+                  y: snapToGrid(event.target.y(), GRID),
+                  w: block.w,
+                  h: block.h,
+                  rotation: block.rotation,
+                })
+              }}
+              onTransformEnd={(event) => {
+                const node = event.target as Konva.Rect
+                const scaleX = node.scaleX()
+                const scaleY = node.scaleY()
+                node.scaleX(1)
+                node.scaleY(1)
+                onTransformBlock(block.id, {
+                  x: node.x(),
+                  y: node.y(),
+                  w: Math.max(MIN_BLOCK, node.width() * scaleX),
+                  h: Math.max(MIN_BLOCK, node.height() * scaleY),
+                  rotation: node.rotation(),
+                })
+              }}
+            />
+          ))}
+          {sorted.map((block) => (
+            <Text
+              key={`${block.id}-label`}
+              x={block.x + 12}
+              y={block.y + 12}
+              rotation={block.rotation}
+              text={block.type}
+              fill="#ecfeff"
+              listening={false}
+            />
+          ))}
+          <Transformer
+            ref={transformerRef}
+            rotateEnabled
+            boundBoxFunc={(oldBox, newBox) =>
+              newBox.width < MIN_BLOCK || newBox.height < MIN_BLOCK ? oldBox : newBox
+            }
+          />
+        </Layer>
+      </Stage>
+    </div>
   )
 }
