@@ -3,17 +3,19 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it, vi } from 'vitest'
 import { createProject } from '../../domain/projectFactory'
+import { PRESET_CATALOG } from '../../presets/presetCatalog'
 import { ProjectDashboard } from './ProjectDashboard'
 
 describe('ProjectDashboard', () => {
-  it('creates a project from the dashboard', async () => {
+  it('creates a blank project from the dashboard', async () => {
     const createProjectCommand = vi.fn().mockResolvedValue(createProject('Dream Chip', 'project-1', 100))
     render(
       <MemoryRouter>
         <ProjectDashboard
           projects={[]}
+          presets={PRESET_CATALOG}
           createProject={createProjectCommand}
-          createHeroChip={vi.fn()}
+          remixPreset={vi.fn()}
           duplicateProject={vi.fn()}
           removeProject={vi.fn()}
         />
@@ -25,22 +27,23 @@ describe('ProjectDashboard', () => {
     expect(createProjectCommand).toHaveBeenCalledWith('Untitled Dream Chip')
   })
 
-  it('loads the hero chip from the dashboard', async () => {
-    const createHeroChipCommand = vi.fn().mockResolvedValue(createProject('Hero', 'hero-1', 100))
+  it('shows all presets and remixes the selected one', async () => {
+    const remixPreset = vi.fn().mockResolvedValue(createProject('Remix', 'remix-1', 100))
     render(
       <MemoryRouter>
         <ProjectDashboard
           projects={[]}
+          presets={PRESET_CATALOG}
           createProject={vi.fn()}
-          createHeroChip={createHeroChipCommand}
+          remixPreset={remixPreset}
           duplicateProject={vi.fn()}
           removeProject={vi.fn()}
         />
       </MemoryRouter>,
     )
 
-    await userEvent.click(screen.getByRole('button', { name: 'Load Hero Chip' }))
-
-    expect(createHeroChipCommand).toHaveBeenCalledTimes(1)
+    expect(screen.getAllByRole('button', { name: /^Remix / })).toHaveLength(6)
+    await userEvent.click(screen.getByRole('button', { name: 'Remix NEON DISTRICT N-9' }))
+    expect(remixPreset).toHaveBeenCalledWith('neon-district-n9')
   })
 })

@@ -3,6 +3,7 @@ import { Navigate, Route, Routes, useParams } from 'react-router-dom'
 import type { Project } from '../domain/project'
 import { EditorPage } from '../features/editor/EditorPage'
 import { ProjectDashboard } from '../features/projects/ProjectDashboard'
+import { PRESET_CATALOG } from '../presets/presetCatalog'
 import { ProjectStoreProvider, useProjectStore } from '../stores/projectStoreContext'
 
 function DashboardRoute() {
@@ -10,8 +11,9 @@ function DashboardRoute() {
   return (
     <ProjectDashboard
       projects={store.projects}
+      presets={PRESET_CATALOG}
       createProject={store.create}
-      createHeroChip={store.createHero}
+      remixPreset={store.remixPreset}
       duplicateProject={store.duplicate}
       removeProject={store.remove}
     />
