@@ -62,6 +62,13 @@
 - 현재 디렉터리는 Git 저장소가 아니다. 첫 구현 작업에서 `git init`을 실행한다.
 - 첫 구현 전 Node.js 버전을 확인한다. 현재 Vite 공식 문서 기준으로 Node.js `20.19+` 또는 `22.12+`가 필요하다.
 
+## 2026-06-02 - Foundation Task 1 진행
+
+### 계획 보완
+
+- `src/main.tsx`에서 `styles.css`를 import할 때 TypeScript가 Vite의 CSS 모듈 선언을 읽을 수 있도록 `tsconfig.app.json`에 `types: ["vite/client"]`를 추가했다.
+- 첫 구현은 `feature/foundation-slice` 브랜치의 `.worktrees/foundation-slice` 격리 worktree에서 진행한다.
+
 ## 2026-06-02 - 계획 검토 반영
 
 ### 테스트 인프라 결함 수정 (Foundation 계획)
