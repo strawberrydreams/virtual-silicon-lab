@@ -78,8 +78,8 @@ Rules:
 
 - **M0 Reference Board** (no code): pending — must finish before M3; gathers visual direction (defense against amateur output).
 - **M1 Foundation Vertical Slice**: ✅ done — project CRUD, IndexedDB+fallback, rectangular-die editor, bounded drag, refresh persistence.
-- **M2 Editor Core**: plan written (`docs/superpowers/plans/2026-06-02-editor-core.md`); not yet implemented — four shapes, zoom/pan/grid/snap, resize/rotate, selection, undo/redo/delete/duplicate/reorder, shortcuts, debounced autosave.
-- **M3 Visual System** → **M4 Presets/Remix** → **M5 Fake Specs + Dual PNG Export** → **M6 Landing/QA/Deploy**: planned, plan files written just before each.
+- **M2 Editor Core**: ✅ done (`docs/superpowers/plans/2026-06-02-editor-core.md`) — four die shapes with bounded drag/resize, zoom/pan/grid/snap, resize/rotate via Konva Transformer, single selection, undo/redo/delete/duplicate/reorder, keyboard shortcuts, debounced autosave. All commands unit-tested; browser-verified (Chrome/Playwright). Engine lives in `src/stores/editorStore.ts` + `src/features/editor/canvas/geometry.ts`.
+- **M3 Visual System** (next code milestone) → **M4 Presets/Remix** → **M5 Fake Specs + Dual PNG Export** → **M6 Landing/QA/Deploy**: planned, plan files written just before each. Finish M0 (reference board) before M3; write `docs/superpowers/plans/2026-06-02-visual-system.md` just before starting M3.
 
 > Visual-quality gate: do not advance past M3 if glow/neon looks amateurish; the first hero chip is manually reviewed against the M0 reference board.
 
