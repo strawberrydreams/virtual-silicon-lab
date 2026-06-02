@@ -53,7 +53,6 @@ function DieShape({ die }: { die: Die }) {
         y={die.height / 2}
         sides={6}
         radius={die.width / 2}
-        rotation={-90}
         fill={fill}
         stroke={stroke}
       />
