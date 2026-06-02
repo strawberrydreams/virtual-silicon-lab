@@ -91,6 +91,27 @@
 - Konva와 editor route를 runtime에 연결한 뒤 production bundle이 약 549kB로 증가해 Vite의 500kB chunk 경고가 발생한다.
 - Foundation vertical slice에서는 기능 검증을 우선한다. route 단위 code splitting은 MVP 성능 점검에서 초기 로딩이 문제가 될 때 도입한다.
 
+## 2026-06-02 - Foundation vertical slice
+
+### 구현 완료
+
+- 로컬 프로젝트 dashboard와 사각 다이 editor slice를 추가했다.
+- IndexedDB persistence와 localStorage fallback을 추가했다.
+- in-app browser에서 로그인 없는 프로젝트 생성, `CPU`와 `DreamSynth` 배치, 사각 다이 경계 clamp, 새로고침 복원, dashboard 재진입 후 reopen을 검증했다.
+- 브라우저 오류·경고 로그가 비어 있는 것을 확인했다.
+
+### 결정 및 관찰
+
+- 첫 slice는 사각 다이로 제한한다. 원형과 육각형 constraint는 기본 drag pipeline을 검증한 뒤 Editor core 마일스톤에서 추가한다.
+- 직렬화 가능한 프로젝트 JSON만 저장 representation으로 유지한다.
+- 신규 블록은 현재 동일한 `(32, 32)` 위치에서 시작해 연속 추가 시 겹친다. Foundation slice에서는 의도적으로 단순하게 유지하며, preset 배치와 editor placement UX를 다룰 때 개선한다.
+- Konva block과 label은 현재 별도 노드다. label drag 동기화와 선택 UX는 Editor core 마일스톤에서 함께 정리한다.
+
+### 다음 재개 지점
+
+- Foundation vertical slice는 완료했다.
+- 다음 작업은 Milestone 0 `Reference Board And Visual Direction` 또는 Milestone 2 `Editor Core`다. Milestone 0은 Milestone 2와 병행 가능하지만 Milestone 3 visual system 이전에는 반드시 완료한다.
+
 ## 2026-06-02 - 계획 검토 반영
 
 ### 테스트 인프라 결함 수정 (Foundation 계획)
