@@ -379,3 +379,34 @@
 
 - Milestone 4 완료. 다음은 Milestone 5 `Fake Specs And Dual PNG Export`다.
 - 착수 직전 `docs/superpowers/plans/2026-06-02-specs-and-export.md`를 작성한다(로드맵 지시).
+
+## 2026-06-03 - Milestone 5 계획 작성 및 구현 전 코드 리뷰
+
+### 계획
+
+- 로드맵 지시에 따라 `docs/superpowers/plans/2026-06-02-specs-and-export.md`를 작성했다.
+- M5는 export 기능을 바로 덧붙이지 않고, 결과물 신뢰성에 직접 영향을 주는 회귀 수정 3개를 먼저 처리한다.
+  - pending autosave를 editor teardown 전에 flush한다.
+  - editor Stage를 현재 다이 크기 이상으로 잡아 `720x720` 프리셋 하단 클리핑을 제거한다.
+  - 블록의 shape/texture/label을 블록 단위 그룹으로 렌더하여 앞/뒤 순서가 시각 전체에 적용되게 한다.
+- 이후 fake spec 예시/폼, 순수 export layout, Web Share fallback helper, die-only 전용 Stage, poster 전용 Stage, editor export panel, 브라우저 acceptance gate 순서로 진행한다.
+
+### 확정한 출력 계약
+
+- `die-only PNG`: 다이 논리 크기를 그대로 사용하고 `pixelRatio: 4`로 캡처한다. 예: `720x720` 다이는 `2880x2880`, `920x600` 다이는 `3680x2400`.
+- `poster PNG`: 논리 크기 `1600x900`, `pixelRatio: 2`, 최종 `3200x1800`.
+- 두 exporter는 화면 밖에 마운트한 별도 Konva Stage를 사용한다. editor DOM, toolbar, selection overlay, transformer, zoom/pan 상태를 캡처하지 않는다.
+- poster 공유는 파일 Web Share가 가능하면 `navigator.share({ files })`를 사용하고, 불가능하면 동일 poster PNG를 다운로드한다.
+- 저장 schema는 바꾸지 않는다. 기존 `Project.spec: FakeSpec`를 폼과 poster layout의 단일 소스로 사용한다.
+
+### 코드 리뷰에서 확인한 후속 부채
+
+- 사각·정사각 다이의 경계 제한은 회전 각도를 고려하지 않는다. 회전한 블록의 모서리가 다이 밖으로 나갈 수 있다. M5 exporter 구조와 독립적이므로 release QA 전 editor hardening으로 처리한다.
+- `BlockPalette`는 v1 `BlockType` 16종 중 6종만 노출한다. 프리셋에는 더 많은 타입이 들어가지만 사용자가 빈 캔버스에서 전 타입을 추가할 수 없다. release QA 전 palette 확장으로 처리한다.
+- 두 항목은 이번 계획 문서 작성 체크포인트에서 코드 수정하지 않는다.
+
+### 다음 재개 지점
+
+- M5 코드는 아직 시작하지 않았다.
+- `docs/superpowers/plans/2026-06-02-specs-and-export.md`의 Task 1 `Flush pending autosave work before teardown`부터 TDD로 구현한다.
+- task 단위 커밋을 유지하고 각 체크포인트에서 멈춘다.
