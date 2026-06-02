@@ -264,3 +264,23 @@
 ### 다음 재개 지점
 
 - Milestone 3(비주얼 시스템) 완료. 다음은 Milestone 4 프리셋/리믹스다. 착수 직전 `docs/superpowers/plans/2026-06-02-presets-and-remixing.md`를 작성한다(로드맵 지시). M3에서 만든 `createHeroChip`·테마 토큰·`resolveBlockStyle`이 프리셋 카탈로그의 출발점이 된다. 후속 Hero 칩(컴포지션 B neon 육각, C military)도 M4/M6에서 큐레이션한다.
+
+## 2026-06-03 - Milestone 4 프리셋/리믹스 계획 작성
+
+### 계획
+
+- 로드맵 지시에 따라 `docs/superpowers/plans/2026-06-02-presets-and-remixing.md`를 작성했다.
+- M4는 순수 프리셋 엔진(카탈로그 metadata + blueprint materialization + store command)과 대시보드 preview card/UI 배선, 브라우저 게이트로 나눈다.
+- 프리셋은 6개를 제공한다: M3에서 검토한 `AURORA C-1`, 레퍼런스 보드의 alternate인 `NEON DISTRICT N-9`와 `FIELD UNIT M-7`, 추가 방향인 `LUCID-88`, `MONOLITH I/O`, `SOLAR FLARE X`.
+
+### 결정 및 트레이드오프
+
+- **저장 스키마 변경 없음.** 프리셋은 새로운 편집 모드가 아니라 기존 `Project` JSON으로 materialize한다. remix 결과는 새 project/block/decoration ID를 받고 기존 editor·autosave·export 경로를 그대로 사용한다.
+- **source preset 불변.** 프리셋 blueprint는 저장하지 않고 읽기 전용 소스로 취급한다. remix 수정이 source를 바꾸지 않는 것을 순수 factory 테스트와 브라우저 흐름으로 검증한다.
+- **대시보드 preview는 CSS 요약 카드.** 카드마다 Konva Stage를 추가하거나 bitmap thumbnail을 관리하지 않는다. 대시보드는 빠르게 유지하고, 전체 비주얼은 Remix 직후 기존 Konva editor에서 확인한다.
+- **`createHero()`는 호환성을 위해 유지.** 대시보드의 M3 임시 `Load Hero Chip` 진입점은 preset gallery로 대체한다.
+
+### 다음 재개 지점
+
+- `docs/superpowers/plans/2026-06-02-presets-and-remixing.md`의 Task 1 `Preset metadata catalog`부터 TDD로 구현한다.
+- task 단위 커밋을 유지하고, Phase B 완료 뒤 in-app Browser에서 6개 카드, N-9/M-7 시각 차이, remix source 불변성, IndexedDB 복원을 검증한다.
