@@ -145,3 +145,41 @@
 ### 다음 재개 지점
 
 - `docs/superpowers/plans/2026-06-02-editor-core.md`를 Task 1부터 task 단위로 구현한다. Task별 커밋, Phase B(Task 7)·Task 8에서 브라우저 검증.
+
+## 2026-06-02 - Editor Core 구현 완료
+
+### 구현 (Task 1~7)
+
+- editor store(선택, undo/redo 히스토리, add/transform/delete/duplicate/reorder/setDieShape) 추가.
+- 사각/정사각/원형/육각형 die clamp와 형태 전환 시 정규화(정사각화 + 블록 재clamp) 추가.
+- zoom/pan/grid(형태별 clip)/snap, Transformer 리사이즈·회전, 에디터 툴바, 키보드 단축키, debounce 자동저장 추가.
+- `buildBlock`을 `src/domain/blockFactory.ts`로 이동하고 zIndex를 `max+1`로 수정(M1 충돌 버그).
+
+### 구현 중 발견·결정
+
+- **새 boundary `src/lib/`**: 의존성 없는 debouncer 배치.
+- **테스트 인프라 수정**: 이 프로젝트는 Vitest globals를 켜지 않아 React Testing Library 자동 cleanup이 등록되지 않는다. `EditorToolbar.test.tsx`처럼 한 파일에서 여러 번 render하면 DOM이 누적돼 "multiple elements"로 실패했다. `src/test/setup.ts`에 `afterEach(cleanup)`을 등록해 전역 해결(기존 1-render 테스트들은 누적이 없어 안 걸렸던 것).
+- **육각형 clip 정렬 버그(브라우저 검증에서 발견)**: `RegularPolygon`에 `rotation={-90}`을 주면 flat-top으로 렌더되는데 grid clip 경로는 pointy-top이라 grid가 육각형 밖으로 새어나왔다. Konva 기본 `RegularPolygon`(회전 없음)이 clip 경로와 동일한 꼭짓점을 만들므로 `rotation`을 제거해 정렬.
+- 단일 선택만 지원(멀티 선택 후순위). 회전은 경계 계산에서 무시(미회전 AABB로 clamp). zoom/pan은 Project에 저장하지 않는 비영속 view 상태.
+
+### 브라우저 검증 (Task 8, Chrome via Playwright) — 직접 구동 확인
+
+- 로그인 없이 New Project → 에디터 진입, 앱 콘솔 오류 0 (favicon 404만 존재).
+- 팔레트 블록 추가 시 자동 선택 + 히스토리 생성(Undo 활성, 선택 커맨드 활성).
+- 4형태 die 렌더 + grid가 형태에 맞게 clip + 형태 전환 시 블록이 안쪽으로 재clamp(원형·육각형).
+- 키보드 `Ctrl/Cmd+Z` undo 동작(Undo/Redo 활성 전환 + 화면이 직전 형태로 복귀로 확인).
+- 새로고침 후 die 형태와 블록이 IndexedDB에서 복원(히스토리는 설계대로 초기화).
+- 150블록 추가에도 콘솔 오류 0, 즉시 응답.
+
+### 단위 테스트로 커버(브라우저 좌표 조작이 어려워 스크립트 구동은 생략)
+
+- 블록 드래그/리사이즈/회전 시 die 경계 clamp: `editorStore.transformBlock` + `clampBlockToDie`/`clampBlockToRect`/`clampBlockToRadial`.
+- delete/duplicate/bringForward/sendBackward, undo/redo 히스토리, zoom 수학(`zoomAtPointer`), 단축키 resolver, debouncer.
+
+### 검증 결과
+
+- `npm test`: 14개 파일 / 43개 테스트 통과. `npm run build` 통과.
+
+### 다음 재개 지점
+
+- Editor Core(Milestone 2) 완료. 다음은 Milestone 0(레퍼런스 보드) 또는 Milestone 3(비주얼 시스템)이며, M3 착수 전 M0를 완료해야 한다. Milestone 3 착수 직전 `docs/superpowers/plans/2026-06-02-visual-system.md`를 작성한다.
