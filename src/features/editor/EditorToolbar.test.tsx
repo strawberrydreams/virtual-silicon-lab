@@ -6,10 +6,13 @@ import { EditorToolbar } from './EditorToolbar'
 function renderToolbar(overrides = {}) {
   const props = {
     dieShape: 'rect' as const,
+    theme: 'neon' as const,
     canUndo: true,
     canRedo: false,
     hasSelection: true,
     onSetDieShape: vi.fn(),
+    onSetTheme: vi.fn(),
+    onAddDecoration: vi.fn(),
     onUndo: vi.fn(),
     onRedo: vi.fn(),
     onDuplicate: vi.fn(),
@@ -46,5 +49,17 @@ describe('EditorToolbar', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Delete' }))
     expect(props.onUndo).toHaveBeenCalledTimes(1)
     expect(props.onDelete).toHaveBeenCalledTimes(1)
+  })
+
+  it('switches theme', async () => {
+    const props = renderToolbar()
+    await userEvent.click(screen.getByRole('button', { name: 'Keynote' }))
+    expect(props.onSetTheme).toHaveBeenCalledWith('keynote')
+  })
+
+  it('adds a decoration', async () => {
+    const props = renderToolbar()
+    await userEvent.click(screen.getByRole('button', { name: 'Neon Line' }))
+    expect(props.onAddDecoration).toHaveBeenCalledWith('neonLine')
   })
 })

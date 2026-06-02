@@ -1,11 +1,15 @@
-import type { DieShape } from '../../domain/project'
+import type { DieShape, StyleTheme } from '../../domain/project'
+import type { DecorationKind } from '../../domain/decorationFactory'
 
 type Props = {
   dieShape: DieShape
+  theme: StyleTheme
   canUndo: boolean
   canRedo: boolean
   hasSelection: boolean
   onSetDieShape: (shape: DieShape) => void
+  onSetTheme: (theme: StyleTheme) => void
+  onAddDecoration: (kind: DecorationKind) => void
   onUndo: () => void
   onRedo: () => void
   onDuplicate: () => void
@@ -21,14 +25,31 @@ const SHAPES: { shape: DieShape; label: string }[] = [
   { shape: 'hexagon', label: 'Hexagon' },
 ]
 
+const THEME_OPTIONS: { theme: StyleTheme; label: string }[] = [
+  { theme: 'neon', label: 'Neon' },
+  { theme: 'retro', label: 'Retro' },
+  { theme: 'military', label: 'Military' },
+  { theme: 'keynote', label: 'Keynote' },
+  { theme: 'mono', label: 'Mono' },
+]
+
+const DECORATIONS: { kind: DecorationKind; label: string }[] = [
+  { kind: 'neonLine', label: 'Neon Line' },
+  { kind: 'warningMark', label: 'Warning' },
+  { kind: 'label', label: 'Label' },
+]
+
 const buttonClass = 'border border-cyan-900 px-3 py-1 text-xs uppercase tracking-wider disabled:opacity-30'
 
 export function EditorToolbar({
   dieShape,
+  theme,
   canUndo,
   canRedo,
   hasSelection,
   onSetDieShape,
+  onSetTheme,
+  onAddDecoration,
   onUndo,
   onRedo,
   onDuplicate,
@@ -45,6 +66,26 @@ export function EditorToolbar({
             className={`${buttonClass} ${shape === dieShape ? 'bg-cyan-400/20 text-cyan-200' : ''}`}
             onClick={() => onSetDieShape(shape)}
           >
+            {label}
+          </button>
+        ))}
+      </div>
+      <span className="mx-2 h-4 w-px bg-cyan-900" />
+      <div className="flex gap-1">
+        {THEME_OPTIONS.map(({ theme: option, label }) => (
+          <button
+            key={option}
+            className={`${buttonClass} ${option === theme ? 'bg-cyan-400/20 text-cyan-200' : ''}`}
+            onClick={() => onSetTheme(option)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      <span className="mx-2 h-4 w-px bg-cyan-900" />
+      <div className="flex gap-1">
+        {DECORATIONS.map(({ kind, label }) => (
+          <button key={kind} className={buttonClass} onClick={() => onAddDecoration(kind)}>
             {label}
           </button>
         ))}

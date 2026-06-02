@@ -34,10 +34,13 @@ export function EditorPage({ project, persist }: Props) {
       <section className="flex flex-1 flex-col">
         <EditorToolbar
           dieShape={state.project.die.shape}
+          theme={state.project.theme}
           canUndo={state.past.length > 0}
           canRedo={state.future.length > 0}
           hasSelection={state.selectedBlockId !== null}
           onSetDieShape={state.setDieShape}
+          onSetTheme={state.setTheme}
+          onAddDecoration={state.addDecoration}
           onUndo={state.undo}
           onRedo={state.redo}
           onDuplicate={state.duplicateSelected}
