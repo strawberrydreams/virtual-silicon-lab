@@ -284,3 +284,25 @@
 
 - `docs/superpowers/plans/2026-06-02-presets-and-remixing.md`의 Task 1 `Preset metadata catalog`부터 TDD로 구현한다.
 - task 단위 커밋을 유지하고, Phase B 완료 뒤 in-app Browser에서 6개 카드, N-9/M-7 시각 차이, remix source 불변성, IndexedDB 복원을 검증한다.
+
+## 2026-06-03 - Milestone 4 Task 1 진행
+
+### 완료
+
+- `src/presets/presetCatalog.ts`에 6개 프리셋의 가벼운 metadata 카탈로그를 추가했다.
+- 모든 비주얼 테마(`neon`, `retro`, `military`, `keynote`, `mono`)를 최소 1개 프리셋이 대표하고, 각 카드용 name/tagline/accent/die shape/preview block 정보를 저장한다.
+- `AURORA C-1`, `NEON DISTRICT N-9`, `FIELD UNIT M-7`는 후속 Hero 후보로 `featured: true`를 표시했다.
+
+### 결정
+
+- 이 단계는 dashboard preview와 blueprint factory가 공유할 순수 metadata만 추가한다. 저장 `Project` 스키마는 변경하지 않는다.
+- 전체 블록 배치, 장식, fake spec payload는 Task 2 `presetFactory.ts`에서 분리해 materialize한다. 카드 metadata가 편집 프로젝트 payload까지 떠안지 않도록 경계를 유지한다.
+
+### 검증
+
+- TDD RED: `presetCatalog.test.ts`가 `./presetCatalog` 모듈 부재로 실패하는 것을 확인했다.
+- TDD GREEN: 집중 테스트 1파일 / 2테스트 통과.
+
+### 다음 재개 지점
+
+- M4 계획의 Task 2 `Blueprint materialization into independent projects`부터 시작한다.
