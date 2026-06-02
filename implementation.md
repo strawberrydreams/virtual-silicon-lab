@@ -207,3 +207,27 @@
 ### 다음 재개 지점
 
 - Milestone 0 완료. 다음은 Milestone 3 비주얼 시스템이다. 착수 직전 `docs/superpowers/plans/2026-06-02-visual-system.md`를 작성하고(로드맵 지시), `visual-direction.md` 토큰으로 theme 카탈로그를, 컴포지션 A로 첫 Hero 칩을 구현한 뒤 보드 기준 수동 리뷰를 통과해야 다음 단계로 넘어간다.
+
+## 2026-06-03 - Milestone 3 계획 작성 + Phase A 구현
+
+### 진행
+
+- 로드맵 지시대로 `docs/superpowers/plans/2026-06-02-visual-system.md`를 작성했다(15개 task, M2의 순수 엔진 TDD + Konva 브라우저 검증 2단계 패턴). 토큰은 `docs/reference/visual-direction.md`, Hero 칩은 `hero-compositions.md` 컴포지션 A를 출처로 한다.
+- **Phase A(Task 1~8, 순수 엔진, 단위 테스트) 완료·커밋:**
+  - `src/themes/themeTokens.ts`: 5개 테마 토큰 카탈로그 + `resolveTheme`.
+  - `src/themes/gradients.ts`: Konva 그래디언트 prop 빌더(`flattenStops`/`linearGradientProps`/`dieFillProps` — 원형·육각형은 중심 원점 기준 보정).
+  - `src/themes/resolveStyle.ts`: 테마 기반 블록·장식 스타일 리졸버(`colorOverride` 우선, 판타지 블록은 accent 글로우 강화, neonLine은 additive blend).
+  - `src/features/editor/canvas/blockTexture.ts`: 메모리 계열 블록 판별 + 절차적 메모리셀 격자(이미지 에셋 미사용).
+  - `src/domain/decorationFactory.ts`: `buildDecoration`(다이 중심 기본값) + `nextDecorationZIndex`.
+  - `src/domain/heroChip.ts`: `createHeroChip` = 컴포지션 A(keynote, 정사각 720, 6블록, 라벨, AURORA C-1 스펙).
+  - 스토어: `editorStore.setTheme`/`addDecoration`(undo 가능, 동일 테마는 no-op), `projectStore.createHero`.
+- 검증: `npm test` 20파일/71테스트 통과(M3 이전 14/43), `npm run build` 성공(559kB, 기존 chunk 경고 유지 — 회귀 아님).
+
+### 다음 재개 지점
+
+- **Phase B(Task 9~15)부터 재개**한다. 모두 Konva 렌더링/UI 배선이라 단위 테스트가 아닌 브라우저 검증 대상이다.
+  - Task 9: 툴바 테마 picker + 장식 추가 버튼(EditorToolbar/EditorPage). `EditorToolbar.test.tsx`만 DOM 테스트.
+  - Task 10~12: ChipStage를 테마 토큰 기반으로 — die/grid → 블록(글로우·메모리 텍스처) → 장식 렌더.
+  - Task 13: 대시보드 "Load Hero Chip" → **Hero 칩을 M0 보드(컴포지션 A) 기준으로 수동 시각 리뷰**(M3 게이트). 미달이면 토큰/렌더 보정.
+  - Task 14: 최소 die PNG export smoke test(`stage.toDataURL`)로 효과가 Konva에서 렌더됨을 확인(M3 게이트). 포스터/고DPI/공유는 M5.
+  - Task 15: 전체 검증 + implementation.md/CLAUDE.md에 M3 완료 기록.
