@@ -30,10 +30,9 @@ function EditorRoute() {
 
   return (
     <EditorPage
+      key={project.id}
       project={project}
-      saveProject={async (nextProject) => {
-        setProject(await store.save(nextProject))
-      }}
+      persist={(nextProject) => void store.save(nextProject)}
     />
   )
 }

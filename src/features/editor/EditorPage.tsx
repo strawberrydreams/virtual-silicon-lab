@@ -1,30 +1,59 @@
-import type { Block, BlockType, Project } from '../../domain/project'
+import { useMemo } from 'react'
+import { useStore } from 'zustand'
+import type { Project } from '../../domain/project'
+import { createEditorStore } from '../../stores/editorStore'
 import { BlockPalette } from './BlockPalette'
-import { buildBlock, ChipStage } from './canvas/ChipStage'
+import { EditorToolbar } from './EditorToolbar'
+import { ChipStage } from './canvas/ChipStage'
+import { useAutosave } from './useAutosave'
+import { useEditorShortcuts } from './useEditorShortcuts'
 
 type Props = {
   project: Project
-  saveProject: (project: Project) => Promise<void>
+  persist: (project: Project) => void
 }
 
-export function EditorPage({ project, saveProject }: Props) {
-  function addBlock(type: BlockType) {
-    void saveProject({ ...project, blocks: [...project.blocks, buildBlock(project, type)] })
-  }
+export function EditorPage({ project, persist }: Props) {
+  const store = useMemo(() => createEditorStore(project), [project])
+  const state = useStore(store)
 
-  function updateBlock(block: Block) {
-    void saveProject({
-      ...project,
-      blocks: project.blocks.map((candidate) => (candidate.id === block.id ? block : candidate)),
-    })
-  }
+  useAutosave(store, persist)
+  useEditorShortcuts({
+    undo: state.undo,
+    redo: state.redo,
+    delete: state.deleteSelected,
+    duplicate: state.duplicateSelected,
+    bringForward: state.bringForward,
+    sendBackward: state.sendBackward,
+    deselect: () => state.select(null),
+  })
 
   return (
     <main className="flex min-h-screen bg-[#03080b] text-[#d8f7ff]">
-      <BlockPalette addBlock={addBlock} />
-      <section className="p-8">
-        <h1 className="mb-4 text-lg tracking-[0.25em] uppercase">{project.name}</h1>
-        <ChipStage project={project} updateBlock={updateBlock} />
+      <BlockPalette addBlock={state.addBlock} />
+      <section className="flex flex-1 flex-col">
+        <EditorToolbar
+          dieShape={state.project.die.shape}
+          canUndo={state.past.length > 0}
+          canRedo={state.future.length > 0}
+          hasSelection={state.selectedBlockId !== null}
+          onSetDieShape={state.setDieShape}
+          onUndo={state.undo}
+          onRedo={state.redo}
+          onDuplicate={state.duplicateSelected}
+          onDelete={state.deleteSelected}
+          onBringForward={state.bringForward}
+          onSendBackward={state.sendBackward}
+        />
+        <div className="p-6">
+          <h1 className="mb-4 text-lg tracking-[0.25em] uppercase">{state.project.name}</h1>
+          <ChipStage
+            project={state.project}
+            selectedBlockId={state.selectedBlockId}
+            onSelectBlock={state.select}
+            onTransformBlock={state.transformBlock}
+          />
+        </div>
       </section>
     </main>
   )
