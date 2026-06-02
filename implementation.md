@@ -231,3 +231,36 @@
   - Task 13: 대시보드 "Load Hero Chip" → **Hero 칩을 M0 보드(컴포지션 A) 기준으로 수동 시각 리뷰**(M3 게이트). 미달이면 토큰/렌더 보정.
   - Task 14: 최소 die PNG export smoke test(`stage.toDataURL`)로 효과가 Konva에서 렌더됨을 확인(M3 게이트). 포스터/고DPI/공유는 M5.
   - Task 15: 전체 검증 + implementation.md/CLAUDE.md에 M3 완료 기록.
+
+## 2026-06-03 - Milestone 3 비주얼 시스템 구현 완료
+
+### 구현 (Phase B, Task 9~14 — Konva 렌더링/UI, 브라우저 검증)
+
+- 툴바에 5개 테마 picker + 장식 추가 버튼(Neon Line/Warning/Label) 추가, `EditorPage`에서 `setTheme`/`addDecoration` 배선. `EditorToolbar.test.tsx`에 테마/장식 DOM 테스트 추가.
+- `ChipStage`를 `project.theme` 기반으로 전환: die(형태별 그래디언트 + 스트로크 + 은은한 외곽 글로우), grid(테마 색), 블록(`resolveBlockStyle`로 fill/stroke/글로우, cornerRadius), 메모리 계열 블록의 절차적 셀 텍스처, 라벨(테마 text 색).
+- `DecorationNode`로 4종 장식 렌더: neonLine(additive blend `lighter` + 글로우), warningMark(삼각형+`!`), label, sciFiObject(원형 fallback).
+- 대시보드 "Load Hero Chip" → `projectStore.createHero` 배선. ChipStage에 stage ref + "Export PNG" 버튼(`stage.toDataURL({pixelRatio:2})` → 다운로드, `src/features/export/exportStage.ts`).
+
+### 구현 중 결정·관찰
+
+- **테마 = 렌더타임 단일 소스.** `project.theme`만 바뀌면 die/grid/블록/장식/라벨이 전부 재색칠된다. 마이그레이션 불필요. `die.background`는 현재 렌더러가 소비하지 않으며 preset 배경 변형용으로 예약(M4).
+- **에디터 배경은 CSS ambiance**(테마 배경 stop). die-only PNG export는 이에 의존하지 않으며(`toDataURL`은 Konva canvas만 캡처), 포스터 배경은 M5 전용 export Stage가 담당한다.
+- **이미지 에셋 미사용.** 메모리 어레이 텍스처는 절차적 Konva Rect 격자로 구현(스펙의 "Konva-native 효과만" 규칙 + 바이너리 에셋 회피). `Konva.Filters` 블러는 node.cache() 필요·jsdom 미검증이라 후순위 — `shadowBlur` + additive blend로 네온 룩 달성.
+- **장식 삭제 UI는 미구현(YAGNI).** 잘못 추가한 장식은 Undo로 제거. 장식 선택/드래그/텍스트 편집은 후순위.
+- export 버튼은 현재 전체 Stage(960×640)를 내보내 die 우측 여백이 포함된다. die-only crop·고DPI·포스터·공유는 M5.
+
+### 브라우저 검증 (Chrome via Playwright) — 직접 구동 확인
+
+- 로그인 없이 대시보드 → "Load Hero Chip" → 에디터 진입. 앱 콘솔 에러 0 (favicon 404만).
+- **게이트 1 (테마 일관성):** keynote→neon 전환 시 die 그래디언트·스트로크·grid·블록·라벨·장식이 전부 일관되게 재색칠. 두 테마가 완전히 다른 세계로 보임.
+- **게이트 2 (Hero 칩 M0 보드 리뷰):** AURORA C-1(컴포지션 A) = brushed-graphite 정사각 die + 중앙 ConsciousnessProcessor 부드러운 violet bloom + 실블록 약한 글로우(계층) + QuantumMemory 밴드 반복셀 텍스처(die-shot 질감) + AURORA C-1 라벨. premium·절제·on-brief, EDA 외형 아님.
+- **게이트 3 (export smoke test):** Export PNG로 받은 래스터에 die 그래디언트·글로우·additive 네온 라인·경고 삼각형·메모리 텍스처·라벨이 모두 포함되고 DOM/CSS 크롬은 전무 → 효과가 Konva에서 렌더됨을 확인.
+- 장식 4종(neonLine additive bloom, warning 삼각형, label, sciFiObject) 렌더 + 테마 따라 색 변화 + Undo 제거 동작.
+
+### 검증 결과
+
+- `npm test`: 20개 파일 / 74개 테스트 통과. `npm run build` 통과(565kB, 기존 chunk 경고 유지 — 회귀 아님).
+
+### 다음 재개 지점
+
+- Milestone 3(비주얼 시스템) 완료. 다음은 Milestone 4 프리셋/리믹스다. 착수 직전 `docs/superpowers/plans/2026-06-02-presets-and-remixing.md`를 작성한다(로드맵 지시). M3에서 만든 `createHeroChip`·테마 토큰·`resolveBlockStyle`이 프리셋 카탈로그의 출발점이 된다. 후속 Hero 칩(컴포지션 B neon 육각, C military)도 M4/M6에서 큐레이션한다.
