@@ -7,6 +7,8 @@ import type { BlockTransform } from '../../../stores/editorStore'
 import { zoomAtPointer } from './viewport'
 import { resolveTheme, type ThemeTokens } from '../../../themes/themeTokens'
 import { dieFillProps } from '../../../themes/gradients'
+import { resolveBlockStyle } from '../../../themes/resolveStyle'
+import { blockVisual, memoryCells } from './blockTexture'
 
 const STAGE_WIDTH = 960
 const STAGE_HEIGHT = 640
@@ -129,52 +131,81 @@ export function ChipStage({ project, selectedBlockId, onSelectBlock, onTransform
         <Layer>
           <DieShape die={project.die} tokens={tokens} />
           <GridLines die={project.die} tokens={tokens} />
-          {sorted.map((block: Block) => (
-            <Rect
-              key={block.id}
-              ref={(node) => {
-                if (node) blockRefs.current.set(block.id, node)
-                else blockRefs.current.delete(block.id)
-              }}
-              x={block.x}
-              y={block.y}
-              width={block.w}
-              height={block.h}
-              rotation={block.rotation}
-              fill={block.category === 'fantasy' ? '#312e81' : '#164e63'}
-              stroke={block.id === selectedBlockId ? '#f0abfc' : block.category === 'fantasy' ? '#a78bfa' : '#67e8f9'}
-              strokeWidth={block.id === selectedBlockId ? 2 : 1}
-              shadowColor={block.glow ? '#22d3ee' : undefined}
-              shadowBlur={block.glow ? 12 : 0}
-              draggable
-              onClick={() => onSelectBlock(block.id)}
-              onTap={() => onSelectBlock(block.id)}
-              onDragStart={() => onSelectBlock(block.id)}
-              onDragEnd={(event) => {
-                onTransformBlock(block.id, {
-                  x: snapToGrid(event.target.x(), GRID),
-                  y: snapToGrid(event.target.y(), GRID),
-                  w: block.w,
-                  h: block.h,
-                  rotation: block.rotation,
-                })
-              }}
-              onTransformEnd={(event) => {
-                const node = event.target as Konva.Rect
-                const scaleX = node.scaleX()
-                const scaleY = node.scaleY()
-                node.scaleX(1)
-                node.scaleY(1)
-                onTransformBlock(block.id, {
-                  x: node.x(),
-                  y: node.y(),
-                  w: Math.max(MIN_BLOCK, node.width() * scaleX),
-                  h: Math.max(MIN_BLOCK, node.height() * scaleY),
-                  rotation: node.rotation(),
-                })
-              }}
-            />
-          ))}
+          {sorted.map((block: Block) => {
+            const style = resolveBlockStyle(block, tokens, block.id === selectedBlockId)
+            return (
+              <Rect
+                key={block.id}
+                ref={(node) => {
+                  if (node) blockRefs.current.set(block.id, node)
+                  else blockRefs.current.delete(block.id)
+                }}
+                x={block.x}
+                y={block.y}
+                width={block.w}
+                height={block.h}
+                rotation={block.rotation}
+                cornerRadius={6}
+                fill={style.fill}
+                stroke={style.stroke}
+                strokeWidth={style.strokeWidth}
+                shadowColor={style.shadowColor}
+                shadowBlur={style.shadowBlur}
+                shadowOpacity={style.shadowOpacity}
+                draggable
+                onClick={() => onSelectBlock(block.id)}
+                onTap={() => onSelectBlock(block.id)}
+                onDragStart={() => onSelectBlock(block.id)}
+                onDragEnd={(event) => {
+                  onTransformBlock(block.id, {
+                    x: snapToGrid(event.target.x(), GRID),
+                    y: snapToGrid(event.target.y(), GRID),
+                    w: block.w,
+                    h: block.h,
+                    rotation: block.rotation,
+                  })
+                }}
+                onTransformEnd={(event) => {
+                  const node = event.target as Konva.Rect
+                  const scaleX = node.scaleX()
+                  const scaleY = node.scaleY()
+                  node.scaleX(1)
+                  node.scaleY(1)
+                  onTransformBlock(block.id, {
+                    x: node.x(),
+                    y: node.y(),
+                    w: Math.max(MIN_BLOCK, node.width() * scaleX),
+                    h: Math.max(MIN_BLOCK, node.height() * scaleY),
+                    rotation: node.rotation(),
+                  })
+                }}
+              />
+            )
+          })}
+          {sorted
+            .filter((block) => blockVisual(block.type) === 'memory')
+            .map((block) => (
+              <Group
+                key={`${block.id}-mem`}
+                x={block.x}
+                y={block.y}
+                rotation={block.rotation}
+                listening={false}
+                clipFunc={(context) => context.rect(0, 0, block.w, block.h)}
+              >
+                {memoryCells(block.w, block.h).map((cell, index) => (
+                  <Rect
+                    key={index}
+                    x={cell.x}
+                    y={cell.y}
+                    width={cell.w}
+                    height={cell.h}
+                    fill={tokens.accents[0]}
+                    opacity={0.18}
+                  />
+                ))}
+              </Group>
+            ))}
           {sorted.map((block) => (
             <Text
               key={`${block.id}-label`}
@@ -182,7 +213,8 @@ export function ChipStage({ project, selectedBlockId, onSelectBlock, onTransform
               y={block.y + 12}
               rotation={block.rotation}
               text={block.type}
-              fill="#ecfeff"
+              fontSize={13}
+              fill={tokens.text}
               listening={false}
             />
           ))}
