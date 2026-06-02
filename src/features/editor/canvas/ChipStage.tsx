@@ -1,34 +1,9 @@
 import { Layer, Rect, Stage, Text } from 'react-konva'
-import type { Block, BlockType, Project } from '../../../domain/project'
+import type { Block, Project } from '../../../domain/project'
+import { buildBlock } from '../../../domain/blockFactory'
 import { clampBlockToRect, snapToGrid } from './geometry'
 
-const FANTASY_TYPES = new Set<BlockType>([
-  'EmotionEngine',
-  'DreamSynth',
-  'QuantumMemory',
-  'ConsciousnessProcessor',
-  'RealityDistortionUnit',
-  'TimeCore',
-])
-
-export function buildBlock(
-  project: Project,
-  type: BlockType,
-  id: string = crypto.randomUUID(),
-): Block {
-  return {
-    id,
-    type,
-    category: FANTASY_TYPES.has(type) ? 'fantasy' : 'real',
-    x: 32,
-    y: 32,
-    w: 192,
-    h: 112,
-    rotation: 0,
-    glow: true,
-    zIndex: project.blocks.length,
-  }
-}
+export { buildBlock }
 
 type Props = {
   project: Project
