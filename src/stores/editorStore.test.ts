@@ -119,3 +119,30 @@ describe('editor store commands', () => {
     }
   })
 })
+
+describe('editorStore visual commands', () => {
+  it('setTheme updates the theme and is undoable', () => {
+    const store = createEditorStore(createProject('p', 'p1', 0))
+    store.getState().setTheme('military')
+    expect(store.getState().project.theme).toBe('military')
+    expect(store.getState().past).toHaveLength(1)
+    store.getState().undo()
+    expect(store.getState().project.theme).toBe('neon')
+  })
+
+  it('setTheme is a no-op when the theme is unchanged', () => {
+    const store = createEditorStore(createProject('p', 'p1', 0))
+    store.getState().setTheme('neon')
+    expect(store.getState().past).toHaveLength(0)
+  })
+
+  it('addDecoration appends a decoration without changing selection and is undoable', () => {
+    const store = createEditorStore(createProject('p', 'p1', 0))
+    store.getState().addDecoration('warningMark')
+    expect(store.getState().project.decorations).toHaveLength(1)
+    expect(store.getState().project.decorations[0].kind).toBe('warningMark')
+    expect(store.getState().selectedBlockId).toBeNull()
+    store.getState().undo()
+    expect(store.getState().project.decorations).toHaveLength(0)
+  })
+})
