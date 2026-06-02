@@ -1,9 +1,26 @@
+import { Route, Routes } from 'react-router-dom'
+import { ProjectDashboard } from '../features/projects/ProjectDashboard'
+
 export function App() {
   return (
-    <main className="min-h-screen bg-[#071015] p-8 text-[#d8f7ff]">
-      <h1 className="text-3xl font-semibold tracking-[0.2em] uppercase">
-        Virtual Silicon Lab
-      </h1>
-    </main>
+    <Routes>
+      <Route
+        path="/"
+        element={
+          <ProjectDashboard
+            projects={[]}
+            createProject={async () => {
+              throw new Error('Project store adapter is wired in Task 8')
+            }}
+            duplicateProject={async () => {
+              throw new Error('Project store adapter is wired in Task 8')
+            }}
+            removeProject={async () => {
+              throw new Error('Project store adapter is wired in Task 8')
+            }}
+          />
+        }
+      />
+    </Routes>
   )
 }
