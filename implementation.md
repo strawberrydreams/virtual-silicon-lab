@@ -124,3 +124,24 @@
 
 - 스펙이 명시한 "착수 전 레퍼런스 보드" 단계가 어떤 계획에도 없었다. 비주얼 품질이 곧 제품이고 아마추어 함정의 최대 방어책이므로, 코드가 없는 Milestone 0(레퍼런스 보드 + 테마별 비주얼 방향 노트 + Hero 칩 러프 컴포지션)을 추가한다.
 - Milestone 0은 Milestone 3(비주얼 시스템) 이전에 완료하며 Milestone 1·2와 병행할 수 있다. 첫 Hero 칩 수동 리뷰는 이 보드를 기준으로 한다. Requirement Coverage 표에도 행을 추가했다.
+
+## 2026-06-02 - Editor Core 계획 작성 및 프로젝트 메모리 추가
+
+### 진행
+
+- 로드맵 지시("Editor Core 구현 직전에 상세 계획 작성")에 따라 `docs/superpowers/plans/2026-06-02-editor-core.md`를 작성했다. 아직 구현은 시작하지 않았다.
+- 구현 관련 문서(스펙·로드맵·계획·implementation.md)를 요약한 루트 `CLAUDE.md`를 추가했다.
+
+### Editor Core 계획 설계 결정
+
+- **엔진(순수, TDD) / 캔버스(브라우저 검증) 2단계 분리.** Phase A(Task 1~6)는 React·Konva 없이 단위 테스트 가능한 순수 로직(geometry, blockFactory, editorStore, debounce, shortcuts, viewport)으로, "모든 에디터 커맨드는 단위 테스트" 게이트를 충족한다. Phase B(Task 7)는 Konva 캔버스·툴바·훅·라우트 배선으로 브라우저에서 검증한다.
+- **`buildBlock`을 `ChipStage.tsx` → `src/domain/blockFactory.ts`로 이동**하며 zIndex를 `blocks.length`에서 `max(zIndex)+1`(`nextZIndex`)로 고친다(M1 리뷰에서 지적한 충돌 버그). store가 Konva 컴포넌트를 import하지 않도록 하기 위함이기도 하다.
+- **`editorStore`(zustand/vanilla)**: 단일 선택(`selectedBlockId`), 커맨드 단위 undo/redo 히스토리(`past`/`future`, MAX_HISTORY 100). 선택(`select`)은 히스토리에 안 쌓고, 자동저장은 영속화만 하며 히스토리를 건드리지 않는다.
+- **새 boundary `src/lib/`** 추가(의존성 없는 범용 유틸 — debouncer). 로드맵 파일 경계에 없던 디렉터리라 여기 기록한다.
+- **die 형태 전환 시 정규화**: rect 외 형태로 바꾸면 `width=height=min(w,h)`로 정사각화하고 모든 블록을 새 die에 재clamp. 원형/육각형 경계는 보수적 radial clamp(외접원이 die 원/육각형 내접원 안에 들어가도록)이며 회전은 경계 계산에서 무시한다.
+- **zoom/pan은 휘발성 view 상태**로 `ChipStage` 로컬 state에만 두고 Project JSON에 저장하지 않는다.
+- 키보드 단축키: undo `Cmd/Ctrl+Z`, redo `Cmd/Ctrl+Shift+Z`, delete `Delete/Backspace`, duplicate `Cmd/Ctrl+D`, 순서변경 `]`/`[`, 선택해제 `Esc`.
+
+### 다음 재개 지점
+
+- `docs/superpowers/plans/2026-06-02-editor-core.md`를 Task 1부터 task 단위로 구현한다. Task별 커밋, Phase B(Task 7)·Task 8에서 브라우저 검증.
