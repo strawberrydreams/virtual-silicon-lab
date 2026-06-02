@@ -183,3 +183,27 @@
 ### 다음 재개 지점
 
 - Editor Core(Milestone 2) 완료. 다음은 Milestone 0(레퍼런스 보드) 또는 Milestone 3(비주얼 시스템)이며, M3 착수 전 M0를 완료해야 한다. Milestone 3 착수 직전 `docs/superpowers/plans/2026-06-02-visual-system.md`를 작성한다.
+
+## 2026-06-03 - Milestone 0 레퍼런스 보드 완료
+
+### 산출물
+
+- `docs/reference/README.md`: 보드 인덱스. 스펙이 지정한 3가지 방향(실제 die-shot 색·질감·격자 / Sci-Fi 게임 UI(Destiny·Star Citizen) / 애플 키노트 슬라이드)을 정리하고, 각 방향에서 뽑아낼 특성과 그것이 매핑되는 Konva 토큰을 기록했다. 전역 anti-reference(EDA 툴 외형 금지)도 명시했다.
+- `docs/reference/visual-direction.md`: 5개 테마(`neon`/`retro`/`military`/`keynote`/`mono`)별 방향 노트. 각 테마마다 hex 팔레트, 글로우·대비 의도(Konva `shadowColor`/`shadowBlur`/`shadowOpacity`/blend 토큰), 배경, 장식 성격, 명시적 anti-reference 1개를 적었다. M3 theme 카탈로그의 토큰 출처다.
+- `docs/reference/hero-compositions.md`: 첫 Hero 칩 러프 컴포지션 1(primary) + 2(alternate). primary는 "AURORA C-1 — Consciousness Processor"(keynote + 네온 액센트, 정사각 다이, 단일 bloom, die-shot 메모리 밴드)이며 M3에서 가장 먼저 만들고 이 보드 기준으로 리뷰한다. alternate B(neon, 육각형)·C(military, 사각)는 테마 시스템의 폭을 증명하는 역할이자 M6 큐레이션 Hero 후보다.
+
+### 결정 및 트레이드오프
+
+- **이미지 바이너리 대신 텍스트 우선 보드.** 로드맵이 "보드를 `docs/reference/`에 두거나 외부 보드를 링크"하는 것을 명시 허용한다. 터미널 에이전트가 이미지를 큐레이션하기보다, 레퍼런스 출처 링크 + 정밀한 특성 서술 + 거기서 도출한 구체적 Konva 토큰(hex, shadowBlur, blend)으로 보드를 구성했다. 이미지 더미보다 M3 코드에 직접 연결되어 구현 입력으로서 가치가 높다.
+- 컴포지션 좌표는 다이 크기에 무관하도록 0~1 상대값으로 적었다. 블록 타입은 스펙의 real/fantasy 팔레트에서 골랐고, 판타지 블록을 각 컴포지션의 서사 앵커로 둔다.
+- 테마별 액센트 예산을 정했다(neon ≤2색/칩, keynote·mono ≤1색). 아마추어 함정(레인보우 남발)의 1차 방어다.
+
+### Acceptance gate 충족
+
+- 레퍼런스 보드와 방향 노트가 존재하고 본 implementation.md에 기록됨. ✅
+- M3 비주얼 작업과 첫 Hero 칩은 ad hoc 취향이 아니라 이 보드(특히 컴포지션 A와 `visual-direction.md` 토큰, README의 anti-reference)를 기준으로 리뷰한다. ✅
+- M0은 코드가 없는 마일스톤이라 `npm test`/`npm run build` 변화는 없다(소스 미변경).
+
+### 다음 재개 지점
+
+- Milestone 0 완료. 다음은 Milestone 3 비주얼 시스템이다. 착수 직전 `docs/superpowers/plans/2026-06-02-visual-system.md`를 작성하고(로드맵 지시), `visual-direction.md` 토큰으로 theme 카탈로그를, 컴포지션 A로 첫 Hero 칩을 구현한 뒤 보드 기준 수동 리뷰를 통과해야 다음 단계로 넘어간다.
