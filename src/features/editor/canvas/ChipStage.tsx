@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import type Konva from 'konva'
 import { Circle, Group, Layer, Line, Rect, RegularPolygon, Stage, Text, Transformer } from 'react-konva'
-import type { Block, Die, Project } from '../../../domain/project'
+import type { Block, Decoration, Die, Project } from '../../../domain/project'
 import { snapToGrid } from './geometry'
 import type { BlockTransform } from '../../../stores/editorStore'
 import { zoomAtPointer } from './viewport'
 import { resolveTheme, type ThemeTokens } from '../../../themes/themeTokens'
 import { dieFillProps } from '../../../themes/gradients'
-import { resolveBlockStyle } from '../../../themes/resolveStyle'
+import { resolveBlockStyle, resolveDecorationStyle } from '../../../themes/resolveStyle'
 import { blockVisual, memoryCells } from './blockTexture'
 
 const STAGE_WIDTH = 960
@@ -72,6 +72,63 @@ function GridLines({ die, tokens }: { die: Die; tokens: ThemeTokens }) {
     lines.push(<Line key={`h-${y}`} points={[0, y, die.width, y]} stroke={tokens.gridColor} strokeWidth={1} />)
   }
   return <Group clipFunc={(context) => clipForDie(context, die)}>{lines}</Group>
+}
+
+function DecorationNode({ decoration, tokens }: { decoration: Decoration; tokens: ThemeTokens }) {
+  const style = resolveDecorationStyle(decoration, tokens)
+  switch (decoration.kind) {
+    case 'neonLine':
+      return (
+        <Line
+          points={decoration.points}
+          stroke={style.color}
+          strokeWidth={style.strokeWidth}
+          shadowColor={style.shadowColor}
+          shadowBlur={style.shadowBlur}
+          lineCap="round"
+          globalCompositeOperation={style.blend}
+          listening={false}
+        />
+      )
+    case 'warningMark':
+      return (
+        <Group x={decoration.x} y={decoration.y} listening={false}>
+          <RegularPolygon
+            sides={3}
+            radius={18}
+            stroke={style.color}
+            strokeWidth={style.strokeWidth}
+            shadowColor={style.shadowColor}
+            shadowBlur={style.shadowBlur}
+          />
+          <Text x={-3} y={-6} text="!" fontStyle="bold" fontSize={16} fill={style.color} />
+        </Group>
+      )
+    case 'label':
+      return (
+        <Text
+          x={decoration.x}
+          y={decoration.y}
+          text={decoration.text}
+          fontSize={18}
+          fontStyle="bold"
+          letterSpacing={2}
+          fill={style.color}
+          listening={false}
+        />
+      )
+    case 'sciFiObject':
+      return (
+        <Circle
+          x={decoration.x}
+          y={decoration.y}
+          radius={10}
+          stroke={style.color}
+          strokeWidth={style.strokeWidth}
+          listening={false}
+        />
+      )
+  }
 }
 
 export function ChipStage({ project, selectedBlockId, onSelectBlock, onTransformBlock }: Props) {
@@ -218,6 +275,12 @@ export function ChipStage({ project, selectedBlockId, onSelectBlock, onTransform
               listening={false}
             />
           ))}
+          {project.decorations
+            .slice()
+            .sort((a, b) => a.zIndex - b.zIndex)
+            .map((decoration) => (
+              <DecorationNode key={decoration.id} decoration={decoration} tokens={tokens} />
+            ))}
           <Transformer
             ref={transformerRef}
             rotateEnabled
