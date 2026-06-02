@@ -68,6 +68,7 @@
 
 - `src/main.tsx`에서 `styles.css`를 import할 때 TypeScript가 Vite의 CSS 모듈 선언을 읽을 수 있도록 `tsconfig.app.json`에 `types: ["vite/client"]`를 추가했다.
 - 첫 구현은 `feature/foundation-slice` 브랜치의 `.worktrees/foundation-slice` 격리 worktree에서 진행한다.
+- `crypto.randomUUID()`의 반환 타입이 factory의 `id` 기본 인자 타입을 UUID 템플릿 리터럴로 좁히지 않도록 `id: string`을 명시했다. 로컬 JSON import와 테스트에서는 UUID 외의 안정적인 문자열 ID도 허용한다.
 
 ## 2026-06-02 - 계획 검토 반영
 
