@@ -9,6 +9,7 @@ import { resolveTheme, type ThemeTokens } from '../../../themes/themeTokens'
 import { dieFillProps } from '../../../themes/gradients'
 import { resolveBlockStyle, resolveDecorationStyle } from '../../../themes/resolveStyle'
 import { blockVisual, memoryCells } from './blockTexture'
+import { downloadDataUrl } from '../../export/exportStage'
 
 const STAGE_WIDTH = 960
 const STAGE_HEIGHT = 640
@@ -136,6 +137,7 @@ export function ChipStage({ project, selectedBlockId, onSelectBlock, onTransform
   const [position, setPosition] = useState({ x: 0, y: 0 })
   const blockRefs = useRef(new Map<string, Konva.Rect>())
   const transformerRef = useRef<Konva.Transformer>(null)
+  const stageRef = useRef<Konva.Stage>(null)
   const tokens = resolveTheme(project.theme)
 
   useEffect(() => {
@@ -153,7 +155,17 @@ export function ChipStage({ project, selectedBlockId, onSelectBlock, onTransform
       className="inline-block"
       style={{ backgroundColor: tokens.background[tokens.background.length - 1].color }}
     >
+      <button
+        className="mb-2 border border-cyan-700 px-3 py-1 text-xs uppercase tracking-wider text-cyan-200"
+        onClick={() => {
+          const url = stageRef.current?.toDataURL({ pixelRatio: 2 })
+          if (url) downloadDataUrl(url, `${project.name || 'chip'}.png`)
+        }}
+      >
+        Export PNG
+      </button>
       <Stage
+        ref={stageRef}
         width={STAGE_WIDTH}
         height={STAGE_HEIGHT}
         scaleX={scale}
