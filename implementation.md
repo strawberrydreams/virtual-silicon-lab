@@ -338,3 +338,44 @@
 
 - M4 계획의 Task 6 `Browser verification, project memory, and milestone checkpoint`부터 시작한다.
 - in-app Browser에서 6개 카드, AURORA/N-9/M-7 editor 진입, N-9 source 불변성, IndexedDB refresh 복원, console error 부재를 검증한다.
+
+## 2026-06-03 - Milestone 4 프리셋/리믹스 구현 완료
+
+### 구현
+
+- 새 순수 boundary `src/presets/`를 추가했다.
+  - `presetCatalog.ts`: 6개 프리셋의 dashboard metadata.
+  - `presetFactory.ts`: metadata id를 기존 직렬화 가능 `Project` JSON으로 materialize하는 blueprint factory.
+- 6개 프리셋:
+  - Hero 후보: `aurora-c1`, `neon-district-n9`, `field-unit-m7`.
+  - 추가 방향: `lucid-88`, `monolith-io`, `solar-flare-x`.
+- dashboard에 가벼운 CSS summary preview 카드 6개와 Remix action을 추가했다.
+- `projectStore.remixPreset()`은 새 project ID를 발급하고 repository에 독립 프로젝트로 저장한 뒤 editor route로 연결한다.
+
+### 결정 및 트레이드오프
+
+- **프리셋은 별도 저장 모델이 아니다.** remix 시 기존 `Project` JSON으로 materialize하여 editor, autosave, IndexedDB, export 경로를 그대로 사용한다.
+- **source preset은 불변이다.** 일반 blueprint는 매 remix마다 새 project/block/decoration ID와 배열을 만들고, AURORA는 새 nested ID를 만드는 M3 `createHeroChip()`을 재사용한다.
+- **저장 schema 변경 없음.** preset provenance를 `Project`에 저장하지 않는다. 편집과 export에 필요하지 않으므로 migration도 없다.
+- **dashboard preview는 CSS 요약 카드.** 6개 live Konva Stage나 bitmap thumbnail 관리 비용을 피하고, Remix 직후 기존 Konva editor에서 full visual을 보여준다.
+- M3 호환성을 위해 `projectStore.createHero()`는 유지하지만 dashboard의 임시 `Load Hero Chip` 버튼은 제거했다.
+
+### 브라우저 검증 (in-app Browser)
+
+- dashboard에 6개 preset 카드가 별도 `Remix a preset` 섹션으로 렌더되고, 카드별 theme/die shape/accent/block label이 구분되며 `New Project` 빈 캔버스 경로도 유지됨을 확인했다.
+- `AURORA C-1`: `Square / Keynote`, graphite die, 중앙 ConsciousnessProcessor bloom, memory band가 보이고 기존 편집 툴바를 그대로 사용한다.
+- `NEON DISTRICT N-9`: `Hexagon / Neon`, cyan·magenta routing, EmotionEngine·RealityDistortionUnit anchor가 보인다.
+- N-9 remix를 `Mono`로 변경하고 autosave 후 같은 editor URL을 새로고침했다. `Hexagon / Mono`와 mono 배경이 IndexedDB에서 복원되었다.
+- dashboard에서 N-9를 다시 Remix했을 때 다른 project ID로 생성되고 원본 `Hexagon / Neon` 배경으로 시작했다. source preset 불변성을 UI 흐름으로 확인했다.
+- `FIELD UNIT M-7`: `Rect / Military`, wide olive gunmetal, 낮은 glow, warning mark 중심 composition으로 N-9와 명확히 다른 세계로 보인다.
+- 전체 흐름 동안 browser console error는 0개였다.
+
+### 검증 결과
+
+- `npm test`: 23개 파일 / 81개 테스트 통과.
+- `npm run build`: 통과(574kB, 기존 chunk 경고 유지).
+
+### 다음 재개 지점
+
+- Milestone 4 완료. 다음은 Milestone 5 `Fake Specs And Dual PNG Export`다.
+- 착수 직전 `docs/superpowers/plans/2026-06-02-specs-and-export.md`를 작성한다(로드맵 지시).
