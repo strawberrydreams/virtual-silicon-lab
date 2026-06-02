@@ -70,6 +70,20 @@
 - 첫 구현은 `feature/foundation-slice` 브랜치의 `.worktrees/foundation-slice` 격리 worktree에서 진행한다.
 - `crypto.randomUUID()`의 반환 타입이 factory의 `id` 기본 인자 타입을 UUID 템플릿 리터럴로 좁히지 않도록 `id: string`을 명시했다. 로컬 JSON import와 테스트에서는 UUID 외의 안정적인 문자열 ID도 허용한다.
 
+## 2026-06-02 - Foundation 체크포인트 1
+
+### 완료
+
+- Task 1: Vite, React, Tailwind CSS, Vitest 셋업과 최소 앱 셸
+- Task 2: `schemaVersion` 기반 프로젝트 JSON 타입, factory, migration 진입점
+- Task 3: IndexedDB 저장소, localStorage 저장소, resilient fallback adapter
+- Task 4: 사각 다이용 grid snap과 블록 경계 제한 helper
+
+### 재개 지점
+
+- 다음 작업은 Foundation 계획의 Task 5 `Add Project Store And CRUD Commands`다.
+- 체크포인트 기준 검증 명령은 `npm test`와 `npm run build`다.
+
 ## 2026-06-02 - 계획 검토 반영
 
 ### 테스트 인프라 결함 수정 (Foundation 계획)
