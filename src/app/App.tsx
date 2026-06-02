@@ -11,6 +11,7 @@ function DashboardRoute() {
     <ProjectDashboard
       projects={store.projects}
       createProject={store.create}
+      createHeroChip={store.createHero}
       duplicateProject={store.duplicate}
       removeProject={store.remove}
     />

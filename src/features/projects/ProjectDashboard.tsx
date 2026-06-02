@@ -4,6 +4,7 @@ import type { Project } from '../../domain/project'
 type Props = {
   projects: Project[]
   createProject: (name: string) => Promise<Project>
+  createHeroChip: () => Promise<Project>
   duplicateProject: (id: string) => Promise<Project>
   removeProject: (id: string) => Promise<void>
 }
@@ -11,6 +12,7 @@ type Props = {
 export function ProjectDashboard({
   projects,
   createProject,
+  createHeroChip,
   duplicateProject,
   removeProject,
 }: Props) {
@@ -18,6 +20,11 @@ export function ProjectDashboard({
 
   async function startProject() {
     const project = await createProject('Untitled Dream Chip')
+    navigate(`/editor/${project.id}`)
+  }
+
+  async function startHero() {
+    const project = await createHeroChip()
     navigate(`/editor/${project.id}`)
   }
 
@@ -29,9 +36,14 @@ export function ProjectDashboard({
             <p className="text-xs tracking-[0.45em] text-cyan-300">CONCEPT FABRICATION TERMINAL</p>
             <h1 className="mt-3 text-3xl font-semibold tracking-[0.2em] uppercase">Virtual Silicon Lab</h1>
           </div>
-          <button className="border border-cyan-300 px-4 py-2 text-sm uppercase" onClick={startProject}>
-            New Project
-          </button>
+          <div className="flex gap-3">
+            <button className="border border-violet-300 px-4 py-2 text-sm uppercase" onClick={startHero}>
+              Load Hero Chip
+            </button>
+            <button className="border border-cyan-300 px-4 py-2 text-sm uppercase" onClick={startProject}>
+              New Project
+            </button>
+          </div>
         </header>
         <section className="mt-12 grid grid-cols-3 gap-4">
           {projects.map((project) => (
