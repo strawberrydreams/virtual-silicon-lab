@@ -306,3 +306,35 @@
 ### 다음 재개 지점
 
 - M4 계획의 Task 2 `Blueprint materialization into independent projects`부터 시작한다.
+
+## 2026-06-03 - Milestone 4 Task 2~5 진행
+
+### 완료
+
+- `src/presets/presetFactory.ts`: 6개 catalog entry를 기존 직렬화 가능 `Project` JSON으로 materialize하는 순수 factory를 추가했다.
+  - `AURORA C-1`은 M3에서 수동 검토한 `createHeroChip()` composition을 재사용한다.
+  - `NEON DISTRICT N-9`, `FIELD UNIT M-7`, `LUCID-88`, `MONOLITH I/O`, `SOLAR FLARE X`는 독립 blueprint로 추가했다.
+- `projectStore.remixPreset()`: 새 project ID를 발급하고 repository에 저장한 뒤 dashboard 목록 맨 앞에 넣는다.
+- `PresetCard`: metadata만 사용하는 CSS summary preview를 추가했다. 카드마다 Konva Stage나 bitmap thumbnail을 만들지 않는다.
+- dashboard: M3 임시 `Load Hero Chip` 버튼을 6개 preset gallery로 대체했다. `New Project` 빈 캔버스 경로는 유지한다.
+
+### 결정 및 관찰
+
+- remix는 source preset을 복사한 독립 `Project`다. 일반 blueprint materialization은 project/block/decoration ID와 배열을 새로 만들고, AURORA도 기존 factory가 새 nested ID를 만든다.
+- `projectStore.createHero()`는 M3 호환성과 테스트를 위해 유지하지만 dashboard에서 직접 노출하지 않는다. AURORA 진입은 이제 다른 프리셋과 동일한 Remix 경로를 사용한다.
+- dashboard preview는 빠른 선택 보조물이며 export-quality 렌더가 아니다. full visual은 Remix 후 기존 Konva editor에서 즉시 확인한다.
+- Task 2 계획 테스트의 bounded assertion을 보정했다. `clampBlockToDie()` 계약은 전체 `Block`이 아니라 `{ x, y, w, h }` geometry projection을 반환하므로, projection끼리 비교해야 한다.
+- 저장 `Project` 스키마 변경은 없다. `die.background` 값은 M5 poster export stage가 사용할 visual-intent key로 계속 예약한다.
+
+### 검증
+
+- Task 2 TDD RED: `presetFactory` 모듈 부재 실패 확인. GREEN: 집중 3테스트 통과.
+- Task 3 TDD RED: `remixPreset` command 부재 실패 확인. GREEN: store 집중 3테스트 통과.
+- Task 4 TDD RED: `PresetCard` 모듈 부재 실패 확인. GREEN: DOM 집중 1테스트 통과.
+- Task 5 TDD RED: dashboard에 Remix 버튼이 없어 gallery 테스트 실패 확인. GREEN: dashboard + card 집중 3테스트 통과.
+- Task 5 browser smoke: dashboard에 6개 카드와 `New Project`가 렌더되고 console error가 비어 있는 것을 확인했다. 전체 acceptance 흐름은 Task 6에서 진행한다.
+
+### 다음 재개 지점
+
+- M4 계획의 Task 6 `Browser verification, project memory, and milestone checkpoint`부터 시작한다.
+- in-app Browser에서 6개 카드, AURORA/N-9/M-7 editor 진입, N-9 source 불변성, IndexedDB refresh 복원, console error 부재를 검증한다.
