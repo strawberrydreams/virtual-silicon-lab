@@ -10,7 +10,9 @@ Completion and "looks great at a glance" beat feature breadth.
 
 ## Working Context
 
-- The MVP (M0–M6) is complete and lives on `main` (the `feature/foundation-slice` branch + worktree were fast-forward merged and removed). Run `npm install` in the repo root before `npm run dev`/`npm test`.
+- The v1 MVP (M0–M6) is complete and lives on `main`.
+- The current v2 visual major work lives on branch `v2-m2-editor-redesign`; do not merge it until the user explicitly asks.
+- v2 scope is visual/design only: page design, editor design, chip renderer quality, poster output, 10 hero sets, and random generator.
 - Package manager: **npm**. No backend; static hosting; storage is IndexedDB with localStorage fallback.
 - Node.js `20.19+` or `22.12+` (Vite/Vitest requirement).
 
@@ -47,6 +49,7 @@ src/
     landing/  portfolio landing page            (Milestone 6)
   presets/    curated remixable chip definitions (Milestone 4)
   themes/     Konva-renderable visual tokens     (Milestone 3)
+  visual/     v2 page themes, material recipes, hero sets, random generator
   lib/        framework-agnostic utilities (zero deps; e.g. debouncer)
   test/       test setup (fake-indexeddb + jest-dom)
 ```
@@ -71,10 +74,23 @@ Rules:
 - Four die shapes: `rect`, `square`, `circle`, `hexagon`. Blocks are clamped inside die bounds on move AND resize.
 - Export visual effects use **Konva node settings** (`shadowBlur`, gradients, filters, blend) — never DOM/CSS, which `toDataURL()` ignores. DOM/CSS effects are editor-UI-only.
 - Two PNG exports: `die-only` and `poster` (poster composited on a separate export-only Konva stage).
+- v2 poster formats: `press-hero`, `architecture-slide`, `product-closeup`; poster raster remains `3200x1800`.
 - Desktop-first (Chrome); responsive is post-MVP. Autosave is required; target ~60fps canvas.
 - v1 editor: single selection; multi-select deferred.
 
 ## Milestone Status
+
+### v2 Visual Major
+
+- **V2-M0 Visual Audit & Direction**: ✅ done — reference audit, style direction, and 10 hero set targets in `docs/reference/`.
+- **V2-M1 Page Theme System & App Shell**: ✅ done — `laboratory`/`anime`/`space`, app root CSS variables, theme switcher, landing/dashboard redesign.
+- **V2-M2 Editor Chrome Redesign**: ✅ done — three-zone desktop tool surface, product analysis stage, segmented toolbar, export rail.
+- **V2-M3 Chip Material Renderer**: ✅ done — material recipes, chip layer model, package/micro/trace/readout/glow rendering shared by editor/export.
+- **V2-M4 Poster Export Redesign**: ✅ done — three poster compositions with the same `3200x1800` output contract.
+- **V2-M5 Hero Sets & Random Generator**: ✅ done — 10 v2 hero presets, deterministic non-AI random chip generation, dashboard integration.
+- **V2-M6 Final QA & Release Pack**: ✅ done — `npm test` 39 files / 146 tests, `npm run build` green with known chunk warning, desktop Browser QA passed for landing/theme/dashboard/editor/random/export controls, 150-block layer smoke covered by test.
+
+### v1 MVP
 
 - **M0 Reference Board** (no code): ✅ done — `docs/reference/` board (`README.md` three named directions + global EDA anti-reference, `visual-direction.md` per-theme Konva tokens, `hero-compositions.md` first-hero comps A/B/C). M3 visual work and the first hero chip are reviewed against this board, not ad-hoc taste.
 - **M1 Foundation Vertical Slice**: ✅ done — project CRUD, IndexedDB+fallback, rectangular-die editor, bounded drag, refresh persistence.
@@ -87,7 +103,8 @@ Rules:
 
 ## Merge Status
 
-- ✅ Merged into `main` via fast-forward (commit `bac1d8e`); the feature branch and its worktree were removed. MVP complete. Remaining work is the minor backlog in `docs/superpowers/plans/2026-06-03-pre-merge-review-fixes.md`.
+- v1 MVP: ✅ merged into `main` via fast-forward (commit `bac1d8e`).
+- v2 visual major: ✅ implementation and final QA complete on `v2-m2-editor-redesign`; merge is still pending explicit user instruction.
 
 > Visual-quality gate: do not advance past M3 if glow/neon looks amateurish; the first hero chip is manually reviewed against the M0 reference board.
 
@@ -97,8 +114,11 @@ Rules:
 - `docs/superpowers/plans/` — milestone roadmap + condensed per-milestone plan summaries (goal, decisions, outcome). Full bite-sized TDD steps remain in git history.
 - `implementation.md` — condensed running log of per-milestone decisions and outcomes **[Korean]**.
 
-## Explicitly Out Of Scope (do not build during MVP)
+## Explicitly Out Of Scope / v3 Deferred
 
 Custom freeform die paths · PixiJS/Three.js shaders · animation simulation · backend sharing links ·
 gallery/rankings/contests · AI generation · worldbuilding pages · responsive mobile · true 3D ·
 MP4 export · login/accounts · GDSII/DRC/LVS/manufacturing compatibility.
+
+For v3, the user may reconsider backend + SQLite, account/member CRUD, board/gallery/ranking/contest,
+mobile viewer/editor, true 3D, AI prompt generation, and public sharing links.
