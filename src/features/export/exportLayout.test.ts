@@ -21,4 +21,9 @@ describe('export layout', () => {
     expect(posterChipPlacement({ shape: 'rect', width: 920, height: 600, background: 'military' }))
       .toMatchObject({ x: 80, y: 180 })
   })
+
+  it('can resolve alternate poster format placements', () => {
+    expect(posterChipPlacement({ shape: 'rect', width: 920, height: 600, background: 'military' }, 'architecture-slide'))
+      .toMatchObject({ x: 430, y: 174 })
+  })
 })

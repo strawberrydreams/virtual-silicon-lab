@@ -1,4 +1,6 @@
 import type { Die } from '../../domain/project'
+import type { PosterFormat } from './posterCompositions'
+import { resolvePosterComposition } from './posterCompositions'
 
 export const DIE_EXPORT_PIXEL_RATIO = 4
 export const POSTER_EXPORT = {
@@ -19,9 +21,7 @@ export function dieExportSize(die: Die) {
   }
 }
 
-export function posterChipPlacement(die: Die) {
-  const maxWidth = 900
-  const maxHeight = 620
-  const scale = Math.min(maxWidth / die.width, maxHeight / die.height)
-  return { x: 80, y: 180, scale }
+export function posterChipPlacement(die: Die, format: PosterFormat = 'press-hero') {
+  const placement = resolvePosterComposition(die, format).chip
+  return { x: placement.x, y: placement.y, scale: placement.scale }
 }
