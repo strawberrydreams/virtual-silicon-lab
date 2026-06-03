@@ -457,3 +457,21 @@
 
 - Milestone 5 완료. 다음은 Milestone 6 `Landing, QA, And Static Deployment`다.
 - 착수 직전 `docs/superpowers/plans/2026-06-02-landing-and-release.md`를 작성한다(로드맵 지시).
+
+## 2026-06-03 - Milestone 6 계획 작성
+
+### 계획
+
+- 로드맵 지시에 따라 `docs/superpowers/plans/2026-06-02-landing-and-release.md`를 작성했다.
+- M6는 최종 MVP 마일스톤이며, 구현 완료 후 별도 post-MVP 기능을 시작하지 않는다.
+- 요청에 맞춰 첫 체크포인트를 3개 task로 제한한다.
+  - Task 1: M6 계획 문서 작성.
+  - Task 2: M5에서 남긴 release-hardening debt 중 사각/정사각 다이의 회전 블록 경계 제한을 해결.
+  - Task 3: `BlockPalette`를 v1 전체 16개 블록 타입으로 확장.
+- 랜딩 페이지, 대시보드 polish, README/static deploy, 최종 Chrome QA, 코드 리뷰와 머지 판단은 다음 체크포인트로 넘긴다.
+
+### 결정 및 트레이드오프
+
+- M6 시작을 랜딩 UI가 아니라 release-hardening으로 잡았다. 이미 M5 로그에 "M6 release QA 전 처리"로 명시한 두 부채가 있고, 둘 다 최종 acceptance gate의 편집 신뢰성에 직접 영향을 준다.
+- 저장 schema 변경은 하지 않는다. 회전 clamp는 geometry/editorStore 내부 동작 수정이고, palette 확장은 UI 노출 범위 확장이다.
+- 이번 체크포인트는 3개 task 단위 검증과 커밋 후 멈춘다. 이렇게 하면 이후 코드 리뷰 전에도 작은 단위로 되돌아보기 쉽다.
