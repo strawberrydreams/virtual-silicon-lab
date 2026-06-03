@@ -1,5 +1,5 @@
 import type { Project } from '../domain/project'
-import { migrateProject } from '../domain/projectMigration'
+import { migrateProjects } from '../domain/projectMigration'
 import type { ProjectRepository } from './projectRepository'
 
 export function createLocalStorageProjectRepository(
@@ -7,11 +7,18 @@ export function createLocalStorageProjectRepository(
 ): ProjectRepository {
   function readAll(): Project[] {
     const raw = localStorage.getItem(storageKey)
-    return raw === null ? [] : (JSON.parse(raw) as unknown[]).map(migrateProject)
+    return raw === null ? [] : migrateProjects(JSON.parse(raw) as unknown[])
   }
 
   function writeAll(projects: Project[]) {
-    localStorage.setItem(storageKey, JSON.stringify(projects))
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(projects))
+    } catch (error) {
+      // localStorage is the last-resort fallback; surface a write failure
+      // (e.g. QuotaExceededError) instead of losing the project silently.
+      console.error('[storage] failed to persist projects to localStorage', error)
+      throw error
+    }
   }
 
   return {

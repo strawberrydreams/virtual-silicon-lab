@@ -1,5 +1,5 @@
 import { openDB, type DBSchema } from 'idb'
-import { migrateProject } from '../domain/projectMigration'
+import { migrateProject, migrateProjects } from '../domain/projectMigration'
 import type { ProjectRepository } from './projectRepository'
 
 interface ProjectDatabase extends DBSchema {
@@ -20,9 +20,9 @@ export function createIndexedDbProjectRepository(
 
   return {
     async list() {
-      return (await (await database).getAll('projects'))
-        .map(migrateProject)
-        .sort((left, right) => right.updatedAt - left.updatedAt)
+      return migrateProjects(await (await database).getAll('projects')).sort(
+        (left, right) => right.updatedAt - left.updatedAt,
+      )
     },
     async get(id) {
       const value = await (await database).get('projects', id)

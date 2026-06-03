@@ -37,4 +37,26 @@ describe('project repositories', () => {
 
     expect(await repository.get('project-2')).toEqual(project)
   })
+
+  it('sticks to the fallback after a primary failure and never reads stale primary data', async () => {
+    const fresh = createProject('Fresh Chip', 'project-3', 300)
+    const stale = createProject('Stale Chip', 'project-3', 100)
+    const fallback = createLocalStorageProjectRepository('test-sticky-projects')
+    let primaryGetCalls = 0
+    const primary = {
+      list: async () => [stale],
+      get: async () => {
+        primaryGetCalls += 1
+        return stale
+      },
+      save: async () => Promise.reject(new Error('IndexedDB write failed')),
+      remove: async () => {},
+    }
+    const repository = createResilientProjectRepository(primary, fallback)
+
+    await repository.save(fresh) // primary rejects -> fallback, and marks primary failed
+
+    expect(await repository.get('project-3')).toEqual(fresh) // sticky fallback, not stale primary
+    expect(primaryGetCalls).toBe(0) // primary not consulted again this session
+  })
 })
