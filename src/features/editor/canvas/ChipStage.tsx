@@ -10,9 +10,8 @@ import { dieFillProps } from '../../../themes/gradients'
 import { resolveBlockStyle, resolveDecorationStyle } from '../../../themes/resolveStyle'
 import { blockVisual, memoryCells } from './blockTexture'
 import { downloadDataUrl } from '../../export/exportStage'
+import { editorStageSize } from './artworkLayout'
 
-const STAGE_WIDTH = 960
-const STAGE_HEIGHT = 640
 const GRID = 16
 const MIN_BLOCK = 48
 
@@ -149,6 +148,7 @@ export function ChipStage({ project, selectedBlockId, onSelectBlock, onTransform
   }, [selectedBlockId, project.blocks])
 
   const sorted = project.blocks.slice().sort((left, right) => left.zIndex - right.zIndex)
+  const stageSize = editorStageSize(project.die)
 
   return (
     <div
@@ -166,8 +166,8 @@ export function ChipStage({ project, selectedBlockId, onSelectBlock, onTransform
       </button>
       <Stage
         ref={stageRef}
-        width={STAGE_WIDTH}
-        height={STAGE_HEIGHT}
+        width={stageSize.width}
+        height={stageSize.height}
         scaleX={scale}
         scaleY={scale}
         x={position.x}
