@@ -10,7 +10,7 @@ Completion and "looks great at a glance" beat feature breadth.
 
 ## Working Context
 
-- Active work happens on branch `feature/foundation-slice` in `.worktrees/foundation-slice` (git worktree).
+- The MVP (M0–M6) is complete and lives on `main` (the `feature/foundation-slice` branch + worktree were fast-forward merged and removed). Run `npm install` in the repo root before `npm run dev`/`npm test`.
 - Package manager: **npm**. No backend; static hosting; storage is IndexedDB with localStorage fallback.
 - Node.js `20.19+` or `22.12+` (Vite/Vitest requirement).
 
@@ -87,7 +87,7 @@ Rules:
 
 ## Merge Status
 
-- Full-branch pre-merge review complete and Important findings fixed; `feature/foundation-slice` is ready to merge into `main`.
+- ✅ Merged into `main` via fast-forward (commit `bac1d8e`); the feature branch and its worktree were removed. MVP complete. Remaining work is the minor backlog in `docs/superpowers/plans/2026-06-03-pre-merge-review-fixes.md`.
 
 > Visual-quality gate: do not advance past M3 if glow/neon looks amateurish; the first hero chip is manually reviewed against the M0 reference board.
 
