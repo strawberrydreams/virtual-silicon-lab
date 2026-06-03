@@ -45,4 +45,13 @@ describe('createPresetProject', () => {
     expect(project.blocks.map((block) => block.type)).toContain('ConsciousnessProcessor')
     expect(project.spec.brand).toBe('AURORA')
   })
+
+  it('creates independent aurora-c1 remixes', () => {
+    const first = createPresetProject('aurora-c1', 'a', 100)
+    const second = createPresetProject('aurora-c1', 'b', 200)
+    first.blocks[0].x = 999
+    first.spec.features.push('Mutation')
+    expect(second.blocks[0].x).not.toBe(999)
+    expect(second.spec.features).not.toContain('Mutation')
+  })
 })

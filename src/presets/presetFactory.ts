@@ -28,7 +28,7 @@ type PresetBlueprint = {
 
 const BLUEPRINTS: Record<Exclude<PresetId, 'aurora-c1'>, PresetBlueprint> = {
   'neon-district-n9': {
-    name: 'NEON DISTRICT N-9 - Reality Routing Array',
+    name: 'NEON DISTRICT N-9 — Reality Routing Array',
     die: { shape: 'hexagon', width: 720, height: 720, background: 'neon-indigo-spotlight' },
     theme: 'neon',
     blocks: [
@@ -56,7 +56,7 @@ const BLUEPRINTS: Record<Exclude<PresetId, 'aurora-c1'>, PresetBlueprint> = {
     },
   },
   'field-unit-m7': {
-    name: 'FIELD UNIT M-7 - Temporal Control Module',
+    name: 'FIELD UNIT M-7 — Temporal Control Module',
     die: { shape: 'rect', width: 920, height: 600, background: 'military-gunmetal' },
     theme: 'military',
     blocks: [
@@ -84,7 +84,7 @@ const BLUEPRINTS: Record<Exclude<PresetId, 'aurora-c1'>, PresetBlueprint> = {
     },
   },
   'lucid-88': {
-    name: 'LUCID-88 - Dream Synthesis Disc',
+    name: 'LUCID-88 — Dream Synthesis Disc',
     die: { shape: 'circle', width: 720, height: 720, background: 'retro-phosphor' },
     theme: 'retro',
     blocks: [
@@ -109,7 +109,7 @@ const BLUEPRINTS: Record<Exclude<PresetId, 'aurora-c1'>, PresetBlueprint> = {
     },
   },
   'monolith-io': {
-    name: 'MONOLITH I/O - Signal Discipline Array',
+    name: 'MONOLITH I/O — Signal Discipline Array',
     die: { shape: 'square', width: 720, height: 720, background: 'mono-editorial' },
     theme: 'mono',
     blocks: [
@@ -135,7 +135,7 @@ const BLUEPRINTS: Record<Exclude<PresetId, 'aurora-c1'>, PresetBlueprint> = {
     },
   },
   'solar-flare-x': {
-    name: 'SOLAR FLARE X - Emotion Telemetry Engine',
+    name: 'SOLAR FLARE X — Emotion Telemetry Engine',
     die: { shape: 'rect', width: 920, height: 600, background: 'neon-magenta-horizon' },
     theme: 'neon',
     blocks: [

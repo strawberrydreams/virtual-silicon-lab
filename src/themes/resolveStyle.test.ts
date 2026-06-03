@@ -45,6 +45,11 @@ describe('resolveBlockStyle', () => {
     expect(fantasy.shadowColor).toBe(tokens.accents[0])
     expect(fantasy.shadowBlur).toBeGreaterThan(real.shadowBlur)
   })
+
+  it('uses colorOverride for the glow color when present', () => {
+    const styled = resolveBlockStyle(block({ category: 'fantasy', colorOverride: '#ff2bd6' }), tokens, false)
+    expect(styled.shadowColor).toBe('#ff2bd6')
+  })
 })
 
 describe('resolveDecorationStyle', () => {

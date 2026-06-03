@@ -18,7 +18,7 @@ export function resolveBlockStyle(block: Block, tokens: ThemeTokens, isSelected:
     fill: block.colorOverride ?? tokens.blockFill[block.category],
     stroke: isSelected ? tokens.selectStroke : tokens.blockStroke[block.category],
     strokeWidth: isSelected ? 2.5 : 1.25,
-    shadowColor: isFantasy ? tokens.accents[0] : tokens.glow.shadowColor,
+    shadowColor: block.colorOverride ?? (isFantasy ? tokens.accents[0] : tokens.glow.shadowColor),
     shadowBlur: glowing ? baseBlur : 0,
     shadowOpacity: glowing ? tokens.glow.shadowOpacity : 0,
   }
