@@ -1,6 +1,7 @@
 export type Debouncer = {
   schedule: () => void
   cancel: () => void
+  flush: () => void
 }
 
 export function createDebouncer(callback: () => void, delayMs: number): Debouncer {
@@ -19,6 +20,12 @@ export function createDebouncer(callback: () => void, delayMs: number): Debounce
         clearTimeout(timer)
         timer = undefined
       }
+    },
+    flush() {
+      if (timer === undefined) return
+      clearTimeout(timer)
+      timer = undefined
+      callback()
     },
   }
 }

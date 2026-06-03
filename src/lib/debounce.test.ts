@@ -27,4 +27,15 @@ describe('createDebouncer', () => {
 
     expect(callback).not.toHaveBeenCalled()
   })
+
+  it('flush runs a pending callback immediately and only once', () => {
+    const callback = vi.fn()
+    const debouncer = createDebouncer(callback, 600)
+
+    debouncer.schedule()
+    debouncer.flush()
+    vi.advanceTimersByTime(600)
+
+    expect(callback).toHaveBeenCalledTimes(1)
+  })
 })

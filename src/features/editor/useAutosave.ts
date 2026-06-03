@@ -15,7 +15,7 @@ export function useAutosave(
       if (state.project !== previous.project) debouncer.schedule()
     })
     return () => {
-      debouncer.cancel()
+      debouncer.flush()
       unsubscribe()
     }
   }, [store, persist, delayMs])
