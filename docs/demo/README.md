@@ -1,4 +1,4 @@
-# Demo GIF Placeholder
+# Demo GIF
 
-Capture `virtual-silicon-lab-demo.gif` here during the final M6 Chrome QA pass, after the UI is release-stable.
-
+Capture `virtual-silicon-lab-demo.gif` here during final QA: landing → preset remix → block edit →
+spec edit → poster export.
