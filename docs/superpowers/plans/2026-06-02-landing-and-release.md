@@ -53,12 +53,12 @@
 - Modify: `src/stores/editorStore.ts`
 - Modify: `src/stores/editorStore.test.ts`
 
-- [ ] Add a failing geometry test proving all four corners of a 45-degree rotated block remain inside a rectangular die.
-- [ ] Extend rectangular clamp logic to account for a block's rotated axis-aligned extents.
-- [ ] Pass the candidate rotation into clamp during transform, duplication, shape changes, and existing block clamp paths.
-- [ ] Add a store regression test for a rotated rectangular transform near the die edge.
-- [ ] Run `npm test` and `npm run build`.
-- [ ] Commit.
+- [x] Add a failing geometry test proving all four corners of a 45-degree rotated block remain inside a rectangular die.
+- [x] Extend rectangular clamp logic to account for a block's rotated axis-aligned extents.
+- [x] Pass the candidate rotation into clamp during transform, duplication, shape changes, and existing block clamp paths.
+- [x] Add a store regression test for a rotated rectangular transform near the die edge.
+- [x] Run `npm test` and `npm run build`.
+- [x] Commit.
 
 ### Task 3: Expose the full v1 block palette
 
@@ -66,12 +66,12 @@
 - Modify: `src/features/editor/BlockPalette.tsx`
 - Add: `src/features/editor/BlockPalette.test.tsx`
 
-- [ ] Add a failing test that all 16 v1 `BlockType` entries are rendered.
-- [ ] Replace the 6-item palette with all real and fantasy block types.
-- [ ] Keep the compact desktop editor layout usable by grouping real and fantasy blocks.
-- [ ] Verify a representative newly exposed block can be added.
-- [ ] Run `npm test` and `npm run build`.
-- [ ] Commit.
+- [x] Add a failing test that all 16 v1 `BlockType` entries are rendered.
+- [x] Replace the 6-item palette with all real and fantasy block types.
+- [x] Keep the compact desktop editor layout usable by grouping real and fantasy blocks.
+- [x] Verify a representative newly exposed block can be added.
+- [x] Run `npm test` and `npm run build`.
+- [x] Commit.
 
 Stop after Task 3 for the requested checkpoint.
 
@@ -148,4 +148,3 @@ Stop after Task 3 for the requested checkpoint.
 | desktop Chrome QA checklist | 7 |
 | known pre-release debt closed | 2, 3 |
 | final review before merge | 8 |
-

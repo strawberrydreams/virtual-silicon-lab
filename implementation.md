@@ -489,3 +489,18 @@
 
 - Konva `Group`의 회전 기준이 현재 블록 origin이므로, geometry도 동일하게 origin 기준 회전 모서리를 사용한다. center-origin 회전으로 바꾸면 Transformer/drag 동작까지 같이 바꿔야 하므로 M6 hardening 범위를 넘긴다.
 - 원형/육각형 clamp는 기존의 보수적 radial half-diagonal 방식을 유지한다. 회전해도 대각선 길이는 변하지 않으므로 이번 release debt의 핵심인 rect/square 모서리 이탈만 별도로 해결했다.
+
+## 2026-06-03 - Milestone 6 Task 3 전체 블록 팔레트 노출
+
+### 구현
+
+- `BlockPalette`를 v1 `BlockType` 16종 전체로 확장했다.
+  - real: `CPU`, `GPU`, `DSP`, `SRAM`, `Cache`, `DAC`, `ADC`, `PLL`, `IO`, `USB`
+  - fantasy: `EmotionEngine`, `DreamSynth`, `QuantumMemory`, `ConsciousnessProcessor`, `RealityDistortionUnit`, `TimeCore`
+- 팔레트는 real/fantasy 섹션으로 나눴고, 기존 `addBlock(type)` 경로는 그대로 유지한다.
+- 좁은 desktop-first editor sidebar에서 긴 판타지 타입명이 버튼 밖으로 넘치지 않도록 버튼 font size와 line-height를 줄이고 sidebar에 `overflow-y-auto`를 적용했다.
+
+### 결정 및 트레이드오프
+
+- 검색/필터 UI는 추가하지 않았다. 16개 항목은 아직 단일 sidebar에서 충분히 스캔 가능하고, M6 첫 체크포인트 범위는 release-hardening debt 해결이므로 새 interaction surface를 늘리지 않았다.
+- 버튼의 accessible name은 타입 문자열 그대로 유지했다. 테스트와 store command가 동일한 `BlockType` 계약을 공유하므로 추후 palette 리팩터링 때 회귀를 잡기 쉽다.
