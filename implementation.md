@@ -587,3 +587,22 @@
 - M0~M6 MVP acceptance를 충족했다.
 - 브랜치 `feature/foundation-slice`는 코드 리뷰 기준 merge 가능 상태로 판단한다.
 - 사용자 지시에 따라 아직 `main`으로 병합하지 않는다.
+
+## 2026-06-03 - 병합 전 리뷰 수정 (Pre-merge review fixes)
+
+### 배경
+
+- 병합 전, 브랜치 전체(`main..feature/foundation-slice`)를 3개 영역(core/state · rendering/export · app/UX/config) 리뷰어로 다시 검토했다. 만장일치 "수정 후 병합", **Critical 없음**.
+- 발견사항을 실행 가능한 TDD 계획 `docs/superpowers/plans/2026-06-03-pre-merge-review-fixes.md`에 정리한 뒤, Important 4건을 수정했다. Minor는 같은 문서의 백로그로 남겼다.
+
+### 수정 내용
+
+- **Fix 1 — 없는 `/editor/:id` 무한 로딩:** `EditorRoute`를 `'loading' | Project | 'missing'` 3-state로 변경하고 `get()` 거부도 처리. 삭제/오타 id는 "Project not found" + 대시보드 복귀 링크를 보여준다. `App.test.tsx`에 missing-id·unknown-route·dashboard 라우팅 테스트 추가.
+- **Fix 2 — 영속성 강화:** `migrateProject`에 구조 검증(die/blocks/decorations/theme/spec) 추가; `migrateProjects()`가 손상 레코드를 건너뛰어 한 개의 불량 레코드가 `list()` 전체를 무너뜨리지 않게 함(IndexedDB·localStorage 양쪽 적용); `resilientProjectRepository`는 primary 실패 시 세션 동안 fallback에 고정(sticky)하고 에러를 로깅(스테일 읽기 방지); localStorage `writeAll` quota 실패를 로깅.
+- **Fix 3 — 포스터 공유 가드:** `dataUrlToFile`이 잘못된 data URL에 명확히 throw; `shareFileOrDownload`가 사용자 취소(`AbortError`)는 추가 다운로드로 바꾸지 않고, 실제 공유 실패만 다운로드로 폴백; `ExportPanel.sharePoster`를 try/catch로 감싸 실패 시 직접 다운로드.
+- **Fix 4 — 블록↔데코 z-order(결정):** 데코레이션(라벨·경고·네온 라인)은 v1에서 **의도적으로 모든 블록 위에 그려지는 오버레이**로 유지(자기들끼리만 z-정렬). `ChipArtwork`에 주석으로 명시. 동작 변경 없음(에디터·익스포트 동일).
+
+### 검증 결과
+
+- `npm test`: 30 files / 112 tests 통과(라우팅 +3, 영속성 +3, 공유/디코드 +4, 기존 일부 정리).
+- `npm run build`: 통과(기존 Konva 500kB chunk 경고만).

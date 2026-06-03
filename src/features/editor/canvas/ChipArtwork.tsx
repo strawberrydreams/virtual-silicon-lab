@@ -190,6 +190,13 @@ export function ChipArtwork({ project, renderBlock }: Props) {
           {renderBlock?.(block, tokens) ?? <BlockArtwork block={block} tokens={tokens} />}
         </Fragment>
       ))}
+      {/*
+        Decorations (labels, warning marks, neon routing lines) are an intentional
+        overlay: they always render ABOVE every block and are z-sorted only among
+        themselves. This is by design for v1 so annotations stay legible on top of
+        the die. The editor and both export stages share this component, so posters
+        match the editor exactly.
+      */}
       {project.decorations
         .slice()
         .sort((left, right) => left.zIndex - right.zIndex)
