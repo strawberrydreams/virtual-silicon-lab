@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { editorStageSize } from './artworkLayout'
+import type { Block } from '../../../domain/project'
+import { blocksByZIndex, editorStageSize } from './artworkLayout'
 
 describe('editorStageSize', () => {
   it('keeps the blank rectangular canvas at its established size', () => {
@@ -10,5 +11,13 @@ describe('editorStageSize', () => {
   it('expands to show every pixel of a 720 square preset', () => {
     expect(editorStageSize({ shape: 'square', width: 720, height: 720, background: 'keynote-graphite' }))
       .toEqual({ width: 960, height: 720 })
+  })
+})
+
+describe('blocksByZIndex', () => {
+  it('sorts complete block artwork from back to front', () => {
+    const top = { id: 'top', zIndex: 3 } as Block
+    const bottom = { id: 'bottom', zIndex: 1 } as Block
+    expect(blocksByZIndex([top, bottom]).map((block) => block.id)).toEqual(['bottom', 'top'])
   })
 })
