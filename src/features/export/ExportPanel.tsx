@@ -27,12 +27,18 @@ export function ExportPanel({ project }: { project: Project }) {
   async function sharePoster() {
     const url = posterStageRef.current?.toDataURL({ pixelRatio: POSTER_EXPORT.pixelRatio })
     if (!url) return
-    const file = dataUrlToFile(url, `${baseName}-poster.png`)
-    await shareFileOrDownload(file, {
-      canShare: navigator.canShare?.bind(navigator),
-      share: navigator.share?.bind(navigator),
-      download: downloadFile,
-    })
+    try {
+      const file = dataUrlToFile(url, `${baseName}-poster.png`)
+      await shareFileOrDownload(file, {
+        canShare: navigator.canShare?.bind(navigator),
+        share: navigator.share?.bind(navigator),
+        download: downloadFile,
+      })
+    } catch (error) {
+      // Never leave a failed share as an unhandled rejection; fall back to a plain download.
+      console.error('[export] poster share failed; downloading instead', error)
+      downloadDataUrl(url, `${baseName}-poster.png`)
+    }
   }
 
   return (

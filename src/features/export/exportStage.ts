@@ -9,6 +9,7 @@ export function downloadDataUrl(dataUrl: string, filename: string): void {
 
 export function dataUrlToFile(dataUrl: string, filename: string): File {
   const [header, payload] = dataUrl.split(',')
+  if (!header || !payload) throw new Error('Malformed data URL')
   const mime = header.match(/data:(.*?);base64/)?.[1] ?? 'image/png'
   const bytes = Uint8Array.from(atob(payload), (character) => character.charCodeAt(0))
   return new File([bytes], filename, { type: mime })
@@ -23,8 +24,14 @@ type ShareDependencies = {
 export async function shareFileOrDownload(file: File, dependencies: ShareDependencies) {
   const data = { files: [file], title: 'Virtual Silicon Lab poster' }
   if (dependencies.share && dependencies.canShare?.(data)) {
-    await dependencies.share(data)
-    return 'shared' as const
+    try {
+      await dependencies.share(data)
+      return 'shared' as const
+    } catch (error) {
+      // A user-cancelled share must not be turned into an extra download.
+      if ((error as { name?: string } | null)?.name === 'AbortError') return 'cancelled' as const
+      // A genuine share failure falls through to the download fallback.
+    }
   }
   dependencies.download(file)
   return 'downloaded' as const
