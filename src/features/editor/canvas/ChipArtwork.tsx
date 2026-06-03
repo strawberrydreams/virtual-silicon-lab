@@ -6,7 +6,9 @@ import type { Block, Decoration, Die, Project } from '../../../domain/project'
 import { resolveTheme, type ThemeTokens } from '../../../themes/themeTokens'
 import { dieFillProps } from '../../../themes/gradients'
 import { resolveBlockStyle, resolveDecorationStyle } from '../../../themes/resolveStyle'
-import { blockVisual, memoryCells } from './blockTexture'
+import { buildChipLayers, type ChipLayerModel } from '../../../visual/chipLayers'
+import { resolveMaterialRecipe } from '../../../visual/materialRecipes'
+import { blockMicroLines, blockVisual, memoryCells } from './blockTexture'
 import { blocksByZIndex } from './artworkLayout'
 
 const GRID = 16
@@ -52,6 +54,50 @@ function DieShape({ die, tokens }: { die: Die; tokens: ThemeTokens }) {
   return <Rect width={die.width} height={die.height} {...common} />
 }
 
+function PackageShape({
+  die,
+  layers,
+  recipe,
+}: {
+  die: Die
+  layers: ChipLayerModel
+  recipe: ReturnType<typeof resolveMaterialRecipe>
+}) {
+  const { bounds, radius } = layers.package
+  if (die.shape === 'circle') {
+    return (
+      <Circle
+        x={die.width / 2}
+        y={die.height / 2}
+        radius={radius}
+        fill={recipe.package.fill}
+        stroke={recipe.package.stroke}
+        strokeWidth={1}
+        shadowColor={recipe.package.shadowColor}
+        shadowBlur={recipe.package.shadowBlur}
+        shadowOpacity={recipe.package.shadowOpacity}
+        listening={false}
+      />
+    )
+  }
+  return (
+    <Rect
+      x={bounds.x}
+      y={bounds.y}
+      width={bounds.width}
+      height={bounds.height}
+      cornerRadius={radius}
+      fill={recipe.package.fill}
+      stroke={recipe.package.stroke}
+      strokeWidth={1}
+      shadowColor={recipe.package.shadowColor}
+      shadowBlur={recipe.package.shadowBlur}
+      shadowOpacity={recipe.package.shadowOpacity}
+      listening={false}
+    />
+  )
+}
+
 function GridLines({ die, tokens }: { die: Die; tokens: ThemeTokens }) {
   const lines = []
   for (let x = GRID; x < die.width; x += GRID) {
@@ -61,6 +107,85 @@ function GridLines({ die, tokens }: { die: Die; tokens: ThemeTokens }) {
     lines.push(<Line key={`h-${y}`} points={[0, y, die.width, y]} stroke={tokens.gridColor} strokeWidth={1} />)
   }
   return <Group clipFunc={(context) => clipForDie(context, die)}>{lines}</Group>
+}
+
+function MaterialMicroLayer({ project, layers }: { project: Project; layers: ChipLayerModel }) {
+  const recipe = resolveMaterialRecipe(project.theme)
+  return (
+    <Group clipFunc={(context) => clipForDie(context, project.die)} listening={false}>
+      {layers.microTiles.map((tile) => (
+        <Rect
+          key={tile.id}
+          x={tile.bounds.x}
+          y={tile.bounds.y}
+          width={tile.bounds.width}
+          height={tile.bounds.height}
+          fill={recipe.microTile.fill}
+          stroke={recipe.microTile.stroke}
+          strokeWidth={0.5}
+          opacity={tile.opacity}
+        />
+      ))}
+    </Group>
+  )
+}
+
+function TraceLayer({ project, layers }: { project: Project; layers: ChipLayerModel }) {
+  return (
+    <Group clipFunc={(context) => clipForDie(context, project.die)} listening={false}>
+      {layers.traces.map((trace) => (
+        <Line
+          key={trace.id}
+          points={trace.points}
+          stroke={trace.color}
+          strokeWidth={trace.width}
+          opacity={trace.opacity}
+          lineCap="round"
+          shadowColor={trace.color}
+          shadowBlur={6}
+          globalCompositeOperation="lighter"
+        />
+      ))}
+    </Group>
+  )
+}
+
+function GlassGlowOverlay({ project, layers }: { project: Project; layers: ChipLayerModel }) {
+  const glow = layers.glowOverlay
+  return (
+    <Group clipFunc={(context) => clipForDie(context, project.die)} listening={false}>
+      <Rect
+        x={glow.bounds.x}
+        y={glow.bounds.y}
+        width={glow.bounds.width}
+        height={glow.bounds.height}
+        fill={glow.color}
+        opacity={glow.opacity}
+        shadowColor={glow.color}
+        shadowBlur={glow.blur}
+        globalCompositeOperation="screen"
+      />
+    </Group>
+  )
+}
+
+function ReadoutLayer({ project, layers }: { project: Project; layers: ChipLayerModel }) {
+  const recipe = resolveMaterialRecipe(project.theme)
+  return (
+    <Group listening={false}>
+      {layers.readoutLabels.map((label) => (
+        <Text
+          key={label.id}
+          x={label.x}
+          y={label.y}
+          text={label.text}
+          fontSize={11}
+          letterSpacing={1}
+          fill={recipe.readoutLabel.subduedColor}
+        />
+      ))}
+    </Group>
+  )
 }
 
 function DecorationNode({ decoration, tokens }: { decoration: Decoration; tokens: ThemeTokens }) {
@@ -169,6 +294,18 @@ export function BlockArtwork({
           ))}
         </Group>
       ) : null}
+      <Group clipFunc={(context) => context.rect(0, 0, block.w, block.h)} listening={false}>
+        {blockMicroLines(block.w, block.h).map((line, index) => (
+          <Line
+            key={index}
+            points={line.points}
+            stroke={style.stroke}
+            strokeWidth={0.75}
+            opacity={line.opacity}
+          />
+        ))}
+      </Group>
+      <Rect x={1} y={1} width={block.w - 2} height={1} fill="#ffffff" opacity={0.16} listening={false} />
       <Text x={12} y={12} text={block.label ?? block.type} fontSize={13} fill={tokens.text} />
     </Group>
   )
@@ -181,10 +318,15 @@ type Props = {
 
 export function ChipArtwork({ project, renderBlock }: Props) {
   const tokens = resolveTheme(project.theme)
+  const recipe = resolveMaterialRecipe(project.theme)
+  const layers = buildChipLayers(project)
   return (
     <>
+      <PackageShape die={project.die} layers={layers} recipe={recipe} />
       <DieShape die={project.die} tokens={tokens} />
+      <MaterialMicroLayer project={project} layers={layers} />
       <GridLines die={project.die} tokens={tokens} />
+      <TraceLayer project={project} layers={layers} />
       {blocksByZIndex(project.blocks).map((block) => (
         <Fragment key={block.id}>
           {renderBlock?.(block, tokens) ?? <BlockArtwork block={block} tokens={tokens} />}
@@ -203,6 +345,8 @@ export function ChipArtwork({ project, renderBlock }: Props) {
         .map((decoration) => (
           <DecorationNode key={decoration.id} decoration={decoration} tokens={tokens} />
         ))}
+      <ReadoutLayer project={project} layers={layers} />
+      <GlassGlowOverlay project={project} layers={layers} />
     </>
   )
 }

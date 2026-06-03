@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { blockVisual, memoryCells } from './blockTexture'
+import { blockMicroLines, blockVisual, memoryCells } from './blockTexture'
 
 describe('blockVisual', () => {
   it('marks memory-family blocks as memory texture', () => {
@@ -11,6 +11,21 @@ describe('blockVisual', () => {
   it('treats other blocks as standard', () => {
     expect(blockVisual('CPU')).toBe('standard')
     expect(blockVisual('ConsciousnessProcessor')).toBe('standard')
+  })
+})
+
+describe('blockMicroLines', () => {
+  it('creates bounded micro routing lines for block surfaces', () => {
+    const lines = blockMicroLines(80, 48, 20)
+    expect(lines.length).toBeGreaterThan(0)
+    for (const line of lines) {
+      for (let index = 0; index < line.points.length; index += 2) {
+        expect(line.points[index]).toBeGreaterThanOrEqual(0)
+        expect(line.points[index]).toBeLessThanOrEqual(80)
+        expect(line.points[index + 1]).toBeGreaterThanOrEqual(0)
+        expect(line.points[index + 1]).toBeLessThanOrEqual(48)
+      }
+    }
   })
 })
 
