@@ -442,6 +442,12 @@ export function isHeroSetId(id: string): id is HeroSetId {
   return HERO_SET_IDS.has(id)
 }
 
+export function resolveHeroSetForProject(project: Project): HeroSetDefinition | undefined {
+  const heroSetId = project.die.background.startsWith('v2-') ? project.die.background.slice(3) : ''
+  if (!isHeroSetId(heroSetId)) return undefined
+  return HERO_SET_CATALOG.find((candidate) => candidate.id === heroSetId)
+}
+
 function materializeDecoration(blueprint: DecorationBlueprint, id: string, zIndex: number): Decoration {
   if (blueprint.kind === 'neonLine') return { ...blueprint, points: [...blueprint.points], id, zIndex }
   return { ...blueprint, id, zIndex }

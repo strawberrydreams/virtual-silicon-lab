@@ -1,8 +1,14 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { App } from './App'
+
+vi.mock('../features/editor/EditorPage', () => ({
+  EditorPage: ({ project }: { project: { name: string } }) => (
+    <main aria-label="Chip editor workspace">{project.name}</main>
+  ),
+}))
 
 describe('App', () => {
   afterEach(() => {
@@ -64,5 +70,18 @@ describe('App', () => {
     )
 
     expect(await screen.findByRole('button', { name: 'New Project' })).toBeInTheDocument()
+  })
+
+  it('applies the hero set page theme when a hero project is opened', async () => {
+    render(
+      <MemoryRouter initialEntries={['/dashboard']}>
+        <App />
+      </MemoryRouter>,
+    )
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Remix N1 GREEN HORIZON' }))
+
+    expect(await screen.findByRole('main', { name: 'Chip editor workspace' })).toBeInTheDocument()
+    expect(screen.getByTestId('app-shell')).toHaveAttribute('data-page-theme', 'space')
   })
 })

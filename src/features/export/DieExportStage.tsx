@@ -9,7 +9,7 @@ export const DieExportStage = forwardRef<Konva.Stage, { project: Project }>(
     return (
       <Stage ref={ref} width={project.die.width} height={project.die.height}>
         <Layer>
-          <ChipArtwork project={project} />
+          <ChipArtwork project={project} renderMode="die-only" />
         </Layer>
       </Stage>
     )

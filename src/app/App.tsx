@@ -6,6 +6,7 @@ import { LandingPage } from '../features/landing/LandingPage'
 import { ProjectDashboard } from '../features/projects/ProjectDashboard'
 import { PRESET_CATALOG } from '../presets/presetCatalog'
 import { ProjectStoreProvider, useProjectStore } from '../stores/projectStoreContext'
+import { resolveHeroSetForProject } from '../visual/heroSetCatalog'
 import { PAGE_THEME_NAMES, pageThemes, resolvePageTheme, type PageThemeName } from '../visual/pageThemes'
 import { usePageTheme } from '../visual/pageThemeStore'
 
@@ -39,6 +40,7 @@ function DashboardRoute() {
 function EditorRoute() {
   const { projectId = '' } = useParams()
   const store = useProjectStore()
+  const [, setPageTheme] = usePageTheme()
   const [project, setProject] = useState<Project | 'loading' | 'missing'>('loading')
 
   useEffect(() => {
@@ -52,6 +54,12 @@ function EditorRoute() {
       active = false
     }
   }, [projectId])
+
+  useEffect(() => {
+    if (project === 'loading' || project === 'missing') return
+    const heroSet = resolveHeroSetForProject(project)
+    if (heroSet) setPageTheme(heroSet.pageTheme)
+  }, [project, setPageTheme])
 
   if (project === 'loading') return <p className="p-8">Loading project...</p>
 

@@ -1,6 +1,7 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type Konva from 'konva'
 import type { Project } from '../../domain/project'
+import { resolveHeroSetForProject } from '../../visual/heroSetCatalog'
 import { DieExportStage } from './DieExportStage'
 import { PosterExportStage } from './PosterExportStage'
 import { DIE_EXPORT_PIXEL_RATIO, POSTER_EXPORT } from './exportLayout'
@@ -13,8 +14,13 @@ const buttonClass =
 export function ExportPanel({ project }: { project: Project }) {
   const dieStageRef = useRef<Konva.Stage>(null)
   const posterStageRef = useRef<Konva.Stage>(null)
-  const [posterFormat, setPosterFormat] = useState<PosterFormat>('press-hero')
+  const defaultPosterFormat = resolveHeroSetForProject(project)?.posterFormat ?? 'press-hero'
+  const [posterFormat, setPosterFormat] = useState<PosterFormat>(defaultPosterFormat)
   const baseName = project.name || 'chip'
+
+  useEffect(() => {
+    setPosterFormat(defaultPosterFormat)
+  }, [defaultPosterFormat, project.id])
 
   function downloadDie() {
     const url = dieStageRef.current?.toDataURL({ pixelRatio: DIE_EXPORT_PIXEL_RATIO })

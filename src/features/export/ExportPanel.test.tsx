@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { createHeroChip } from '../../domain/heroChip'
+import { createHeroSetProject } from '../../visual/heroSetCatalog'
 import { ExportPanel } from './ExportPanel'
 
 vi.mock('./DieExportStage', async () => {
@@ -27,5 +28,12 @@ describe('ExportPanel', () => {
 
     expect(screen.getByRole('button', { name: 'Product Closeup' })).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByTestId('poster-stage')).toHaveAttribute('data-format', 'product-closeup')
+  })
+
+  it('starts hero set projects on their catalog poster format', () => {
+    render(<ExportPanel project={createHeroSetProject('panther-scale', 'panther', 100)} />)
+
+    expect(screen.getByRole('button', { name: 'Architecture Slide' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByTestId('poster-stage')).toHaveAttribute('data-format', 'architecture-slide')
   })
 })

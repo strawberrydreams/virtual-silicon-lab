@@ -313,16 +313,17 @@ export function BlockArtwork({
 
 type Props = {
   project: Project
+  renderMode?: 'full' | 'die-only'
   renderBlock?: (block: Block, tokens: ThemeTokens) => ReactNode
 }
 
-export function ChipArtwork({ project, renderBlock }: Props) {
+export function ChipArtwork({ project, renderMode = 'full', renderBlock }: Props) {
   const tokens = resolveTheme(project.theme)
   const recipe = resolveMaterialRecipe(project.theme)
   const layers = buildChipLayers(project)
   return (
     <>
-      <PackageShape die={project.die} layers={layers} recipe={recipe} />
+      {renderMode === 'full' ? <PackageShape die={project.die} layers={layers} recipe={recipe} /> : null}
       <DieShape die={project.die} tokens={tokens} />
       <MaterialMicroLayer project={project} layers={layers} />
       <GridLines die={project.die} tokens={tokens} />
