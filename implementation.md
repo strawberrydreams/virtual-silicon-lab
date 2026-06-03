@@ -532,3 +532,16 @@
 
 - dashboard는 랜딩보다 반복 사용 화면에 가깝기 때문에 hero식 장식보다 스캔 가능한 밀도를 우선했다.
 - preset preview는 계속 CSS summary card로 유지한다. M4 결정처럼 6개 Konva stage를 dashboard에 올리는 비용은 release polish 범위에서 피한다.
+
+## 2026-06-03 - Milestone 6 Task 6 README 및 정적 배포 설정
+
+### 구현
+
+- `README.md`를 추가해 제품 범위, 로컬 개발, 자동 검증, desktop Chrome QA checklist, demo GIF 캡처 경로, 정적 배포 방법을 기록했다.
+- Netlify용 `netlify.toml`을 추가했다. `npm run build` 후 `dist`를 publish하고, SPA route(`/dashboard`, `/editor/:projectId`)가 새로고침 시 깨지지 않도록 모든 경로를 `/index.html`로 fallback한다.
+- 실제 demo GIF는 최종 Chrome QA 이후 `docs/demo/virtual-silicon-lab-demo.gif`로 캡처하도록 `docs/demo/README.md` placeholder를 추가했다.
+
+### 결정 및 트레이드오프
+
+- GIF를 지금 생성하지 않았다. M6의 최종 QA와 코드 리뷰 전에는 UI가 추가로 바뀔 수 있으므로, 릴리스 안정화 후 캡처하는 편이 README와 실제 제품의 불일치를 줄인다.
+- Netlify 설정만 추가했다. Vercel/GitHub Pages도 가능하지만 하나의 구체적 static hosting config를 두는 것이 release handoff에 충분하고, README에 다른 호스팅에서는 unknown route를 `index.html`로 fallback해야 한다고 명시했다.

@@ -109,9 +109,9 @@ Stop after Task 3 for the requested checkpoint.
 - Add/Modify: static hosting config as needed
 - Modify: `package.json` only if needed
 
-- [ ] Document local setup, tests, build, preview, browser QA, and static deployment.
-- [ ] Include a demo GIF note or placeholder path if the actual GIF is deferred.
-- [ ] Keep the app backend-free and statically buildable.
+- [x] Document local setup, tests, build, preview, browser QA, and static deployment.
+- [x] Include a demo GIF note or placeholder path if the actual GIF is deferred.
+- [x] Keep the app backend-free and statically buildable.
 
 ---
 
