@@ -30,10 +30,28 @@ export function EditorPage({ project, persist }: Props) {
     deselect: () => state.select(null),
   })
 
+  const blockCount = state.project.blocks.length
+  const dieLabel = `${state.project.die.shape} ${state.project.die.width}x${state.project.die.height}`
+
   return (
-    <main className="flex min-h-screen bg-[#03080b] text-[#d8f7ff]">
+    <main
+      aria-label="Chip editor workspace"
+      className="editor-shell min-h-screen bg-[var(--v2-bg)] text-[var(--v2-text)]"
+    >
       <BlockPalette addBlock={state.addBlock} />
-      <section className="flex flex-1 flex-col">
+      <section aria-label="Product analysis stage" className="editor-center" role="region">
+        <div className="editor-command-deck">
+          <div>
+            <p className="editor-kicker">Active project</p>
+            <h1 className="editor-title">{state.project.name}</h1>
+          </div>
+          <div className="editor-readout-grid" aria-label="Project readouts">
+            <span>{dieLabel}</span>
+            <span>{blockCount} blocks</span>
+            <span>{state.project.theme}</span>
+          </div>
+        </div>
+
         <EditorToolbar
           dieShape={state.project.die.shape}
           theme={state.project.theme}
@@ -50,8 +68,8 @@ export function EditorPage({ project, persist }: Props) {
           onBringForward={state.bringForward}
           onSendBackward={state.sendBackward}
         />
-        <div className="p-6">
-          <h1 className="mb-4 text-lg tracking-[0.25em] uppercase">{state.project.name}</h1>
+
+        <div className="editor-stage-wrap">
           <ChipStage
             project={state.project}
             selectedBlockId={state.selectedBlockId}
@@ -60,7 +78,7 @@ export function EditorPage({ project, persist }: Props) {
           />
         </div>
       </section>
-      <aside className="flex w-80 shrink-0 flex-col gap-6 border-l border-cyan-900 bg-[#071015] p-4">
+      <aside aria-label="Inspector and export rail" className="editor-side-rail editor-inspector-rail">
         <FakeSpecForm spec={state.project.spec} onChange={state.setSpec} />
         <ExportPanel project={state.project} />
       </aside>

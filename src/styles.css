@@ -1,6 +1,17 @@
 @import "tailwindcss";
 
 :root {
+  --v2-bg: #03070b;
+  --v2-bg-2: #061219;
+  --v2-panel: rgba(7, 18, 25, 0.86);
+  --v2-panel-strong: rgba(10, 28, 38, 0.94);
+  --v2-border: rgba(91, 213, 240, 0.18);
+  --v2-border-strong: rgba(91, 213, 240, 0.42);
+  --v2-text: #d8f7ff;
+  --v2-muted: #7faab6;
+  --v2-accent: #58d9f5;
+  --v2-accent-2: #a6f7ff;
+  --v2-shadow: rgba(32, 211, 238, 0.22);
   color: #d8f7ff;
   background: #071015;
   font-family: Inter, ui-sans-serif, system-ui, sans-serif;
@@ -14,4 +25,286 @@ body {
 
 button {
   cursor: pointer;
+}
+
+.editor-shell {
+  display: grid;
+  grid-template-columns: 280px minmax(760px, 1fr) 360px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 8%, rgba(52, 211, 235, 0.14), transparent 34rem),
+    linear-gradient(135deg, var(--v2-bg), var(--v2-bg-2) 48%, #020407);
+}
+
+.editor-side-rail {
+  height: 100vh;
+  overflow-y: auto;
+  border-color: var(--v2-border);
+  background:
+    linear-gradient(180deg, rgba(12, 34, 46, 0.94), rgba(3, 9, 14, 0.96)),
+    var(--v2-panel);
+  padding: 1rem;
+}
+
+.editor-creation-rail {
+  border-right-width: 1px;
+}
+
+.editor-inspector-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  border-left-width: 1px;
+}
+
+.editor-center {
+  min-width: 0;
+  height: 100vh;
+  overflow: hidden;
+  padding: 1rem 1.125rem;
+}
+
+.editor-command-deck {
+  display: flex;
+  min-height: 72px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  border: 1px solid var(--v2-border);
+  background: linear-gradient(90deg, rgba(7, 20, 28, 0.92), rgba(7, 14, 20, 0.72));
+  padding: 0.875rem 1rem;
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.25);
+}
+
+.editor-kicker {
+  margin: 0;
+  color: var(--v2-muted);
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.editor-title {
+  margin: 0.25rem 0 0;
+  color: var(--v2-text);
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1.2;
+}
+
+.editor-readout-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(96px, 1fr));
+  gap: 0.5rem;
+}
+
+.editor-readout-grid span {
+  min-height: 36px;
+  border: 1px solid var(--v2-border);
+  background: rgba(4, 12, 18, 0.72);
+  color: var(--v2-accent-2);
+  display: grid;
+  place-items: center;
+  padding: 0 0.75rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.editor-stage-wrap {
+  position: relative;
+  height: calc(100vh - 166px);
+  min-height: 620px;
+  overflow: auto;
+  border: 1px solid var(--v2-border);
+  border-top: 0;
+  background:
+    linear-gradient(rgba(91, 213, 240, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(91, 213, 240, 0.045) 1px, transparent 1px),
+    radial-gradient(circle at 50% 46%, rgba(88, 217, 245, 0.17), transparent 31rem),
+    radial-gradient(circle at 50% 88%, rgba(88, 217, 245, 0.1), transparent 22rem),
+    #03080c;
+  background-size: 28px 28px, 28px 28px, auto, auto, auto;
+  padding: 1.5rem;
+  box-shadow: inset 0 0 80px rgba(0, 0, 0, 0.55);
+}
+
+.editor-toolbar {
+  display: flex;
+  min-height: 72px;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  border-right: 1px solid var(--v2-border);
+  border-left: 1px solid var(--v2-border);
+  background: linear-gradient(90deg, rgba(3, 9, 14, 0.94), rgba(6, 18, 26, 0.9));
+  padding: 0.625rem 0.75rem;
+}
+
+.editor-tool-group {
+  display: flex;
+  min-height: 40px;
+  align-items: center;
+  gap: 0.25rem;
+  border: 1px solid rgba(91, 213, 240, 0.12);
+  background: rgba(2, 8, 12, 0.54);
+  padding: 0.25rem;
+}
+
+.editor-tool-button {
+  min-width: 48px;
+  min-height: 32px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--v2-muted);
+  padding: 0 0.625rem;
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transition:
+    border-color 120ms ease,
+    background 120ms ease,
+    color 120ms ease;
+}
+
+.editor-tool-button:hover:not(:disabled) {
+  border-color: var(--v2-border-strong);
+  background: rgba(91, 213, 240, 0.08);
+  color: var(--v2-accent-2);
+}
+
+.editor-tool-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.32;
+}
+
+.editor-tool-button--active {
+  border-color: rgba(91, 213, 240, 0.34);
+  background: rgba(91, 213, 240, 0.14);
+  color: var(--v2-accent-2);
+  box-shadow: inset 0 0 18px rgba(91, 213, 240, 0.08);
+}
+
+.editor-stage-wrap::before,
+.editor-stage-wrap::after {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(88, 217, 245, 0.45), transparent);
+}
+
+.editor-stage-wrap::before {
+  top: 1.25rem;
+}
+
+.editor-stage-wrap::after {
+  bottom: 1.25rem;
+}
+
+.chip-stage-frame {
+  display: inline-block;
+  border: 1px solid rgba(91, 213, 240, 0.2);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.045), transparent 22%),
+    radial-gradient(circle at 50% 50%, rgba(88, 217, 245, 0.09), transparent 34rem),
+    #020506;
+  box-shadow:
+    0 28px 90px rgba(0, 0, 0, 0.5),
+    0 0 70px rgba(88, 217, 245, 0.12),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.025);
+}
+
+.chip-stage-frame__chrome {
+  position: relative;
+  display: grid;
+  place-items: center;
+  padding: 48px;
+}
+
+.chip-stage-frame__chrome::before {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: 18px;
+  border: 1px solid rgba(91, 213, 240, 0.15);
+  background:
+    linear-gradient(90deg, rgba(91, 213, 240, 0.12), transparent 18%, transparent 82%, rgba(91, 213, 240, 0.12)),
+    linear-gradient(rgba(91, 213, 240, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(91, 213, 240, 0.07) 1px, transparent 1px);
+  background-size: auto, 24px 24px, 24px 24px;
+  mask-image: linear-gradient(black, transparent 96%);
+}
+
+.chip-stage-frame__readout {
+  position: absolute;
+  top: 18px;
+  right: 20px;
+  z-index: 1;
+  display: flex;
+  gap: 0.375rem;
+}
+
+.chip-stage-frame__readout span {
+  border: 1px solid rgba(91, 213, 240, 0.18);
+  background: rgba(2, 8, 12, 0.78);
+  color: var(--v2-muted);
+  padding: 0.25rem 0.4rem;
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.chip-stage-canvas {
+  position: relative;
+  z-index: 1;
+  border: 1px solid rgba(91, 213, 240, 0.34);
+  box-shadow: 0 0 45px rgba(88, 217, 245, 0.1);
+}
+
+.editor-rail-heading h2 {
+  margin: 0.25rem 0 0;
+  color: var(--v2-text);
+  font-size: 0.92rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.editor-section-label {
+  color: var(--v2-muted);
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.editor-block-button {
+  min-height: 40px;
+  border: 1px solid rgba(91, 213, 240, 0.14);
+  background: linear-gradient(135deg, rgba(12, 45, 58, 0.72), rgba(5, 15, 22, 0.9));
+  color: var(--v2-text);
+  padding: 0.625rem 0.75rem;
+  text-align: left;
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1.1;
+  transition:
+    border-color 120ms ease,
+    background 120ms ease,
+    color 120ms ease;
+}
+
+.editor-block-button:hover {
+  border-color: var(--v2-border-strong);
+  background: linear-gradient(135deg, rgba(18, 70, 88, 0.78), rgba(7, 22, 32, 0.92));
+  color: var(--v2-accent-2);
 }

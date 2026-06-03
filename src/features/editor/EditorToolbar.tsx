@@ -37,9 +37,11 @@ const DECORATIONS: { kind: DecorationKind; label: string }[] = [
   { kind: 'neonLine', label: 'Neon Line' },
   { kind: 'warningMark', label: 'Warning' },
   { kind: 'label', label: 'Label' },
+  { kind: 'sciFiObject', label: 'Object' },
 ]
 
-const buttonClass = 'border border-cyan-900 px-3 py-1 text-xs uppercase tracking-wider disabled:opacity-30'
+const buttonClass = 'editor-tool-button'
+const activeButtonClass = 'editor-tool-button editor-tool-button--active'
 
 export function EditorToolbar({
   dieShape,
@@ -58,58 +60,60 @@ export function EditorToolbar({
   onSendBackward,
 }: Props) {
   return (
-    <div className="flex flex-wrap items-center gap-2 border-b border-cyan-900 bg-[#071015] p-3">
-      <div className="flex gap-1">
+    <div className="editor-toolbar" aria-label="Editor command toolbar">
+      <div aria-label="Die shape controls" className="editor-tool-group" role="group">
         {SHAPES.map(({ shape, label }) => (
           <button
             key={shape}
-            className={`${buttonClass} ${shape === dieShape ? 'bg-cyan-400/20 text-cyan-200' : ''}`}
+            aria-pressed={shape === dieShape}
+            className={shape === dieShape ? activeButtonClass : buttonClass}
             onClick={() => onSetDieShape(shape)}
           >
             {label}
           </button>
         ))}
       </div>
-      <span className="mx-2 h-4 w-px bg-cyan-900" />
-      <div className="flex gap-1">
+      <div aria-label="Chip theme controls" className="editor-tool-group" role="group">
         {THEME_OPTIONS.map(({ theme: option, label }) => (
           <button
             key={option}
-            className={`${buttonClass} ${option === theme ? 'bg-cyan-400/20 text-cyan-200' : ''}`}
+            aria-pressed={option === theme}
+            className={option === theme ? activeButtonClass : buttonClass}
             onClick={() => onSetTheme(option)}
           >
             {label}
           </button>
         ))}
       </div>
-      <span className="mx-2 h-4 w-px bg-cyan-900" />
-      <div className="flex gap-1">
+      <div aria-label="Decoration controls" className="editor-tool-group" role="group">
         {DECORATIONS.map(({ kind, label }) => (
           <button key={kind} className={buttonClass} onClick={() => onAddDecoration(kind)}>
             {label}
           </button>
         ))}
       </div>
-      <span className="mx-2 h-4 w-px bg-cyan-900" />
-      <button className={buttonClass} disabled={!canUndo} onClick={onUndo}>
-        Undo
-      </button>
-      <button className={buttonClass} disabled={!canRedo} onClick={onRedo}>
-        Redo
-      </button>
-      <span className="mx-2 h-4 w-px bg-cyan-900" />
-      <button className={buttonClass} disabled={!hasSelection} onClick={onDuplicate}>
-        Duplicate
-      </button>
-      <button className={buttonClass} disabled={!hasSelection} onClick={onDelete}>
-        Delete
-      </button>
-      <button className={buttonClass} disabled={!hasSelection} onClick={onBringForward}>
-        Forward
-      </button>
-      <button className={buttonClass} disabled={!hasSelection} onClick={onSendBackward}>
-        Backward
-      </button>
+      <div aria-label="History controls" className="editor-tool-group" role="group">
+        <button className={buttonClass} disabled={!canUndo} onClick={onUndo}>
+          Undo
+        </button>
+        <button className={buttonClass} disabled={!canRedo} onClick={onRedo}>
+          Redo
+        </button>
+      </div>
+      <div aria-label="Selection controls" className="editor-tool-group" role="group">
+        <button className={buttonClass} disabled={!hasSelection} onClick={onDuplicate}>
+          Duplicate
+        </button>
+        <button className={buttonClass} disabled={!hasSelection} onClick={onDelete}>
+          Delete
+        </button>
+        <button className={buttonClass} disabled={!hasSelection} onClick={onBringForward}>
+          Forward
+        </button>
+        <button className={buttonClass} disabled={!hasSelection} onClick={onSendBackward}>
+          Backward
+        </button>
+      </div>
     </div>
   )
 }

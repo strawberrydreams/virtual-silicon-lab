@@ -62,4 +62,20 @@ describe('EditorToolbar', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Neon Line' }))
     expect(props.onAddDecoration).toHaveBeenCalledWith('neonLine')
   })
+
+  it('groups controls into stable tool clusters', () => {
+    renderToolbar()
+
+    expect(screen.getByRole('group', { name: 'Die shape controls' })).toBeInTheDocument()
+    expect(screen.getByRole('group', { name: 'Chip theme controls' })).toBeInTheDocument()
+    expect(screen.getByRole('group', { name: 'Decoration controls' })).toBeInTheDocument()
+    expect(screen.getByRole('group', { name: 'History controls' })).toBeInTheDocument()
+    expect(screen.getByRole('group', { name: 'Selection controls' })).toBeInTheDocument()
+  })
+
+  it('exposes the sci-fi object decoration command', async () => {
+    const props = renderToolbar()
+    await userEvent.click(screen.getByRole('button', { name: 'Object' }))
+    expect(props.onAddDecoration).toHaveBeenCalledWith('sciFiObject')
+  })
 })
