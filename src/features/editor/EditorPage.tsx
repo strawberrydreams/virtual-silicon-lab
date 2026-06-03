@@ -5,6 +5,7 @@ import { createEditorStore } from '../../stores/editorStore'
 import { BlockPalette } from './BlockPalette'
 import { EditorToolbar } from './EditorToolbar'
 import { ChipStage } from './canvas/ChipStage'
+import { FakeSpecForm } from '../specs/FakeSpecForm'
 import { useAutosave } from './useAutosave'
 import { useEditorShortcuts } from './useEditorShortcuts'
 
@@ -58,6 +59,9 @@ export function EditorPage({ project, persist }: Props) {
           />
         </div>
       </section>
+      <aside className="w-80 border-l border-cyan-900 bg-[#071015] p-4">
+        <FakeSpecForm spec={state.project.spec} onChange={state.setSpec} />
+      </aside>
     </main>
   )
 }
