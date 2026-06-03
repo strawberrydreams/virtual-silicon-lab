@@ -410,3 +410,50 @@
 - M5 코드는 아직 시작하지 않았다.
 - `docs/superpowers/plans/2026-06-02-specs-and-export.md`의 Task 1 `Flush pending autosave work before teardown`부터 TDD로 구현한다.
 - task 단위 커밋을 유지하고 각 체크포인트에서 멈춘다.
+
+## 2026-06-03 - Milestone 5 완료 (Fake Specs + Dual PNG Export)
+
+### 구현 요약 (Task 0~11)
+
+- **Task 0 — M0~M4 코드 리뷰 정리:** 블록 glow가 `colorOverride`를 따르도록 수정([M2]), `aurora-c1` 불변성 가드 추가([M5]), 프리셋 이름 구분자를 em-dash로 통일([M4]), 죽은 `projectStore.createHero()`와 미사용 import 제거([M1]). → M4 로그의 "createHero 유지" 결정은 여기서 철회됨. AURORA는 `remixPreset('aurora-c1')` 경로만 사용한다.
+- **Task 1 — autosave flush:** `createDebouncer`에 `flush()`를 추가하고, `useAutosave` cleanup이 `cancel()` 대신 `flush()`를 호출하여 debounce 창 안에서 이탈해도 마지막 편집이 저장된다.
+- **Task 2 — 동적 editor Stage 크기:** `src/features/editor/canvas/artworkLayout.ts`의 `editorStageSize()`가 Stage를 다이 크기 이상(`max(960/640, die)`)으로 잡아 `720x720` 프리셋 하단 클리핑을 제거했다.
+- **Task 3 — 공유 칩 아트워크 + 블록 단위 z-order:** `ChipArtwork.tsx`로 `DieShape`/`GridLines`/`DecorationNode`/`BlockArtwork`를 추출했다. `BlockArtwork`는 shape+texture+label을 하나의 Group으로 묶어 낮은 z 블록의 텍스처/라벨이 높은 z 블록 위로 새지 않는다. editor는 `renderBlock`으로 상호작용을 주입하고 exporter는 동일 컴포넌트를 정적으로 렌더한다. M3 smoke export 버튼은 제거했다.
+- **Task 4 — fake spec 예시 + 스토어 명령:** `specExamples.ts`(AURORA C-1·AEGIS M-7·ONEIRIC LUCID-88) + `editorStore.setSpec()`(features 배열 복사, undo 가능).
+- **Task 5 — fake spec 폼:** `FakeSpecForm.tsx`를 editor 우측 `<aside>`에 연결. features textarea는 로컬 raw 텍스트 + resync effect를 사용해 여러 줄 입력 중 줄바꿈이 유지된다(정규화는 `onChange`에만 적용).
+- **Task 6 — export 치수:** `exportLayout.ts` — `DIE_EXPORT_PIXEL_RATIO=4`, `POSTER_EXPORT`(1600x900 @2 → 3200x1800), `dieExportSize`, `posterChipPlacement`.
+- **Task 7 — Web Share helper:** `exportStage.ts`에 `dataUrlToFile`/`shareFileOrDownload`/`downloadFile`을 추가. 순수 분기(`shareFileOrDownload`)만 단위 테스트하고 DOM 측은 브라우저에서 검증한다.
+- **Task 8/9 — 전용 export Stage:** `DieExportStage`(다이 크기), `PosterExportStage`(키노트 합성 — 배경/브랜드/타이틀/스케일된 칩 히어로/우측 스펙시트/푸터, Konva `Text`만). 둘 다 `ChipArtwork`를 재사용한다.
+- **Task 10 — export 패널:** `ExportPanel.tsx`가 두 Stage를 화면 밖(`absolute left/top -10000`, `display:none` 아님)에 마운트하고 Download Die / Download Poster / Share Poster 버튼을 제공한다. die는 `toDataURL({pixelRatio:4})`, poster는 `{pixelRatio:2}`. 파일명은 `${project.name||'chip'}-die.png` / `-poster.png`.
+
+### 결정 및 트레이드오프
+
+- **칩 아트워크 단일 소스.** editor와 두 exporter가 `ChipArtwork`를 공유한다. poster는 그 위에 배경/타이포만 더한다. exporter는 editor의 zoom/pan/selection/Transformer를 상속하지 않는다.
+- **DOM 캡처 금지 경계.** export Stage는 화면 밖 별도 Konva Stage다. `display:none`이 아니라 음수 좌표로 마운트해 canvas가 그려진 상태를 유지한다.
+- **공유 취소는 추가 다운로드로 바꾸지 않는다.** `navigator.share`와 `canShare({files})`가 모두 가능할 때만 공유하고, 아니면 동일 poster를 다운로드한다.
+- **schema 변경 없음.** 기존 `FakeSpec`을 폼·poster·예시의 단일 소스로 사용한다. migration 없음.
+
+### 브라우저 검증 (in-app Browser, Chrome)
+
+- AURORA C-1 remix: 720x720 다이 전체가 보이고 하단 QuantumMemory 밴드 클리핑 없음. 블록 선택 시 Transformer가 그룹 노드에 부착됨(Rect→Group 재배선 정상).
+- FIELD UNIT M-7: brand/features(3줄)/description 편집 → 대시보드 이동 → 재오픈 + 하드 새로고침 후 편집값 전부 유지(spec ↔ setSpec ↔ autosave ↔ IndexedDB).
+- 다운로드 raster 픽셀 검증(`sips`): AURORA die `2880x2880`, M-7 die `3680x2400`, poster `3200x1800`.
+- poster PNG 내용 확인: 테마 배경, 완전한 칩 아트워크, 브랜드/타이틀/시리즈/PROCESS/CORES/BANDWIDTH/feature 목록/description/푸터 포함. toolbar, 블록 팔레트, selection outline, transformer 핸들, editor border, DOM UI 없음.
+- AURORA(keynote square)·N-9(neon hexagon)·M-7(military rect) poster 3종이 시각적으로 명확히 구분되고 발표 가능한 수준이다. N-9에서 RealityDistortionUnit이 자신의 magenta override 색으로 glow하여 [M2] 수정이 시각적으로 확인됨(neon hue budget = cyan+magenta).
+- `navigator.share`가 없는 컨텍스트(검증 중 share/canShare를 undefined로 덮어씀)에서 Share Poster 클릭 시 poster PNG 다운로드로 graceful하게 폴백됨.
+- 전 과정 browser console error 0개(favicon 404 제외).
+
+### 검증 결과
+
+- `npm test`: 28개 파일 / 94개 테스트 통과.
+- `npm run build`: 통과(574kB, 기존 chunk 경고 유지).
+
+### 미해결 리뷰 부채 (M6 release QA 전 처리)
+
+- 사각·정사각 다이 경계 제한이 회전 각도를 고려하지 않음(회전 블록 모서리가 다이 밖으로 나갈 수 있음).
+- `BlockPalette`가 v1 `BlockType` 16종 중 6종만 노출.
+
+### 다음 재개 지점
+
+- Milestone 5 완료. 다음은 Milestone 6 `Landing, QA, And Static Deployment`다.
+- 착수 직전 `docs/superpowers/plans/2026-06-02-landing-and-release.md`를 작성한다(로드맵 지시).
