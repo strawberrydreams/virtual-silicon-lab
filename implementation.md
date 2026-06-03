@@ -94,4 +94,34 @@ Minor 항목은 fix 플랜 백로그. 결과: 30파일/112테스트, build green
 ## 현재 상태
 
 M0~M6 MVP + 병합 전 Important 수정 완료. `npm test` 30파일/112테스트, `npm run build` green
-(Konva 500kB chunk 경고만). 브랜치 `feature/foundation-slice`는 `main` 병합 준비 완료.
+(Konva 500kB chunk 경고만). `feature/foundation-slice`는 fast-forward로 `main`에 병합 완료되었고,
+v1 MVP는 완료 상태다. 다음 작업은 v2 방향 결정 후 별도 계획으로 시작한다.
+
+## v2 계획 확정 (2026-06-03)
+
+- v2는 **visual major release**로 확정. 범위는 웹 페이지 전체 디자인, 에디터 디자인, output image/poster
+  디자인의 전면 개선이다. `images/` 폴더의 실제 칩 press visual을 품질 기준으로 삼고, v2 완료 기준은
+  10개 hero chip + poster 세트가 같은 rubric을 통과하는 것이다.
+- 초기 `docs/v2-questions.md`에는 backend/SQLite/account/board를 v2에 넣는 답변이 남아 있지만, 이후
+  사용자 결정으로 v2에서는 제외한다. backend, SQLite, 계정/회원 CRUD, 게시판/gallery/ranking/contest는
+  v3 이후 후보로 이동.
+- 유지 결정: desktop web 전용, AI 없음, true 3D 없음, current 2D/Konva visual 품질 개선, single JSON
+  schema 유지. single JSON schema를 버려야 할 정도의 변경은 구현 전에 사용자 확인이 필요하다.
+- 신규 문서: `virtual_silicon_lab_v2.md`(v2 제품/범위 명세)와
+  `docs/superpowers/plans/2026-06-03-v2-visual-major-roadmap.md`(마일스톤 구현 계획).
+
+## V2-M0 Visual Audit & Direction (2026-06-03, 코드 없음)
+
+- `images/` 14개 레퍼런스를 Apple premium product / Intel architecture slide / NVIDIA·Qualcomm glow
+  product / raw die shot 4개 family로 정리했다. v2의 품질 기준은 "색을 더 많이 쓰는 것"이 아니라
+  제한된 accent, 명확한 조명 방향, package/die/material 분리, macro·meso·micro density hierarchy다.
+- 새 기준 문서:
+  `docs/reference/v2-visual-audit.md`(레퍼런스별 관찰, family 규칙, anti-pattern, quality rubric),
+  `docs/reference/v2-style-direction.md`(page theme token 계약, editor layout, chip layer, poster format),
+  `docs/reference/v2-hero-set.md`(10개 hero chip/poster target).
+- Page theme은 project JSON의 chip `StyleTheme`과 분리한다. `laboratory`/`anime`/`space`는 app shell과
+  editor chrome의 mood를 바꾸는 preference이고, 기존 `neon`/`retro`/`military`/`keynote`/`mono`는
+  chip rendering theme으로 유지한다.
+- M3/M4 early gate는 AURORA M5(Apple식 premium one-accent), PANTHER SCALE(Intel식 architecture
+  comparison), N1 GREEN HORIZON(NVIDIA식 product lighting) 3개로 정했다. 이 셋이 실패하면 나머지
+  hero set 양산 전에 material/poster system을 고쳐야 한다.
