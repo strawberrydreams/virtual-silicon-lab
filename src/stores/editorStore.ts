@@ -1,5 +1,5 @@
 import { createStore } from 'zustand/vanilla'
-import type { Block, BlockType, DieShape, Project, StyleTheme } from '../domain/project'
+import type { Block, BlockType, DieShape, FakeSpec, Project, StyleTheme } from '../domain/project'
 import { buildBlock, nextZIndex } from '../domain/blockFactory'
 import { buildDecoration, type DecorationKind } from '../domain/decorationFactory'
 import { clampBlockToDie, normalizeDie } from '../features/editor/canvas/geometry'
@@ -28,6 +28,7 @@ export type EditorState = {
   sendBackward: () => void
   setDieShape: (shape: DieShape) => void
   setTheme: (theme: StyleTheme) => void
+  setSpec: (spec: FakeSpec) => void
   addDecoration: (kind: DecorationKind) => void
   undo: () => void
   redo: () => void
@@ -172,6 +173,11 @@ export function createEditorStore(initialProject: Project, options: Options = {}
         const { project } = get()
         if (project.theme === theme) return
         commit({ ...project, theme })
+      },
+
+      setSpec(spec) {
+        const { project } = get()
+        commit({ ...project, spec: { ...spec, features: [...spec.features] } })
       },
 
       addDecoration(kind) {

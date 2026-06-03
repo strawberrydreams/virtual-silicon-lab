@@ -145,4 +145,15 @@ describe('editorStore visual commands', () => {
     store.getState().undo()
     expect(store.getState().project.decorations).toHaveLength(0)
   })
+
+  it('sets a copied spec and can undo it', () => {
+    const store = createEditorStore(createProject('p', 'p1', 0))
+    const original = store.getState().project.spec
+    const spec = { ...original, brand: 'AEGIS', features: ['Temporal seal'] }
+    store.getState().setSpec(spec)
+    expect(store.getState().project.spec).toEqual(spec)
+    expect(store.getState().project.spec.features).not.toBe(spec.features)
+    store.getState().undo()
+    expect(store.getState().project.spec).toEqual(original)
+  })
 })
