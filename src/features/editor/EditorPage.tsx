@@ -6,6 +6,7 @@ import { BlockPalette } from './BlockPalette'
 import { EditorToolbar } from './EditorToolbar'
 import { ChipStage } from './canvas/ChipStage'
 import { FakeSpecForm } from '../specs/FakeSpecForm'
+import { ExportPanel } from '../export/ExportPanel'
 import { useAutosave } from './useAutosave'
 import { useEditorShortcuts } from './useEditorShortcuts'
 
@@ -59,8 +60,9 @@ export function EditorPage({ project, persist }: Props) {
           />
         </div>
       </section>
-      <aside className="w-80 border-l border-cyan-900 bg-[#071015] p-4">
+      <aside className="flex w-80 shrink-0 flex-col gap-6 border-l border-cyan-900 bg-[#071015] p-4">
         <FakeSpecForm spec={state.project.spec} onChange={state.setSpec} />
+        <ExportPanel project={state.project} />
       </aside>
     </main>
   )
