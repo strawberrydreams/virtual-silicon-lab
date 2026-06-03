@@ -109,7 +109,13 @@ export function createEditorStore(initialProject: Project, options: Options = {}
         const blocks = project.blocks.map((block) => {
           if (block.id !== id) return block
           const clamped = clampBlockToDie(
-            { x: transform.x, y: transform.y, w: transform.w, h: transform.h },
+            {
+              x: transform.x,
+              y: transform.y,
+              w: transform.w,
+              h: transform.h,
+              rotation: transform.rotation ?? block.rotation,
+            },
             project.die,
           )
           return {

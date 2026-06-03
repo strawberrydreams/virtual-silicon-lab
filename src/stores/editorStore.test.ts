@@ -65,9 +65,20 @@ describe('editor store commands', () => {
     store.getState().transformBlock('cpu', { x: 5000, y: 5000, w: 100, h: 100, rotation: 30 })
 
     const moved = store.getState().project.blocks.find((block) => block.id === 'cpu')!
-    expect(moved.x + moved.w).toBeLessThanOrEqual(960)
-    expect(moved.y + moved.h).toBeLessThanOrEqual(640)
+    expect(rotatedCorners(moved).every((corner) => corner.x <= 960 + 1e-6)).toBe(true)
+    expect(rotatedCorners(moved).every((corner) => corner.y <= 640 + 1e-6)).toBe(true)
     expect(moved.rotation).toBe(30)
+  })
+
+  it('clamps a rotated rectangular transform by its actual corners', () => {
+    const store = createEditorStore(seededProject())
+    store.getState().transformBlock('cpu', { x: 910, y: 590, w: 140, h: 80, rotation: 45 })
+
+    const moved = store.getState().project.blocks.find((block) => block.id === 'cpu')!
+    expect(rotatedCorners(moved).every((corner) => corner.x >= -1e-6)).toBe(true)
+    expect(rotatedCorners(moved).every((corner) => corner.y >= -1e-6)).toBe(true)
+    expect(rotatedCorners(moved).every((corner) => corner.x <= 960 + 1e-6)).toBe(true)
+    expect(rotatedCorners(moved).every((corner) => corner.y <= 640 + 1e-6)).toBe(true)
   })
 
   it('deletes the selected block and clears selection', () => {
@@ -119,6 +130,21 @@ describe('editor store commands', () => {
     }
   })
 })
+
+function rotatedCorners(block: { x: number; y: number; w: number; h: number; rotation?: number }) {
+  const radians = ((block.rotation ?? 0) * Math.PI) / 180
+  const cos = Math.cos(radians)
+  const sin = Math.sin(radians)
+  return [
+    { x: 0, y: 0 },
+    { x: block.w, y: 0 },
+    { x: 0, y: block.h },
+    { x: block.w, y: block.h },
+  ].map((corner) => ({
+    x: block.x + corner.x * cos - corner.y * sin,
+    y: block.y + corner.x * sin + corner.y * cos,
+  }))
+}
 
 describe('editorStore visual commands', () => {
   it('setTheme updates the theme and is undoable', () => {

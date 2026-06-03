@@ -475,3 +475,17 @@
 - M6 시작을 랜딩 UI가 아니라 release-hardening으로 잡았다. 이미 M5 로그에 "M6 release QA 전 처리"로 명시한 두 부채가 있고, 둘 다 최종 acceptance gate의 편집 신뢰성에 직접 영향을 준다.
 - 저장 schema 변경은 하지 않는다. 회전 clamp는 geometry/editorStore 내부 동작 수정이고, palette 확장은 UI 노출 범위 확장이다.
 - 이번 체크포인트는 3개 task 단위 검증과 커밋 후 멈춘다. 이렇게 하면 이후 코드 리뷰 전에도 작은 단위로 되돌아보기 쉽다.
+
+## 2026-06-03 - Milestone 6 Task 2 회전 clamp 보강
+
+### 구현
+
+- 사각/정사각 다이의 `clampBlockToRect()`가 블록의 `rotation`을 고려하도록 수정했다.
+- 회전된 블록의 로컬 네 모서리를 원점 기준으로 회전한 뒤 axis-aligned extents를 계산하고, 그 extents 전체가 다이 내부에 들어오도록 블록 origin을 clamp한다.
+- 회전 extents가 다이보다 큰 경우에는 기존 크기 제한처럼 블록 크기를 비율 축소해 들어갈 수 있는 크기로 만든다.
+- `editorStore.transformBlock()`은 candidate rotation을 clamp 입력에 넘긴다. 복제와 die shape 변경은 기존처럼 전체 block 객체를 넘기므로 rotation이 함께 반영된다.
+
+### 결정 및 트레이드오프
+
+- Konva `Group`의 회전 기준이 현재 블록 origin이므로, geometry도 동일하게 origin 기준 회전 모서리를 사용한다. center-origin 회전으로 바꾸면 Transformer/drag 동작까지 같이 바꿔야 하므로 M6 hardening 범위를 넘긴다.
+- 원형/육각형 clamp는 기존의 보수적 radial half-diagonal 방식을 유지한다. 회전해도 대각선 길이는 변하지 않으므로 이번 release debt의 핵심인 rect/square 모서리 이탈만 별도로 해결했다.

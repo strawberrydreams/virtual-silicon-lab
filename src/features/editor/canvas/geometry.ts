@@ -1,6 +1,6 @@
 import type { Die, DieShape } from '../../../domain/project'
 
-type BlockRect = { x: number; y: number; w: number; h: number }
+type BlockRect = { x: number; y: number; w: number; h: number; rotation?: number }
 type DieRect = { width: number; height: number }
 
 const HEXAGON_INCIRCLE_RATIO = Math.sqrt(3) / 2
@@ -10,15 +10,54 @@ export function snapToGrid(value: number, gridSize: number) {
 }
 
 export function clampBlockToRect(block: BlockRect, die: DieRect): BlockRect {
-  const w = Math.min(block.w, die.width)
-  const h = Math.min(block.h, die.height)
+  let w = Math.min(block.w, die.width)
+  let h = Math.min(block.h, die.height)
+  let extents = rotatedExtents(w, h, block.rotation ?? 0)
+
+  if (extents.width > die.width || extents.height > die.height) {
+    const scale = Math.min(die.width / extents.width, die.height / extents.height)
+    w *= scale
+    h *= scale
+    extents = rotatedExtents(w, h, block.rotation ?? 0)
+  }
+
+  const minX = -extents.minX
+  const maxX = die.width - extents.maxX
+  const minY = -extents.minY
+  const maxY = die.height - extents.maxY
 
   return {
-    x: Math.min(Math.max(block.x, 0), die.width - w),
-    y: Math.min(Math.max(block.y, 0), die.height - h),
+    x: cleanZero(Math.min(Math.max(block.x, minX), maxX)),
+    y: cleanZero(Math.min(Math.max(block.y, minY), maxY)),
     w,
     h,
   }
+}
+
+function cleanZero(value: number) {
+  return Math.abs(value) < 1e-10 ? 0 : value
+}
+
+function rotatedExtents(w: number, h: number, rotation: number) {
+  const radians = (rotation * Math.PI) / 180
+  const cos = Math.cos(radians)
+  const sin = Math.sin(radians)
+  const corners = [
+    { x: 0, y: 0 },
+    { x: w, y: 0 },
+    { x: 0, y: h },
+    { x: w, y: h },
+  ].map((corner) => ({
+    x: corner.x * cos - corner.y * sin,
+    y: corner.x * sin + corner.y * cos,
+  }))
+  const xs = corners.map((corner) => corner.x)
+  const ys = corners.map((corner) => corner.y)
+  const minX = Math.min(...xs)
+  const maxX = Math.max(...xs)
+  const minY = Math.min(...ys)
+  const maxY = Math.max(...ys)
+  return { minX, maxX, minY, maxY, width: maxX - minX, height: maxY - minY }
 }
 
 export function clampBlockToRadial(block: BlockRect, die: DieRect, radius: number): BlockRect {

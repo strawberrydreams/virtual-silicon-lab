@@ -24,6 +24,18 @@ describe('clampBlockToRect', () => {
       ),
     ).toEqual({ x: 840, y: 0, w: 120, h: 80 })
   })
+
+  it('keeps every rotated corner inside rectangular bounds', () => {
+    const result = clampBlockToRect(
+      { x: 910, y: 590, w: 140, h: 80, rotation: 45 },
+      { width: 960, height: 640 },
+    )
+    const corners = rotatedCorners({ ...result, rotation: 45 })
+    expect(corners.every((corner) => corner.x >= -1e-6)).toBe(true)
+    expect(corners.every((corner) => corner.y >= -1e-6)).toBe(true)
+    expect(corners.every((corner) => corner.x <= 960 + 1e-6)).toBe(true)
+    expect(corners.every((corner) => corner.y <= 640 + 1e-6)).toBe(true)
+  })
 })
 
 function farthestCornerDistance(
@@ -37,6 +49,21 @@ function farthestCornerDistance(
     { x: block.x + block.w, y: block.y + block.h },
   ]
   return Math.max(...corners.map((corner) => Math.hypot(corner.x - center.x, corner.y - center.y)))
+}
+
+function rotatedCorners(block: { x: number; y: number; w: number; h: number; rotation?: number }) {
+  const radians = ((block.rotation ?? 0) * Math.PI) / 180
+  const cos = Math.cos(radians)
+  const sin = Math.sin(radians)
+  return [
+    { x: 0, y: 0 },
+    { x: block.w, y: 0 },
+    { x: 0, y: block.h },
+    { x: block.w, y: block.h },
+  ].map((corner) => ({
+    x: block.x + corner.x * cos - corner.y * sin,
+    y: block.y + corner.x * sin + corner.y * cos,
+  }))
 }
 
 describe('clampBlockToRadial', () => {
