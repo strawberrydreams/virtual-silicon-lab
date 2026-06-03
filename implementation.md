@@ -504,3 +504,17 @@
 
 - 검색/필터 UI는 추가하지 않았다. 16개 항목은 아직 단일 sidebar에서 충분히 스캔 가능하고, M6 첫 체크포인트 범위는 release-hardening debt 해결이므로 새 interaction surface를 늘리지 않았다.
 - 버튼의 accessible name은 타입 문자열 그대로 유지했다. 테스트와 store command가 동일한 `BlockType` 계약을 공유하므로 추후 palette 리팩터링 때 회귀를 잡기 쉽다.
+
+## 2026-06-03 - Milestone 6 Task 4 랜딩 route 추가
+
+### 구현
+
+- `/`를 기존 dashboard 대신 `LandingPage`로 연결하고, 기존 project dashboard는 `/dashboard`로 이동했다.
+- 랜딩 첫 화면에서 로그인 없이 `Start Blank`, `Start Hero Preset`, hero preset 카드별 `Start from ...`, `Open Projects (n)`를 제공한다.
+- hero chip 신호는 새 asset pipeline을 만들지 않고 `PRESET_CATALOG`의 featured preset 3개(AURORA C-1, NEON DISTRICT N-9, FIELD UNIT M-7)를 CSS mini-die preview로 렌더한다.
+
+### 결정 및 트레이드오프
+
+- M6 랜딩은 마케팅 페이지가 아니라 즉시 시작 표면으로 설계했다. 첫 화면에서 바로 빈 프로젝트 또는 검증된 프리셋 remix로 들어갈 수 있다.
+- dashboard를 `/dashboard`로 분리했지만 project store와 create/remix/open 흐름은 그대로 유지한다. 저장 schema와 repository 변경은 없다.
+- 실제 Konva thumbnail을 landing에 여러 개 마운트하지 않았다. dashboard preview와 같은 이유로 첫 로딩 비용을 낮추고, 편집/출력 품질은 기존 editor/export stage에서 보장한다.

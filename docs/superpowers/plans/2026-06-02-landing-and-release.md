@@ -86,10 +86,10 @@ Stop after Task 3 for the requested checkpoint.
 - Add: `src/features/landing/LandingPage.test.tsx`
 - Modify: `src/app/App.tsx`
 
-- [ ] Route `/` to a first-screen product landing experience.
-- [ ] Provide direct `Start from preset` and `Start blank` actions without login.
-- [ ] Link existing local projects/dashboard from the landing page.
-- [ ] Use the preset catalog for hero chips/signals; avoid fake marketing-only UI.
+- [x] Route `/` to a first-screen product landing experience.
+- [x] Provide direct `Start from preset` and `Start blank` actions without login.
+- [x] Link existing local projects/dashboard from the landing page.
+- [x] Use the preset catalog for hero chips/signals; avoid fake marketing-only UI.
 
 ### Task 5: Polish dashboard for repeated use
 

@@ -2,9 +2,22 @@ import { useEffect, useState } from 'react'
 import { Navigate, Route, Routes, useParams } from 'react-router-dom'
 import type { Project } from '../domain/project'
 import { EditorPage } from '../features/editor/EditorPage'
+import { LandingPage } from '../features/landing/LandingPage'
 import { ProjectDashboard } from '../features/projects/ProjectDashboard'
 import { PRESET_CATALOG } from '../presets/presetCatalog'
 import { ProjectStoreProvider, useProjectStore } from '../stores/projectStoreContext'
+
+function LandingRoute() {
+  const store = useProjectStore()
+  return (
+    <LandingPage
+      projectsCount={store.projects.length}
+      presets={PRESET_CATALOG}
+      createProject={store.create}
+      remixPreset={store.remixPreset}
+    />
+  )
+}
 
 function DashboardRoute() {
   const store = useProjectStore()
@@ -44,7 +57,8 @@ export function App() {
   return (
     <ProjectStoreProvider>
       <Routes>
-        <Route path="/" element={<DashboardRoute />} />
+        <Route path="/" element={<LandingRoute />} />
+        <Route path="/dashboard" element={<DashboardRoute />} />
         <Route path="/editor/:projectId" element={<EditorRoute />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
