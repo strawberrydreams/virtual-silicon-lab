@@ -8,6 +8,7 @@ type Props = {
   projects: Project[]
   presets: readonly PresetMetadata[]
   createProject: (name: string) => Promise<Project>
+  createRandomProject: () => Promise<Project>
   remixPreset: (id: PresetId) => Promise<Project>
   duplicateProject: (id: string) => Promise<Project>
   removeProject: (id: string) => Promise<void>
@@ -17,6 +18,7 @@ export function ProjectDashboard({
   projects,
   presets,
   createProject,
+  createRandomProject,
   remixPreset,
   duplicateProject,
   removeProject,
@@ -25,6 +27,11 @@ export function ProjectDashboard({
 
   async function startProject() {
     const project = await createProject('Untitled Dream Chip')
+    navigate(`/editor/${project.id}`)
+  }
+
+  async function startRandomProject() {
+    const project = await createRandomProject()
     navigate(`/editor/${project.id}`)
   }
 
@@ -51,6 +58,9 @@ export function ProjectDashboard({
             </Link>
             <button className="v2-button v2-button--primary" onClick={startProject}>
               New Project
+            </button>
+            <button className="v2-button" onClick={startRandomProject}>
+              Random Chip
             </button>
           </div>
         </header>

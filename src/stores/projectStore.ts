@@ -4,11 +4,13 @@ import { createProject } from '../domain/projectFactory'
 import type { PresetId } from '../presets/presetCatalog'
 import { createPresetProject } from '../presets/presetFactory'
 import type { ProjectRepository } from '../storage/projectRepository'
+import { generateRandomChipProject } from '../visual/randomChipGenerator'
 
 type ProjectState = {
   projects: Project[]
   load: () => Promise<void>
   create: (name: string) => Promise<Project>
+  createRandom: () => Promise<Project>
   remixPreset: (presetId: PresetId) => Promise<Project>
   duplicate: (id: string) => Promise<Project>
   remove: (id: string) => Promise<void>
@@ -28,6 +30,13 @@ export function createProjectStore(
     },
     async create(name) {
       const project = createProject(name, createId(), now())
+      await repository.save(project)
+      set({ projects: [project, ...get().projects] })
+      return project
+    },
+    async createRandom() {
+      const id = createId()
+      const project = generateRandomChipProject(id, id, now())
       await repository.save(project)
       set({ projects: [project, ...get().projects] })
       return project

@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { PRESET_CATALOG } from './presetCatalog'
 
 describe('preset catalog', () => {
-  it('ships six presets covering every visual theme', () => {
-    expect(PRESET_CATALOG).toHaveLength(6)
+  it('ships the base presets plus ten v2 hero sets covering every visual theme', () => {
+    expect(PRESET_CATALOG).toHaveLength(16)
     expect(new Set(PRESET_CATALOG.map((preset) => preset.theme))).toEqual(
       new Set(['neon', 'retro', 'military', 'keynote', 'mono']),
     )

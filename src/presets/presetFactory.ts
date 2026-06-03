@@ -8,7 +8,8 @@ import {
   type Project,
   type StyleTheme,
 } from '../domain/project'
-import type { PresetId } from './presetCatalog'
+import { createHeroSetProject, isHeroSetId } from '../visual/heroSetCatalog'
+import type { BasePresetId, PresetId } from './presetCatalog'
 
 type BlockBlueprint = Omit<Block, 'id' | 'zIndex'>
 type DecorationBlueprint =
@@ -26,7 +27,7 @@ type PresetBlueprint = {
   spec: FakeSpec
 }
 
-const BLUEPRINTS: Record<Exclude<PresetId, 'aurora-c1'>, PresetBlueprint> = {
+const BLUEPRINTS: Record<Exclude<BasePresetId, 'aurora-c1'>, PresetBlueprint> = {
   'neon-district-n9': {
     name: 'NEON DISTRICT N-9 — Reality Routing Array',
     die: { shape: 'hexagon', width: 720, height: 720, background: 'neon-indigo-spotlight' },
@@ -173,6 +174,7 @@ export function createPresetProject(
   id: string = crypto.randomUUID(),
   now = Date.now(),
 ): Project {
+  if (isHeroSetId(presetId)) return createHeroSetProject(presetId, id, now)
   if (presetId === 'aurora-c1') return createHeroChip(id, now)
 
   const blueprint = BLUEPRINTS[presetId]

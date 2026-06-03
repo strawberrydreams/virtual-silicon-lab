@@ -7,7 +7,9 @@ import { PresetCard } from './PresetCard'
 describe('PresetCard', () => {
   it('summarizes a preset and starts a remix', async () => {
     const remix = vi.fn()
-    render(<PresetCard preset={PRESET_CATALOG[1]} onRemix={remix} />)
+    const preset = PRESET_CATALOG.find((candidate) => candidate.id === 'neon-district-n9')
+    if (preset === undefined) throw new Error('Expected neon-district-n9 preset')
+    render(<PresetCard preset={preset} onRemix={remix} />)
 
     expect(screen.getByText('NEON DISTRICT N-9')).toBeInTheDocument()
     expect(screen.getByText('hexagon / neon')).toBeInTheDocument()

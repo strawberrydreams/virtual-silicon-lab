@@ -1,12 +1,15 @@
 import type { BlockType, DieShape, StyleTheme } from '../domain/project'
+import { HERO_SET_CATALOG, type HeroSetId } from '../visual/heroSetCatalog'
 
-export type PresetId =
+export type BasePresetId =
   | 'aurora-c1'
   | 'neon-district-n9'
   | 'field-unit-m7'
   | 'lucid-88'
   | 'monolith-io'
   | 'solar-flare-x'
+
+export type PresetId = BasePresetId | HeroSetId
 
 export type PresetMetadata = {
   id: PresetId
@@ -19,7 +22,7 @@ export type PresetMetadata = {
   previewBlocks: BlockType[]
 }
 
-export const PRESET_CATALOG: readonly PresetMetadata[] = [
+export const BASE_PRESET_CATALOG: readonly PresetMetadata[] = [
   {
     id: 'aurora-c1',
     name: 'AURORA C-1',
@@ -80,4 +83,18 @@ export const PRESET_CATALOG: readonly PresetMetadata[] = [
     featured: false,
     previewBlocks: ['GPU', 'EmotionEngine', 'DSP', 'Cache'],
   },
+]
+
+export const PRESET_CATALOG: readonly PresetMetadata[] = [
+  ...HERO_SET_CATALOG.map((hero): PresetMetadata => ({
+    id: hero.id,
+    name: hero.name,
+    tagline: hero.tagline,
+    theme: hero.theme,
+    dieShape: hero.dieShape,
+    accent: hero.accent,
+    featured: hero.featured,
+    previewBlocks: [...hero.previewBlocks],
+  })),
+  ...BASE_PRESET_CATALOG,
 ]

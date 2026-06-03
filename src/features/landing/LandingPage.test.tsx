@@ -38,9 +38,9 @@ describe('LandingPage', () => {
       </MemoryRouter>,
     )
 
-    await userEvent.click(screen.getByRole('button', { name: 'Start from AURORA C-1' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Start from AURORA M5' }))
 
-    expect(remixPreset).toHaveBeenCalledWith('aurora-c1')
+    expect(remixPreset).toHaveBeenCalledWith('aurora-m5')
     expect(screen.getByRole('link', { name: 'Open Projects (2)' })).toHaveAttribute('href', '/dashboard')
   })
 

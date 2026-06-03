@@ -14,6 +14,7 @@ describe('ProjectDashboard', () => {
           projects={[]}
           presets={PRESET_CATALOG}
           createProject={vi.fn()}
+          createRandomProject={vi.fn()}
           remixPreset={vi.fn()}
           duplicateProject={vi.fn()}
           removeProject={vi.fn()}
@@ -35,6 +36,7 @@ describe('ProjectDashboard', () => {
           projects={[]}
           presets={PRESET_CATALOG}
           createProject={createProjectCommand}
+          createRandomProject={vi.fn()}
           remixPreset={vi.fn()}
           duplicateProject={vi.fn()}
           removeProject={vi.fn()}
@@ -55,6 +57,7 @@ describe('ProjectDashboard', () => {
           projects={[]}
           presets={PRESET_CATALOG}
           createProject={vi.fn()}
+          createRandomProject={vi.fn()}
           remixPreset={remixPreset}
           duplicateProject={vi.fn()}
           removeProject={vi.fn()}
@@ -62,9 +65,30 @@ describe('ProjectDashboard', () => {
       </MemoryRouter>,
     )
 
-    expect(screen.getAllByRole('button', { name: /^Remix / })).toHaveLength(6)
+    expect(screen.getAllByRole('button', { name: /^Remix / })).toHaveLength(16)
     await userEvent.click(screen.getByRole('button', { name: 'Remix NEON DISTRICT N-9' }))
     expect(remixPreset).toHaveBeenCalledWith('neon-district-n9')
+  })
+
+  it('creates a random chip project from the dashboard', async () => {
+    const createRandomProject = vi.fn().mockResolvedValue(createProject('Random', 'random-1', 100))
+    render(
+      <MemoryRouter>
+        <ProjectDashboard
+          projects={[]}
+          presets={PRESET_CATALOG}
+          createProject={vi.fn()}
+          createRandomProject={createRandomProject}
+          remixPreset={vi.fn()}
+          duplicateProject={vi.fn()}
+          removeProject={vi.fn()}
+        />
+      </MemoryRouter>,
+    )
+
+    await userEvent.click(screen.getByRole('button', { name: 'Random Chip' }))
+
+    expect(createRandomProject).toHaveBeenCalled()
   })
 
   it('keeps existing project actions available', async () => {
@@ -77,6 +101,7 @@ describe('ProjectDashboard', () => {
           projects={[project]}
           presets={PRESET_CATALOG}
           createProject={vi.fn()}
+          createRandomProject={vi.fn()}
           remixPreset={vi.fn()}
           duplicateProject={duplicateProject}
           removeProject={removeProject}

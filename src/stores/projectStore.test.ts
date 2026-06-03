@@ -42,4 +42,16 @@ describe('project store', () => {
     expect(store.getState().projects.map((project) => project.id)).toEqual(['remix-1', 'remix-0'])
     expect(await repository.get(first.id)).toEqual(first)
   })
+
+  it('persists a deterministic random chip project and lists it first', async () => {
+    const repository = createMemoryRepository()
+    const store = createProjectStore(repository, () => 2000, () => 'random-seed')
+
+    const project = await store.getState().createRandom()
+
+    expect(project).toMatchObject({ id: 'random-seed', name: 'RANDOM CHIP RANDOM' })
+    expect(project.blocks.length).toBeGreaterThanOrEqual(6)
+    expect(store.getState().projects[0]).toEqual(project)
+    expect(await repository.get(project.id)).toEqual(project)
+  })
 })

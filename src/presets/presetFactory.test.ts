@@ -46,6 +46,17 @@ describe('createPresetProject', () => {
     expect(project.spec.brand).toBe('AURORA')
   })
 
+  it('materializes v2 hero sets through the preset factory', () => {
+    const project = createPresetProject('aurora-m5', 'v2-aurora', 400)
+    expect(project).toMatchObject({
+      id: 'v2-aurora',
+      name: 'AURORA M5',
+      theme: 'keynote',
+      die: { shape: 'rect' },
+    })
+    expect(project.spec.series).toBe('M5')
+  })
+
   it('creates independent aurora-c1 remixes', () => {
     const first = createPresetProject('aurora-c1', 'a', 100)
     const second = createPresetProject('aurora-c1', 'b', 200)

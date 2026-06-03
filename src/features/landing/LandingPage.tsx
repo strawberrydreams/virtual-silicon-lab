@@ -51,7 +51,7 @@ export function LandingPage({ projectsCount, presets, createProject, remixPreset
             </button>
             <button
               className="v2-button"
-              onClick={() => startPreset('aurora-c1')}
+              onClick={() => startPreset('aurora-m5')}
             >
               Start Hero Preset
             </button>

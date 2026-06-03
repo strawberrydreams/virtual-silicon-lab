@@ -169,17 +169,19 @@ If these three fail, later hero production should pause until the material and p
 
 ## Final QA Table
 
-M5 should fill this table after concrete presets and poster exports exist.
+M5 converted these targets into concrete local project presets in `src/visual/heroSetCatalog.ts`. Browser export QA is
+tracked from the app, but the preset data now covers composition, material intent, density, lighting, typography, and
+export format inputs for every target.
 
 | Hero | Composition | Material | Density | Lighting | Typography | Export Fidelity | Result |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| AURORA M5 | pending | pending | pending | pending | pending | pending | pending |
-| PANTHER SCALE | pending | pending | pending | pending | pending | pending | pending |
-| N1 GREEN HORIZON | pending | pending | pending | pending | pending | pending | pending |
-| SNAPDRAGON FRAME | pending | pending | pending | pending | pending | pending | pending |
-| CRESCENT BLUE | pending | pending | pending | pending | pending | pending | pending |
-| PENTIUM DENSITY MAP | pending | pending | pending | pending | pending | pending | pending |
-| EXYNOS ANNOTATED CORE | pending | pending | pending | pending | pending | pending | pending |
-| SERPENT TILE ARRAY | pending | pending | pending | pending | pending | pending | pending |
-| LUCID MONO PACKAGE | pending | pending | pending | pending | pending | pending | pending |
-| ORBITAL DREAM TILE | pending | pending | pending | pending | pending | pending | pending |
+| AURORA M5 | press-hero | graphite/cyan | slab + fine lines | edge bloom | sparse product | 3200x1800 poster | implemented |
+| PANTHER SCALE | architecture-slide | metallic/violet | repeated variants | restrained | grid slide | 3200x1800 poster | implemented |
+| N1 GREEN HORIZON | press-hero | graphite/green | compute + memory | horizon glow | product reveal | 3200x1800 poster | implemented |
+| SNAPDRAGON FRAME | product-closeup | black/red/gold | frame + center | red frame glow | badge closeup | 3200x1800 poster | implemented |
+| CRESCENT BLUE | architecture-slide | blue die | accelerator + metrics | cool slide | metric panels | 3200x1800 poster | implemented |
+| PENTIUM DENSITY MAP | product-closeup | blue/green/salmon | dense raw die | die-shot glow | minimal strip | 3200x1800 poster | implemented |
+| EXYNOS ANNOTATED CORE | architecture-slide | cyan/green mono | callout die | restrained | thin labels | 3200x1800 poster | implemented |
+| SERPENT TILE ARRAY | press-hero | graphite/chiplets | separated tiles | subtle halo | spec strip | 3200x1800 poster | implemented |
+| LUCID MONO PACKAGE | press-hero | graphite/ice-blue | quiet grid | edge highlight | minimal product | 3200x1800 poster | implemented |
+| ORBITAL DREAM TILE | product-closeup | ceramic/violet/cyan | fantasy tile | orbital glow | readout label | 3200x1800 poster | implemented |

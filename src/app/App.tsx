@@ -28,6 +28,7 @@ function DashboardRoute() {
       projects={store.projects}
       presets={PRESET_CATALOG}
       createProject={store.create}
+      createRandomProject={store.createRandom}
       remixPreset={store.remixPreset}
       duplicateProject={store.duplicate}
       removeProject={store.remove}
