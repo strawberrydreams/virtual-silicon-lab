@@ -43,4 +43,20 @@ describe('LandingPage', () => {
     expect(remixPreset).toHaveBeenCalledWith('aurora-c1')
     expect(screen.getByRole('link', { name: 'Open Projects (2)' })).toHaveAttribute('href', '/dashboard')
   })
+
+  it('shows a first-viewport chip product signal', () => {
+    render(
+      <MemoryRouter>
+        <LandingPage
+          projectsCount={0}
+          presets={PRESET_CATALOG}
+          createProject={vi.fn()}
+          remixPreset={vi.fn()}
+        />
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByRole('region', { name: 'Hero chip preview' })).toBeInTheDocument()
+    expect(screen.getByText('Press Image Lab')).toBeInTheDocument()
+  })
 })

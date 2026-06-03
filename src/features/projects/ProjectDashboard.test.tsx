@@ -23,6 +23,8 @@ describe('ProjectDashboard', () => {
 
     expect(screen.getByText('No local projects yet')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Back to Lab' })).toHaveAttribute('href', '/')
+    expect(screen.getByRole('region', { name: 'Preset remix surface' })).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Local project surface' })).toBeInTheDocument()
   })
 
   it('creates a blank project from the dashboard', async () => {

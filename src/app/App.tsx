@@ -6,6 +6,8 @@ import { LandingPage } from '../features/landing/LandingPage'
 import { ProjectDashboard } from '../features/projects/ProjectDashboard'
 import { PRESET_CATALOG } from '../presets/presetCatalog'
 import { ProjectStoreProvider, useProjectStore } from '../stores/projectStoreContext'
+import { PAGE_THEME_NAMES, pageThemes, resolvePageTheme, type PageThemeName } from '../visual/pageThemes'
+import { usePageTheme } from '../visual/pageThemeStore'
 
 function LandingRoute() {
   const store = useProjectStore()
@@ -80,14 +82,51 @@ function EditorRoute() {
 }
 
 export function App() {
+  const [themeName, setTheme] = usePageTheme()
+  const pageTheme = resolvePageTheme(themeName)
+
   return (
-    <ProjectStoreProvider>
-      <Routes>
-        <Route path="/" element={<LandingRoute />} />
-        <Route path="/dashboard" element={<DashboardRoute />} />
-        <Route path="/editor/:projectId" element={<EditorRoute />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </ProjectStoreProvider>
+    <div
+      className="app-shell"
+      data-page-theme={pageTheme.name}
+      data-testid="app-shell"
+      style={pageTheme.cssVariables}
+    >
+      <ThemeSwitcher current={themeName} onChange={setTheme} />
+      <ProjectStoreProvider>
+        <Routes>
+          <Route path="/" element={<LandingRoute />} />
+          <Route path="/dashboard" element={<DashboardRoute />} />
+          <Route path="/editor/:projectId" element={<EditorRoute />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </ProjectStoreProvider>
+    </div>
+  )
+}
+
+function ThemeSwitcher({
+  current,
+  onChange,
+}: {
+  current: PageThemeName
+  onChange: (theme: PageThemeName) => void
+}) {
+  return (
+    <div aria-label="Page theme controls" className="page-theme-switcher" role="group">
+      {PAGE_THEME_NAMES.map((themeName) => (
+        <button
+          aria-label={`${pageThemes[themeName].label} theme`}
+          aria-pressed={themeName === current}
+          className="page-theme-switcher__button"
+          key={themeName}
+          onClick={() => onChange(themeName)}
+          title={`${pageThemes[themeName].label} theme`}
+          type="button"
+        >
+          {pageThemes[themeName].label.slice(0, 1)}
+        </button>
+      ))}
+    </div>
   )
 }
