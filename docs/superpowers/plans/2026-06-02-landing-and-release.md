@@ -98,9 +98,9 @@ Stop after Task 3 for the requested checkpoint.
 - Modify: `src/features/projects/ProjectDashboard.test.tsx`
 - Modify as needed: `src/features/projects/PresetCard.tsx`
 
-- [ ] Make local projects, preset remixing, and empty states clearer and denser.
-- [ ] Preserve direct create/open/duplicate/delete flows.
-- [ ] Keep card dimensions stable across names and themes.
+- [x] Make local projects, preset remixing, and empty states clearer and denser.
+- [x] Preserve direct create/open/duplicate/delete flows.
+- [x] Keep card dimensions stable across names and themes.
 
 ### Task 6: Add README and static deployment config
 

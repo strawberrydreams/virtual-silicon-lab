@@ -14,12 +14,12 @@ const SHAPE_CLASSES: Record<PresetMetadata['dieShape'], string> = {
 
 export function PresetCard({ preset, onRemix }: Props) {
   return (
-    <article className="border border-slate-700 bg-slate-950/80 p-4">
+    <article className="flex min-h-[24rem] flex-col border border-slate-700 bg-slate-950/80 p-4">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-[10px] uppercase tracking-[0.32em] text-slate-500">{preset.theme}</p>
-          <h3 className="mt-2 text-sm font-semibold tracking-[0.18em] text-slate-100">{preset.name}</h3>
-          <p className="mt-2 text-xs text-slate-400">{preset.tagline}</p>
+          <h3 className="mt-2 min-h-10 text-sm font-semibold tracking-[0.18em] text-slate-100">{preset.name}</h3>
+          <p className="mt-2 min-h-10 text-xs text-slate-400">{preset.tagline}</p>
         </div>
         {preset.featured && <span className="text-[10px] uppercase tracking-[0.2em] text-amber-300">Hero</span>}
       </div>
@@ -36,7 +36,7 @@ export function PresetCard({ preset, onRemix }: Props) {
         {preset.dieShape} / {preset.theme}
       </p>
       <button
-        className="mt-4 border px-3 py-2 text-xs uppercase tracking-[0.2em]"
+        className="mt-auto border px-3 py-2 text-xs uppercase tracking-[0.2em]"
         onClick={() => onRemix(preset.id)}
         style={{ borderColor: preset.accent, color: preset.accent }}
       >

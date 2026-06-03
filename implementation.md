@@ -518,3 +518,17 @@
 - M6 랜딩은 마케팅 페이지가 아니라 즉시 시작 표면으로 설계했다. 첫 화면에서 바로 빈 프로젝트 또는 검증된 프리셋 remix로 들어갈 수 있다.
 - dashboard를 `/dashboard`로 분리했지만 project store와 create/remix/open 흐름은 그대로 유지한다. 저장 schema와 repository 변경은 없다.
 - 실제 Konva thumbnail을 landing에 여러 개 마운트하지 않았다. dashboard preview와 같은 이유로 첫 로딩 비용을 낮추고, 편집/출력 품질은 기존 editor/export stage에서 보장한다.
+
+## 2026-06-03 - Milestone 6 Task 5 대시보드 polish
+
+### 구현
+
+- dashboard header에 `/`로 돌아가는 `Back to Lab` 링크, local project count, preset count를 추가했다.
+- local project empty state를 추가하고, 빈 상태에서도 blank project 시작 흐름을 유지했다.
+- preset card와 project card에 안정적인 최소 높이를 부여해 이름/태그라인 길이에 따라 버튼 위치가 흔들리지 않도록 했다.
+- 기존 create/open/duplicate/delete/remix command는 유지하고, project action 버튼에는 project name을 포함한 accessible label을 추가했다.
+
+### 결정 및 트레이드오프
+
+- dashboard는 랜딩보다 반복 사용 화면에 가깝기 때문에 hero식 장식보다 스캔 가능한 밀도를 우선했다.
+- preset preview는 계속 CSS summary card로 유지한다. M4 결정처럼 6개 Konva stage를 dashboard에 올리는 비용은 release polish 범위에서 피한다.
