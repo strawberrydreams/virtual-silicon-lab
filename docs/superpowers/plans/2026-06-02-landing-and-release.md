@@ -123,18 +123,18 @@ Stop after Task 3 for the requested checkpoint.
 - Modify: `implementation.md`
 - Modify: `CLAUDE.md`
 
-- [ ] New visitor can place first block within 30 seconds.
-- [ ] Refresh and revisit preserve projects.
-- [ ] A preset produces a presentation-ready poster in under five minutes.
-- [ ] Desktop Chrome interaction remains smooth during the 150-block smoke test.
-- [ ] Console errors remain empty except favicon 404 if still present.
-- [ ] `npm test` and `npm run build` pass.
+- [x] New visitor can place first block within 30 seconds.
+- [x] Refresh and revisit preserve projects.
+- [x] A preset produces a presentation-ready poster in under five minutes.
+- [x] Desktop Chrome interaction remains smooth during the 150-block smoke test.
+- [x] Console errors remain empty except favicon 404 if still present.
+- [x] `npm test` and `npm run build` pass.
 
 ### Task 8: Final code review and merge recommendation
 
-- [ ] Review `main..feature/foundation-slice` for bugs, regressions, missing tests, and release blockers.
-- [ ] Fix blockers or record non-blocking follow-up items.
-- [ ] If clean, recommend merging `feature/foundation-slice` into `main`.
+- [x] Review `main..feature/foundation-slice` for bugs, regressions, missing tests, and release blockers.
+- [x] Fix blockers or record non-blocking follow-up items.
+- [x] If clean, recommend merging `feature/foundation-slice` into `main`.
 
 ## Requirement Coverage
 

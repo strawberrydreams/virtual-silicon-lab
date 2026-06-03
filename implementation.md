@@ -545,3 +545,45 @@
 
 - GIF를 지금 생성하지 않았다. M6의 최종 QA와 코드 리뷰 전에는 UI가 추가로 바뀔 수 있으므로, 릴리스 안정화 후 캡처하는 편이 README와 실제 제품의 불일치를 줄인다.
 - Netlify 설정만 추가했다. Vercel/GitHub Pages도 가능하지만 하나의 구체적 static hosting config를 두는 것이 release handoff에 충분하고, README에 다른 호스팅에서는 unknown route를 `index.html`로 fallback해야 한다고 명시했다.
+
+## 2026-06-03 - Milestone 6 Task 7 최종 desktop Chrome QA
+
+### 검증 방법
+
+- Vite dev server를 `http://127.0.0.1:5173/`로 띄운 뒤, 임시 headless Google Chrome을 CDP로 조작했다.
+- in-app Browser MCP 도구와 Playwright 패키지는 현재 환경에 없어서, Node TCP 기반의 임시 CDP 스크립트(`/private/tmp/vsl-cdp-qa.mjs`, 커밋하지 않음)를 사용했다.
+- Chrome headless DOM dump로 `/` landing과 `/dashboard` route가 실제 Chrome에서 렌더되는 것도 별도 확인했다.
+
+### QA 결과
+
+- 새 방문자 flow: landing `Start Blank` → editor 진입 → `CPU` 첫 블록 배치까지 `186ms`로 30초 기준 통과.
+- refresh/revisit: editor route reload 후 `CPU` 블록이 유지되어 IndexedDB/local project persistence 기준 통과.
+- preset poster flow: landing의 `AURORA C-1` featured preset → editor 진입 → `Download Poster PNG` 클릭으로 poster PNG 다운로드 확인.
+- poster raster: `/tmp/vsl-downloads/AURORA C-1 — Consciousness Processor-poster.png`를 `sips`로 확인했고 `3200x1800`이다.
+- 150-block smoke: editor에서 `CPU`/`DreamSynth` 버튼 클릭을 총 150회 실행했고, Chrome session이 멈추지 않고 완료했다.
+- console/log: 앱 예외는 없었다. CDP log에는 favicon 404에 해당하는 `Failed to load resource: the server responded with a status of 404 (Not Found)` 1건만 있었다.
+- 자동 검증: `npm test` = 30 files / 102 tests 통과. `npm run build` 통과. Vite 500kB chunk 경고는 기존 Konva bundle 경고로 유지.
+
+### 한계
+
+- QA는 headless Chrome 기반이다. 실제 눈으로 보는 수동 Chrome QA는 이전 M3/M4/M5에서 수행했고, 이번 Task 7은 release gate를 자동화로 재확인했다.
+- demo GIF는 아직 캡처하지 않았다. `docs/demo/README.md`에 최종 캡처 위치를 남겼다.
+
+## 2026-06-03 - Milestone 6 Task 8 최종 코드 리뷰
+
+### 리뷰 결과
+
+- `main..feature/foundation-slice` 범위를 release-blocker 관점으로 리뷰했다.
+- 라우팅, project store, repository fallback, editor store, geometry clamp, export stages, fake spec form, preset factory, landing/dashboard 변경을 확인했다.
+- release-blocking 버그는 발견하지 못했다.
+
+### 비차단 follow-up
+
+- 존재하지 않는 `/editor/:projectId`로 직접 진입하면 현재 `Loading project...`가 계속 표시된다. 정상 start/remix/open flow에서는 발생하지 않으며 MVP merge blocker는 아니지만, post-merge polish로 "project not found" 상태와 dashboard 복귀 CTA를 추가하는 것이 좋다.
+- production bundle은 여전히 Vite 기본 500kB warning을 넘는다. Konva/editor/export를 한 번에 묶은 결과이며 현재 기능·QA에는 문제 없지만, post-MVP에서 route-level code splitting 후보로 남긴다.
+
+### 머지 판단
+
+- M0~M6 MVP acceptance를 충족했다.
+- 브랜치 `feature/foundation-slice`는 코드 리뷰 기준 merge 가능 상태로 판단한다.
+- 사용자 지시에 따라 아직 `main`으로 병합하지 않는다.
