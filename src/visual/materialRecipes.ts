@@ -37,7 +37,6 @@ export type ChipMaterialRecipe = {
     opacity: number
   }
   readoutLabel: {
-    color: string
     subduedColor: string
   }
 }
@@ -90,7 +89,6 @@ export function resolveMaterialRecipe(theme: StyleTheme): ChipMaterialRecipe {
       opacity: Math.max(0.12, tokens.glow.shadowOpacity * 0.35),
     },
     readoutLabel: {
-      color: tokens.text,
       subduedColor: tokens.gridColor,
     },
   }

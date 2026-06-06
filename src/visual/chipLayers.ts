@@ -23,7 +23,15 @@ export type ChipLayerModel = {
 }
 
 function center(block: Block): [number, number] {
-  return [block.x + block.w / 2, block.y + block.h / 2]
+  // Konva renders each block as a Group at (block.x, block.y) rotated about that
+  // origin, so the visual center is the local midpoint (w/2, h/2) rotated by the
+  // block rotation — not the axis-aligned midpoint.
+  const radians = (block.rotation * Math.PI) / 180
+  const cos = Math.cos(radians)
+  const sin = Math.sin(radians)
+  const localX = block.w / 2
+  const localY = block.h / 2
+  return [block.x + localX * cos - localY * sin, block.y + localX * sin + localY * cos]
 }
 
 function blockSurface(block: Block): Extract<ChipLayer, { kind: 'blockSurface' }> {

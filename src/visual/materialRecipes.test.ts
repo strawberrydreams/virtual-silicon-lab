@@ -15,7 +15,7 @@ describe('resolveMaterialRecipe', () => {
       expect(recipe.metalTrace.color).toMatch(/^#/)
       expect(recipe.microTile.opacity).toBeGreaterThan(0)
       expect(recipe.glassGlow.opacity).toBeGreaterThan(0)
-      expect(recipe.readoutLabel.color).toMatch(/^#/)
+      expect(recipe.readoutLabel.subduedColor).toMatch(/^#/)
       expect(resolveMaterialRecipe(theme)).toEqual(recipe)
     }
   })

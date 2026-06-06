@@ -69,6 +69,29 @@ describe('buildChipLayers', () => {
     expect(layers.traces[0].points.length).toBe(4)
   })
 
+  it('routes traces through the rotated visual center of a block', () => {
+    const base = createHeroChip('rotated', 1)
+    const project: Project = {
+      ...base,
+      die: { shape: 'rect', width: 600, height: 400, background: 'rotate-trace' },
+      blocks: [
+        { id: 'a', type: 'CPU', category: 'real', x: 40, y: 40, w: 80, h: 40, rotation: 0, zIndex: 0 },
+        { id: 'b', type: 'GPU', category: 'real', x: 100, y: 100, w: 80, h: 40, rotation: 90, zIndex: 1 },
+      ],
+    }
+
+    const layers = buildChipLayers(project)
+    const trace = layers.traces[0]
+
+    // Block "a" is unrotated: center is (x + w/2, y + h/2) = (80, 60).
+    expect(trace.points[0]).toBeCloseTo(80)
+    expect(trace.points[1]).toBeCloseTo(60)
+    // Block "b" is rotated 90deg about its (x, y) origin, so the local center
+    // (40, 20) maps to (x - 20, y + 40) = (80, 140), not (140, 120).
+    expect(trace.points[2]).toBeCloseTo(80)
+    expect(trace.points[3]).toBeCloseTo(140)
+  })
+
   it('supports a 150-block smoke layout without dropping render layers', () => {
     const project = manyBlockProject(150)
     const originalBlocks = structuredClone(project.blocks)

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, Navigate, Route, Routes, useParams } from 'react-router-dom'
 import type { Project } from '../domain/project'
 import { EditorPage } from '../features/editor/EditorPage'
@@ -42,6 +42,7 @@ function EditorRoute() {
   const store = useProjectStore()
   const [, setPageTheme] = usePageTheme()
   const [project, setProject] = useState<Project | 'loading' | 'missing'>('loading')
+  const autoThemedProjectId = useRef<string | null>(null)
 
   useEffect(() => {
     let active = true
@@ -57,6 +58,11 @@ function EditorRoute() {
 
   useEffect(() => {
     if (project === 'loading' || project === 'missing') return
+    // Opening a hero set switches the page theme once to its intended "fit".
+    // We apply it at most once per project id so a manual switch afterward sticks
+    // instead of snapping back on the next re-render.
+    if (autoThemedProjectId.current === project.id) return
+    autoThemedProjectId.current = project.id
     const heroSet = resolveHeroSetForProject(project)
     if (heroSet) setPageTheme(heroSet.pageTheme)
   }, [project, setPageTheme])

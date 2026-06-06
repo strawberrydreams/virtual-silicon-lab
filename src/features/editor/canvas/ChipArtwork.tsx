@@ -7,7 +7,7 @@ import { resolveTheme, type ThemeTokens } from '../../../themes/themeTokens'
 import { dieFillProps } from '../../../themes/gradients'
 import { resolveBlockStyle, resolveDecorationStyle } from '../../../themes/resolveStyle'
 import { buildChipLayers, type ChipLayerModel } from '../../../visual/chipLayers'
-import { resolveMaterialRecipe } from '../../../visual/materialRecipes'
+import { resolveMaterialRecipe, type ChipMaterialRecipe } from '../../../visual/materialRecipes'
 import { blockMicroLines, blockVisual, memoryCells } from './blockTexture'
 import { blocksByZIndex } from './artworkLayout'
 
@@ -61,7 +61,7 @@ function PackageShape({
 }: {
   die: Die
   layers: ChipLayerModel
-  recipe: ReturnType<typeof resolveMaterialRecipe>
+  recipe: ChipMaterialRecipe
 }) {
   const { bounds, radius } = layers.package
   if (die.shape === 'circle') {
@@ -109,10 +109,17 @@ function GridLines({ die, tokens }: { die: Die; tokens: ThemeTokens }) {
   return <Group clipFunc={(context) => clipForDie(context, die)}>{lines}</Group>
 }
 
-function MaterialMicroLayer({ project, layers }: { project: Project; layers: ChipLayerModel }) {
-  const recipe = resolveMaterialRecipe(project.theme)
+function MaterialMicroLayer({
+  die,
+  layers,
+  recipe,
+}: {
+  die: Die
+  layers: ChipLayerModel
+  recipe: ChipMaterialRecipe
+}) {
   return (
-    <Group clipFunc={(context) => clipForDie(context, project.die)} listening={false}>
+    <Group clipFunc={(context) => clipForDie(context, die)} listening={false}>
       {layers.microTiles.map((tile) => (
         <Rect
           key={tile.id}
@@ -130,9 +137,9 @@ function MaterialMicroLayer({ project, layers }: { project: Project; layers: Chi
   )
 }
 
-function TraceLayer({ project, layers }: { project: Project; layers: ChipLayerModel }) {
+function TraceLayer({ die, layers }: { die: Die; layers: ChipLayerModel }) {
   return (
-    <Group clipFunc={(context) => clipForDie(context, project.die)} listening={false}>
+    <Group clipFunc={(context) => clipForDie(context, die)} listening={false}>
       {layers.traces.map((trace) => (
         <Line
           key={trace.id}
@@ -150,10 +157,10 @@ function TraceLayer({ project, layers }: { project: Project; layers: ChipLayerMo
   )
 }
 
-function GlassGlowOverlay({ project, layers }: { project: Project; layers: ChipLayerModel }) {
+function GlassGlowOverlay({ die, layers }: { die: Die; layers: ChipLayerModel }) {
   const glow = layers.glowOverlay
   return (
-    <Group clipFunc={(context) => clipForDie(context, project.die)} listening={false}>
+    <Group clipFunc={(context) => clipForDie(context, die)} listening={false}>
       <Rect
         x={glow.bounds.x}
         y={glow.bounds.y}
@@ -169,8 +176,7 @@ function GlassGlowOverlay({ project, layers }: { project: Project; layers: ChipL
   )
 }
 
-function ReadoutLayer({ project, layers }: { project: Project; layers: ChipLayerModel }) {
-  const recipe = resolveMaterialRecipe(project.theme)
+function ReadoutLayer({ layers, recipe }: { layers: ChipLayerModel; recipe: ChipMaterialRecipe }) {
   return (
     <Group listening={false}>
       {layers.readoutLabels.map((label) => (
@@ -325,9 +331,9 @@ export function ChipArtwork({ project, renderMode = 'full', renderBlock }: Props
     <>
       {renderMode === 'full' ? <PackageShape die={project.die} layers={layers} recipe={recipe} /> : null}
       <DieShape die={project.die} tokens={tokens} />
-      <MaterialMicroLayer project={project} layers={layers} />
+      <MaterialMicroLayer die={project.die} layers={layers} recipe={recipe} />
       <GridLines die={project.die} tokens={tokens} />
-      <TraceLayer project={project} layers={layers} />
+      <TraceLayer die={project.die} layers={layers} />
       {blocksByZIndex(project.blocks).map((block) => (
         <Fragment key={block.id}>
           {renderBlock?.(block, tokens) ?? <BlockArtwork block={block} tokens={tokens} />}
@@ -346,8 +352,8 @@ export function ChipArtwork({ project, renderMode = 'full', renderBlock }: Props
         .map((decoration) => (
           <DecorationNode key={decoration.id} decoration={decoration} tokens={tokens} />
         ))}
-      <ReadoutLayer project={project} layers={layers} />
-      <GlassGlowOverlay project={project} layers={layers} />
+      <ReadoutLayer layers={layers} recipe={recipe} />
+      <GlassGlowOverlay die={project.die} layers={layers} />
     </>
   )
 }

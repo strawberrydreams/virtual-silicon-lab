@@ -94,6 +94,7 @@ describe('ProjectDashboard', () => {
   it('keeps existing project actions available', async () => {
     const duplicateProject = vi.fn().mockResolvedValue(createProject('Copy', 'copy-1', 100))
     const removeProject = vi.fn().mockResolvedValue(undefined)
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
     const project = createProject('Dream Chip', 'project-1', 100)
     render(
       <MemoryRouter>
@@ -115,5 +116,31 @@ describe('ProjectDashboard', () => {
 
     expect(duplicateProject).toHaveBeenCalledWith('project-1')
     expect(removeProject).toHaveBeenCalledWith('project-1')
+    confirmSpy.mockRestore()
+  })
+
+  it('does not delete a project when the confirmation is declined', async () => {
+    const removeProject = vi.fn().mockResolvedValue(undefined)
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false)
+    const project = createProject('Dream Chip', 'project-1', 100)
+    render(
+      <MemoryRouter>
+        <ProjectDashboard
+          projects={[project]}
+          presets={PRESET_CATALOG}
+          createProject={vi.fn()}
+          createRandomProject={vi.fn()}
+          remixPreset={vi.fn()}
+          duplicateProject={vi.fn()}
+          removeProject={removeProject}
+        />
+      </MemoryRouter>,
+    )
+
+    await userEvent.click(screen.getByRole('button', { name: 'Delete Dream Chip' }))
+
+    expect(confirmSpy).toHaveBeenCalled()
+    expect(removeProject).not.toHaveBeenCalled()
+    confirmSpy.mockRestore()
   })
 })

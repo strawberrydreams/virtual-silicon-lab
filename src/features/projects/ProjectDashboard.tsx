@@ -40,6 +40,23 @@ export function ProjectDashboard({
     navigate(`/editor/${project.id}`)
   }
 
+  async function duplicate(project: Project) {
+    try {
+      await duplicateProject(project.id)
+    } catch (error) {
+      console.error('[dashboard] failed to duplicate project', error)
+    }
+  }
+
+  async function confirmRemove(project: Project) {
+    if (!window.confirm(`Delete "${project.name}"? This cannot be undone.`)) return
+    try {
+      await removeProject(project.id)
+    } catch (error) {
+      console.error('[dashboard] failed to delete project', error)
+    }
+  }
+
   return (
     <main className="v2-page v2-dashboard">
       <div className="v2-dashboard__inner">
@@ -104,8 +121,8 @@ export function ProjectDashboard({
                   <p>{project.blocks.length} blocks / {project.decorations.length} decorations</p>
                   <div>
                     <button aria-label={`Open ${project.name}`} onClick={() => navigate(`/editor/${project.id}`)}>Open</button>
-                    <button aria-label={`Duplicate ${project.name}`} onClick={() => duplicateProject(project.id)}>Duplicate</button>
-                    <button aria-label={`Delete ${project.name}`} onClick={() => removeProject(project.id)}>Delete</button>
+                    <button aria-label={`Duplicate ${project.name}`} onClick={() => duplicate(project)}>Duplicate</button>
+                    <button aria-label={`Delete ${project.name}`} onClick={() => confirmRemove(project)}>Delete</button>
                   </div>
                 </article>
               ))}

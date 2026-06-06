@@ -26,6 +26,21 @@ describe('posterCompositions', () => {
     }
   })
 
+  it('never overlaps the chip region with the spec column in any format', () => {
+    // A wide die fills the chip region width exactly, so an overlapping spec
+    // column would render specs on top of the silicon instead of clean space.
+    const wideDie: Die = { shape: 'rect', width: 980, height: 600, background: 'wide' }
+    for (const format of POSTER_FORMATS) {
+      const { chip, specs } = resolvePosterComposition(wideDie, format.id)
+      const separated =
+        chip.x + chip.width <= specs.x ||
+        specs.x + specs.width <= chip.x ||
+        chip.y + chip.height <= specs.y ||
+        specs.y + specs.height <= chip.y
+      expect(separated).toBe(true)
+    }
+  })
+
   it('uses distinct chip placement intent by format', () => {
     const pressHero = resolvePosterComposition(die, 'press-hero')
     const architecture = resolvePosterComposition(die, 'architecture-slide')

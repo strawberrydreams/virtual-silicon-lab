@@ -1,8 +1,7 @@
+import { type BlockBlueprint, type DecorationBlueprint, materializeDecoration } from '../domain/blueprint'
 import {
   CURRENT_SCHEMA_VERSION,
-  type Block,
   type BlockType,
-  type Decoration,
   type Die,
   type DieShape,
   type FakeSpec,
@@ -23,13 +22,6 @@ export type HeroSetId =
   | 'serpent-tile-array'
   | 'lucid-mono-package'
   | 'orbital-dream-tile'
-
-type BlockBlueprint = Omit<Block, 'id' | 'zIndex'>
-type DecorationBlueprint =
-  | Omit<Extract<Decoration, { kind: 'neonLine' }>, 'id' | 'zIndex'>
-  | Omit<Extract<Decoration, { kind: 'warningMark' }>, 'id' | 'zIndex'>
-  | Omit<Extract<Decoration, { kind: 'label' }>, 'id' | 'zIndex'>
-  | Omit<Extract<Decoration, { kind: 'sciFiObject' }>, 'id' | 'zIndex'>
 
 export type HeroSetDefinition = {
   id: HeroSetId
@@ -446,11 +438,6 @@ export function resolveHeroSetForProject(project: Project): HeroSetDefinition | 
   const heroSetId = project.die.background.startsWith('v2-') ? project.die.background.slice(3) : ''
   if (!isHeroSetId(heroSetId)) return undefined
   return HERO_SET_CATALOG.find((candidate) => candidate.id === heroSetId)
-}
-
-function materializeDecoration(blueprint: DecorationBlueprint, id: string, zIndex: number): Decoration {
-  if (blueprint.kind === 'neonLine') return { ...blueprint, points: [...blueprint.points], id, zIndex }
-  return { ...blueprint, id, zIndex }
 }
 
 export function createHeroSetProject(heroSetId: HeroSetId, id: string, now: number): Project {

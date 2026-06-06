@@ -1,22 +1,8 @@
+import { type BlockBlueprint, type DecorationBlueprint, materializeDecoration } from '../domain/blueprint'
 import { createHeroChip } from '../domain/heroChip'
-import {
-  CURRENT_SCHEMA_VERSION,
-  type Block,
-  type Decoration,
-  type Die,
-  type FakeSpec,
-  type Project,
-  type StyleTheme,
-} from '../domain/project'
+import { CURRENT_SCHEMA_VERSION, type Die, type FakeSpec, type Project, type StyleTheme } from '../domain/project'
 import { createHeroSetProject, isHeroSetId } from '../visual/heroSetCatalog'
 import type { BasePresetId, PresetId } from './presetCatalog'
-
-type BlockBlueprint = Omit<Block, 'id' | 'zIndex'>
-type DecorationBlueprint =
-  | Omit<Extract<Decoration, { kind: 'neonLine' }>, 'id' | 'zIndex'>
-  | Omit<Extract<Decoration, { kind: 'warningMark' }>, 'id' | 'zIndex'>
-  | Omit<Extract<Decoration, { kind: 'label' }>, 'id' | 'zIndex'>
-  | Omit<Extract<Decoration, { kind: 'sciFiObject' }>, 'id' | 'zIndex'>
 
 type PresetBlueprint = {
   name: string
@@ -162,11 +148,6 @@ const BLUEPRINTS: Record<Exclude<BasePresetId, 'aurora-c1'>, PresetBlueprint> = 
       description: 'Measures emotion at unsafe clock speeds.',
     },
   },
-}
-
-function materializeDecoration(blueprint: DecorationBlueprint, id: string, zIndex: number): Decoration {
-  if (blueprint.kind === 'neonLine') return { ...blueprint, points: [...blueprint.points], id, zIndex }
-  return { ...blueprint, id, zIndex }
 }
 
 export function createPresetProject(

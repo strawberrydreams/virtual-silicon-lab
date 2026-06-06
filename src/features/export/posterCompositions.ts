@@ -61,9 +61,11 @@ export function resolvePosterComposition(die: Die, format: PosterFormat = 'press
         format,
         label: 'Product Closeup',
         backgroundBand: { x: 0, y: 0, width: LOGICAL_POSTER_WIDTH, height: LOGICAL_POSTER_HEIGHT },
-        chip: chipRegion(die, { x: 140, y: 134, width: 1080, height: 720 }),
+        // Chip region right edge (120 + 1000) clears the spec column (x: 1180)
+        // so a wide die's package never renders under the spec typography.
+        chip: chipRegion(die, { x: 120, y: 130, width: 1000, height: 720 }),
         title: { x: 96, y: 58, width: 880, height: 120 },
-        specs: { x: 1170, y: 92, width: 360, height: 520 },
+        specs: { x: 1180, y: 92, width: 360, height: 520 },
         footer: { x: 96, y: 820, width: 920, height: 40 },
         titleSize: 38,
         specSize: 17,

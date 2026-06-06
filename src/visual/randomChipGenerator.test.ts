@@ -19,4 +19,22 @@ describe('generateRandomChipProject', () => {
       expect(clampBlockToDie(block, project.die)).toEqual({ x: block.x, y: block.y, w: block.w, h: block.h })
     }
   })
+
+  it('keeps blocks inside every die shape across many seeds', () => {
+    const shapesSeen = new Set<string>()
+    for (let index = 0; index < 200; index += 1) {
+      const project = generateRandomChipProject(`seed-${index}`, `project-${index}`, 100)
+      shapesSeen.add(project.die.shape)
+      for (const block of project.blocks) {
+        const clamped = clampBlockToDie(block, project.die)
+        expect({ x: clamped.x, y: clamped.y, w: clamped.w, h: clamped.h }).toEqual({
+          x: block.x,
+          y: block.y,
+          w: block.w,
+          h: block.h,
+        })
+      }
+    }
+    expect(shapesSeen).toEqual(new Set(['rect', 'square', 'circle', 'hexagon']))
+  })
 })
