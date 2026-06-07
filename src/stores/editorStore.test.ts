@@ -60,6 +60,30 @@ describe('editor store commands', () => {
     expect(store.getState().selectedBlockId).toBe('new-block')
   })
 
+  it('uses global reflow when a new block is added from the studio kit', () => {
+    const base = createProject('Studio Chip', 'studio-chip', 100)
+    const store = createEditorStore(
+      {
+        ...base,
+        die: { shape: 'rect', width: 480, height: 320, background: 'studio-test' },
+        blocks: [
+          { ...buildBlock(base, 'CPU', 'cpu'), x: 32, y: 32, w: 112, h: 72, rotation: 0, zIndex: 0 },
+          { ...buildBlock(base, 'GPU', 'gpu'), x: 160, y: 32, w: 112, h: 72, rotation: 0, zIndex: 1 },
+        ],
+      },
+      { createId: fixedIds('new-dream') },
+    )
+
+    store.getState().addBlock('DreamSynth')
+
+    const blocks = store.getState().project.blocks
+    const cpu = blocks.find((block) => block.id === 'cpu')!
+    const added = blocks.find((block) => block.id === 'new-dream')!
+    expect(added).toBeDefined()
+    expect(store.getState().selectedBlockId).toBe('new-dream')
+    expect(cpu.x !== 32 || cpu.y !== 32).toBe(true)
+  })
+
   it('transforms a block and clamps it to the die', () => {
     const store = createEditorStore(seededProject())
     store.getState().transformBlock('cpu', { x: 5000, y: 5000, w: 100, h: 100, rotation: 30 })
@@ -68,6 +92,27 @@ describe('editor store commands', () => {
     expect(rotatedCorners(moved).every((corner) => corner.x <= 960 + 1e-6)).toBe(true)
     expect(rotatedCorners(moved).every((corner) => corner.y <= 640 + 1e-6)).toBe(true)
     expect(moved.rotation).toBe(30)
+  })
+
+  it('uses global reflow when a block is moved without resizing or rotating', () => {
+    const base = createProject('Studio Chip', 'studio-chip', 100)
+    const store = createEditorStore({
+      ...base,
+      die: { shape: 'rect', width: 480, height: 320, background: 'studio-test' },
+      blocks: [
+        { ...buildBlock(base, 'CPU', 'cpu'), x: 32, y: 32, w: 112, h: 72, rotation: 0, zIndex: 0 },
+        { ...buildBlock(base, 'GPU', 'gpu'), x: 160, y: 32, w: 112, h: 72, rotation: 0, zIndex: 1 },
+        { ...buildBlock(base, 'QuantumMemory', 'mem'), x: 32, y: 160, w: 240, h: 64, rotation: 0, zIndex: 2 },
+      ],
+    })
+
+    store.getState().transformBlock('mem', { x: 20, y: 20, w: 240, h: 64, rotation: 0 })
+
+    const blocks = store.getState().project.blocks
+    const memory = blocks.find((block) => block.id === 'mem')!
+    const cpu = blocks.find((block) => block.id === 'cpu')!
+    expect(memory.y).toBeLessThan(80)
+    expect(cpu.x !== 32 || cpu.y !== 32).toBe(true)
   })
 
   it('clamps a rotated rectangular transform by its actual corners', () => {
@@ -170,6 +215,96 @@ describe('editorStore visual commands', () => {
     expect(store.getState().selectedBlockId).toBeNull()
     store.getState().undo()
     expect(store.getState().project.decorations).toHaveLength(0)
+  })
+
+  it('adds a studio sticker and can undo it', () => {
+    const store = createEditorStore(createProject('p', 'p1', 0), { createId: fixedIds('sticker-1') })
+
+    store.getState().addSticker()
+
+    expect(store.getState().project.studio.stickers).toEqual([
+      {
+        id: 'sticker-1',
+        kind: 'badge',
+        x: 480,
+        y: 320,
+        text: 'STAR',
+        color: '#f9f4ff',
+        rotation: -8,
+      },
+    ])
+    expect(store.getState().selectedStudioItem).toEqual({ kind: 'sticker', id: 'sticker-1' })
+    store.getState().undo()
+    expect(store.getState().project.studio.stickers).toHaveLength(0)
+    expect(store.getState().selectedStudioItem).toBeNull()
+  })
+
+  it('adds a studio spray and can undo it', () => {
+    const store = createEditorStore(createProject('p', 'p1', 0), { createId: fixedIds('spray-1') })
+
+    store.getState().addSpray()
+
+    expect(store.getState().project.studio.sprays).toEqual([
+      {
+        id: 'spray-1',
+        x: 384,
+        y: 256,
+        radius: 154,
+        color: '#ff70dc',
+        intensity: 0.72,
+      },
+    ])
+    expect(store.getState().selectedStudioItem).toEqual({ kind: 'spray', id: 'spray-1' })
+    store.getState().undo()
+    expect(store.getState().project.studio.sprays).toHaveLength(0)
+    expect(store.getState().selectedStudioItem).toBeNull()
+  })
+
+  it('moves and updates selected studio items', () => {
+    const store = createEditorStore(createProject('p', 'p1', 0), {
+      createId: fixedIds('sticker-1', 'spray-1'),
+    })
+
+    store.getState().addSticker()
+    store.getState().transformSticker('sticker-1', { x: 24, y: 48, rotation: 12 })
+    store.getState().updateSticker('sticker-1', { text: 'WOW', color: '#ffcc00' })
+    store.getState().addSpray()
+    store.getState().transformSpray('spray-1', { x: 900, y: 620, radius: 90 })
+    store.getState().updateSpray('spray-1', { intensity: 0.35, color: '#00ffee' })
+
+    expect(store.getState().project.studio.stickers[0]).toMatchObject({
+      x: 24,
+      y: 48,
+      rotation: 12,
+      text: 'WOW',
+      color: '#ffcc00',
+    })
+    expect(store.getState().project.studio.sprays[0]).toMatchObject({
+      x: 900,
+      y: 620,
+      radius: 90,
+      intensity: 0.35,
+      color: '#00ffee',
+    })
+  })
+
+  it('deletes and duplicates selected studio items', () => {
+    const store = createEditorStore(createProject('p', 'p1', 0), {
+      createId: fixedIds('sticker-1', 'sticker-copy', 'spray-1'),
+    })
+
+    store.getState().addSticker()
+    store.getState().duplicateSelected()
+    expect(store.getState().project.studio.stickers.map((sticker) => sticker.id)).toEqual([
+      'sticker-1',
+      'sticker-copy',
+    ])
+    expect(store.getState().selectedStudioItem).toEqual({ kind: 'sticker', id: 'sticker-copy' })
+
+    store.getState().addSpray()
+    store.getState().deleteSelected()
+    expect(store.getState().project.studio.sprays).toHaveLength(0)
+    expect(store.getState().selectedStudioItem).toBeNull()
   })
 
   it('sets a copied spec and can undo it', () => {
