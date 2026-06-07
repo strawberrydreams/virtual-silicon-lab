@@ -1,4 +1,5 @@
 import { CURRENT_SCHEMA_VERSION, type Project } from './project'
+import { createDefaultStudioState } from './studioDefaults'
 
 export function createProject(
   name: string,
@@ -25,5 +26,6 @@ export function createProject(
       features: ['Lucid cache'],
       description: 'A processor for synthetic dreams.',
     },
+    studio: createDefaultStudioState(),
   }
 }

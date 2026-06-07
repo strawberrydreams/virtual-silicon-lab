@@ -1,4 +1,4 @@
-export const CURRENT_SCHEMA_VERSION = 1 as const
+export const CURRENT_SCHEMA_VERSION = 2 as const
 
 export type DieShape = 'rect' | 'square' | 'circle' | 'hexagon'
 export type StyleTheme = 'neon' | 'retro' | 'military' | 'keynote' | 'mono'
@@ -61,6 +61,43 @@ export type FakeSpec = {
   description: string
 }
 
+export type StudioContactStyle = 'minimal' | 'balanced' | 'dense'
+
+export type StudioTileSettings = {
+  detailDensity: number
+  routeIntensity: number
+  contactStyle: StudioContactStyle
+}
+
+export type StudioSpray = {
+  id: string
+  x: number
+  y: number
+  radius: number
+  color: string
+  intensity: number
+}
+
+export type StudioStickerKind = 'badge' | 'label' | 'mascot' | 'warning'
+
+export type StudioSticker = {
+  id: string
+  kind: StudioStickerKind
+  x: number
+  y: number
+  text: string
+  color: string
+  rotation: number
+}
+
+export type StudioState = {
+  layoutMode: 'global-reflow'
+  detailMode: 'semi-auto'
+  tileSettings: StudioTileSettings
+  sprays: StudioSpray[]
+  stickers: StudioSticker[]
+}
+
 export type Project = {
   schemaVersion: typeof CURRENT_SCHEMA_VERSION
   id: string
@@ -72,4 +109,5 @@ export type Project = {
   decorations: Decoration[]
   theme: StyleTheme
   spec: FakeSpec
+  studio: StudioState
 }

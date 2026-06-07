@@ -26,7 +26,7 @@ function validProject(id: string) {
 }
 
 describe('migrateProject', () => {
-  it('accepts a schema version 1 project', () => {
+  it('migrates a schema version 1 project into schema version 2 studio defaults', () => {
     const project = migrateProject({
       schemaVersion: 1,
       id: 'project-1',
@@ -49,7 +49,60 @@ describe('migrateProject', () => {
       },
     })
 
-    expect(project.schemaVersion).toBe(1)
+    expect(project.schemaVersion).toBe(2)
+    expect(project.studio).toEqual({
+      layoutMode: 'global-reflow',
+      detailMode: 'semi-auto',
+      tileSettings: {
+        detailDensity: 0.62,
+        routeIntensity: 0.58,
+        contactStyle: 'balanced',
+      },
+      sprays: [],
+      stickers: [],
+    })
+  })
+
+  it('preserves a valid schema version 2 studio project', () => {
+    const project = migrateProject({
+      ...validProject('studio-1'),
+      schemaVersion: 2,
+      studio: {
+        layoutMode: 'global-reflow',
+        detailMode: 'semi-auto',
+        tileSettings: {
+          detailDensity: 0.9,
+          routeIntensity: 0.8,
+          contactStyle: 'dense',
+        },
+        sprays: [
+          {
+            id: 'spray-1',
+            x: 40,
+            y: 48,
+            radius: 120,
+            color: '#ff70dc',
+            intensity: 0.75,
+          },
+        ],
+        stickers: [
+          {
+            id: 'sticker-1',
+            kind: 'badge',
+            x: 120,
+            y: 80,
+            text: 'STAR',
+            color: '#f9f4ff',
+            rotation: -8,
+          },
+        ],
+      },
+    })
+
+    expect(project.schemaVersion).toBe(2)
+    expect(project.studio.sprays).toHaveLength(1)
+    expect(project.studio.stickers).toHaveLength(1)
+    expect(project.studio.tileSettings.contactStyle).toBe('dense')
   })
 
   it('rejects data without a supported schema version', () => {

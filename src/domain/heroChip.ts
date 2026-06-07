@@ -1,4 +1,5 @@
 import { CURRENT_SCHEMA_VERSION, type Block, type Decoration, type Project } from './project'
+import { createDefaultStudioState } from './studioDefaults'
 
 const DIE = 720
 
@@ -34,5 +35,6 @@ export function createHeroChip(id: string = crypto.randomUUID(), now = Date.now(
       features: ['Dream Coherence Engine', 'Lucid Cache', 'Empathy Co-processor'],
       description: '의식을 88코어로 병렬 처리합니다. 부작용으로 가끔 자아를 가집니다.',
     },
+    studio: createDefaultStudioState(),
   }
 }

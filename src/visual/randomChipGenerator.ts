@@ -7,6 +7,7 @@ import {
   type Project,
   type StyleTheme,
 } from '../domain/project'
+import { createDefaultStudioState } from '../domain/studioDefaults'
 
 const REAL_BLOCKS: BlockType[] = ['CPU', 'GPU', 'DSP', 'SRAM', 'Cache', 'DAC', 'ADC', 'PLL', 'IO', 'USB']
 const FANTASY_BLOCKS: BlockType[] = ['EmotionEngine', 'DreamSynth', 'QuantumMemory', 'ConsciousnessProcessor', 'RealityDistortionUnit', 'TimeCore']
@@ -106,5 +107,6 @@ export function generateRandomChipProject(seed: string, id: string = crypto.rand
       features: ['Seeded Layout', 'Procedural Blocks', 'Local JSON Project'],
       description: 'A deterministic random chip layout for fast visual exploration.',
     },
+    studio: createDefaultStudioState(),
   }
 }

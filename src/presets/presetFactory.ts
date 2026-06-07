@@ -1,6 +1,7 @@
 import { type BlockBlueprint, type DecorationBlueprint, materializeDecoration } from '../domain/blueprint'
 import { createHeroChip } from '../domain/heroChip'
 import { CURRENT_SCHEMA_VERSION, type Die, type FakeSpec, type Project, type StyleTheme } from '../domain/project'
+import { createDefaultStudioState } from '../domain/studioDefaults'
 import { createHeroSetProject, isHeroSetId } from '../visual/heroSetCatalog'
 import type { BasePresetId, PresetId } from './presetCatalog'
 
@@ -172,5 +173,6 @@ export function createPresetProject(
     ),
     theme: blueprint.theme,
     spec: { ...blueprint.spec, features: [...blueprint.spec.features] },
+    studio: createDefaultStudioState(),
   }
 }

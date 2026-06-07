@@ -1,4 +1,5 @@
 import { type BlockBlueprint, type DecorationBlueprint, materializeDecoration } from '../domain/blueprint'
+import { createDefaultStudioState } from '../domain/studioDefaults'
 import {
   CURRENT_SCHEMA_VERSION,
   type BlockType,
@@ -457,5 +458,6 @@ export function createHeroSetProject(heroSetId: HeroSetId, id: string, now: numb
     ),
     theme: hero.theme,
     spec: { ...hero.spec, features: [...hero.spec.features] },
+    studio: createDefaultStudioState(),
   }
 }

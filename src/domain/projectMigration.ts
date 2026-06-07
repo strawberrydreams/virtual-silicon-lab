@@ -1,11 +1,15 @@
 import { CURRENT_SCHEMA_VERSION, type Project } from './project'
+import { cloneStudioState, createDefaultStudioState } from './studioDefaults'
+
+const SUPPORTED_SCHEMA_VERSIONS = new Set([1, CURRENT_SCHEMA_VERSION])
 
 export function migrateProject(value: unknown): Project {
   if (
     typeof value !== 'object' ||
     value === null ||
     !('schemaVersion' in value) ||
-    value.schemaVersion !== CURRENT_SCHEMA_VERSION
+    typeof value.schemaVersion !== 'number' ||
+    !SUPPORTED_SCHEMA_VERSIONS.has(value.schemaVersion)
   ) {
     throw new Error('Unsupported project schema')
   }
@@ -25,7 +29,32 @@ export function migrateProject(value: unknown): Project {
     throw new Error('Corrupt project record')
   }
 
-  return value as Project
+  const project = value as Project
+  if (candidate.schemaVersion === CURRENT_SCHEMA_VERSION) {
+    const studio = validateStudio(candidate.studio) ? cloneStudioState(candidate.studio) : createDefaultStudioState()
+    return { ...project, schemaVersion: CURRENT_SCHEMA_VERSION, studio }
+  }
+
+  return { ...project, schemaVersion: CURRENT_SCHEMA_VERSION, studio: createDefaultStudioState() }
+}
+
+function validateStudio(value: unknown): value is Project['studio'] {
+  if (typeof value !== 'object' || value === null) return false
+  const studio = value as Record<string, unknown>
+  const tileSettings = studio.tileSettings as Record<string, unknown> | undefined
+  return (
+    studio.layoutMode === 'global-reflow' &&
+    studio.detailMode === 'semi-auto' &&
+    typeof tileSettings === 'object' &&
+    tileSettings !== null &&
+    typeof tileSettings.detailDensity === 'number' &&
+    typeof tileSettings.routeIntensity === 'number' &&
+    (tileSettings.contactStyle === 'minimal' ||
+      tileSettings.contactStyle === 'balanced' ||
+      tileSettings.contactStyle === 'dense') &&
+    Array.isArray(studio.sprays) &&
+    Array.isArray(studio.stickers)
+  )
 }
 
 // Tolerant batch migration for repository `list()`: one unreadable record must
