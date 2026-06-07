@@ -6,7 +6,9 @@ import { BlockPalette } from './BlockPalette'
 import { EditorToolbar } from './EditorToolbar'
 import { ChipStage } from './canvas/ChipStage'
 import { FakeSpecForm } from '../specs/FakeSpecForm'
+import { GeneratedSpecPanel } from '../specs/GeneratedSpecPanel'
 import { ExportPanel } from '../export/ExportPanel'
+import { StudioInspector } from './StudioInspector'
 import { useAutosave } from './useAutosave'
 import { useEditorShortcuts } from './useEditorShortcuts'
 
@@ -38,7 +40,11 @@ export function EditorPage({ project, persist }: Props) {
       aria-label="Chip editor workspace"
       className="editor-shell min-h-screen bg-[var(--v2-bg)] text-[var(--v2-text)]"
     >
-      <BlockPalette addBlock={state.addBlock} />
+      <BlockPalette
+        addBlock={state.addBlock}
+        addSticker={state.addSticker}
+        addSpray={state.addSpray}
+      />
       <section aria-label="Product analysis stage" className="editor-center" role="region">
         <div className="editor-command-deck">
           <div>
@@ -57,7 +63,7 @@ export function EditorPage({ project, persist }: Props) {
           theme={state.project.theme}
           canUndo={state.past.length > 0}
           canRedo={state.future.length > 0}
-          hasSelection={state.selectedBlockId !== null}
+          hasSelection={state.selectedBlockId !== null || state.selectedStudioItem !== null}
           onSetDieShape={state.setDieShape}
           onSetTheme={state.setTheme}
           onAddDecoration={state.addDecoration}
@@ -73,12 +79,23 @@ export function EditorPage({ project, persist }: Props) {
           <ChipStage
             project={state.project}
             selectedBlockId={state.selectedBlockId}
+            selectedStudioItem={state.selectedStudioItem}
             onSelectBlock={state.select}
+            onSelectStudioItem={state.selectStudioItem}
             onTransformBlock={state.transformBlock}
+            onTransformSticker={state.transformSticker}
+            onTransformSpray={state.transformSpray}
           />
         </div>
       </section>
       <aside aria-label="Inspector and export rail" className="editor-side-rail editor-inspector-rail">
+        <GeneratedSpecPanel project={state.project} />
+        <StudioInspector
+          project={state.project}
+          selectedStudioItem={state.selectedStudioItem}
+          onUpdateSticker={state.updateSticker}
+          onUpdateSpray={state.updateSpray}
+        />
         <FakeSpecForm spec={state.project.spec} onChange={state.setSpec} />
         <ExportPanel project={state.project} />
       </aside>

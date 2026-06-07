@@ -7,7 +7,9 @@ import type { BlockTransform } from '../../../stores/editorStore'
 import { zoomAtPointer } from './viewport'
 import { resolveTheme } from '../../../themes/themeTokens'
 import { editorStageFrameSize, editorStageSize } from './artworkLayout'
-import { BlockArtwork, ChipArtwork } from './ChipArtwork'
+import { BlockArtwork, ChipArtwork, StudioSprayArtwork, StudioStickerArtwork } from './ChipArtwork'
+import type { SelectedStudioItem, SprayTransform, StickerTransform } from '../../../stores/editorStore'
+import { reflowBlocksGlobally } from '../../../studio/globalReflow'
 
 const GRID = 16
 const MIN_BLOCK = 48
@@ -15,25 +17,46 @@ const MIN_BLOCK = 48
 type Props = {
   project: Project
   selectedBlockId: string | null
+  selectedStudioItem: SelectedStudioItem | null
   onSelectBlock: (id: string | null) => void
+  onSelectStudioItem: (item: SelectedStudioItem | null) => void
   onTransformBlock: (id: string, transform: BlockTransform) => void
+  onTransformSticker: (id: string, transform: StickerTransform) => void
+  onTransformSpray: (id: string, transform: SprayTransform) => void
 }
 
-export function ChipStage({ project, selectedBlockId, onSelectBlock, onTransformBlock }: Props) {
+export function ChipStage({
+  project,
+  selectedBlockId,
+  selectedStudioItem,
+  onSelectBlock,
+  onSelectStudioItem,
+  onTransformBlock,
+  onTransformSticker,
+  onTransformSpray,
+}: Props) {
   const [scale, setScale] = useState(1)
   const [position, setPosition] = useState({ x: 0, y: 0 })
+  const [previewBlocks, setPreviewBlocks] = useState<Project['blocks'] | null>(null)
   const blockRefs = useRef(new Map<string, Konva.Group>())
+  const studioRefs = useRef(new Map<string, Konva.Group>())
   const transformerRef = useRef<Konva.Transformer>(null)
   const tokens = resolveTheme(project.theme)
 
   useEffect(() => {
     const transformer = transformerRef.current
     if (transformer === null) return
-    const node = selectedBlockId ? blockRefs.current.get(selectedBlockId) : undefined
+    const studioKey = selectedStudioItem ? `${selectedStudioItem.kind}:${selectedStudioItem.id}` : null
+    const node = selectedBlockId
+      ? blockRefs.current.get(selectedBlockId)
+      : studioKey
+        ? studioRefs.current.get(studioKey)
+        : undefined
     transformer.nodes(node ? [node] : [])
     transformer.getLayer()?.batchDraw()
-  }, [selectedBlockId, project.blocks])
+  }, [selectedBlockId, selectedStudioItem, project.blocks, project.studio.stickers, project.studio.sprays])
 
+  const displayProject = previewBlocks === null ? project : { ...project, blocks: previewBlocks }
   const stageSize = editorStageSize(project.die)
   const frameSize = editorStageFrameSize(project.die)
 
@@ -82,7 +105,7 @@ export function ChipStage({ project, selectedBlockId, onSelectBlock, onTransform
         >
           <Layer>
             <ChipArtwork
-              project={project}
+              project={displayProject}
               renderBlock={(block, tokens) => (
                 <BlockArtwork
                   block={block}
@@ -96,8 +119,28 @@ export function ChipStage({ project, selectedBlockId, onSelectBlock, onTransform
                     draggable: true,
                     onClick: () => onSelectBlock(block.id),
                     onTap: () => onSelectBlock(block.id),
-                    onDragStart: () => onSelectBlock(block.id),
+                    onDragStart: () => {
+                      onSelectBlock(block.id)
+                      setPreviewBlocks(project.blocks)
+                    },
+                    onDragMove: (event) => {
+                      if (project.studio.layoutMode !== 'global-reflow') return
+                      const blocks = project.blocks.map((candidate) =>
+                        candidate.id === block.id
+                          ? { ...candidate, x: event.target.x(), y: event.target.y() }
+                          : candidate,
+                      )
+                      setPreviewBlocks(
+                        reflowBlocksGlobally({
+                          blocks,
+                          die: project.die,
+                          targetBlockId: block.id,
+                          target: { x: event.target.x(), y: event.target.y() },
+                        }),
+                      )
+                    },
                     onDragEnd: (event) => {
+                      setPreviewBlocks(null)
                       onTransformBlock(block.id, {
                         x: snapToGrid(event.target.x(), GRID),
                         y: snapToGrid(event.target.y(), GRID),
@@ -117,6 +160,76 @@ export function ChipStage({ project, selectedBlockId, onSelectBlock, onTransform
                         y: node.y(),
                         w: Math.max(MIN_BLOCK, block.w * scaleX),
                         h: Math.max(MIN_BLOCK, block.h * scaleY),
+                        rotation: node.rotation(),
+                      })
+                    },
+                  }}
+                />
+              )}
+              renderStudioSpray={(spray) => (
+                <StudioSprayArtwork
+                  spray={spray}
+                  selected={selectedStudioItem?.kind === 'spray' && selectedStudioItem.id === spray.id}
+                  groupRef={(node) => {
+                    const key = `spray:${spray.id}`
+                    if (node) studioRefs.current.set(key, node)
+                    else studioRefs.current.delete(key)
+                  }}
+                  groupProps={{
+                    draggable: true,
+                    onClick: () => onSelectStudioItem({ kind: 'spray', id: spray.id }),
+                    onTap: () => onSelectStudioItem({ kind: 'spray', id: spray.id }),
+                    onDragStart: () => onSelectStudioItem({ kind: 'spray', id: spray.id }),
+                    onDragEnd: (event) => {
+                      onTransformSpray(spray.id, {
+                        x: snapToGrid(event.target.x(), GRID),
+                        y: snapToGrid(event.target.y(), GRID),
+                        radius: spray.radius,
+                      })
+                    },
+                    onTransformEnd: (event) => {
+                      const node = event.target as Konva.Group
+                      const scaleX = node.scaleX()
+                      const scaleY = node.scaleY()
+                      node.scaleX(1)
+                      node.scaleY(1)
+                      onTransformSpray(spray.id, {
+                        x: node.x(),
+                        y: node.y(),
+                        radius: Math.max(24, spray.radius * Math.max(scaleX, scaleY)),
+                      })
+                    },
+                  }}
+                />
+              )}
+              renderStudioSticker={(sticker) => (
+                <StudioStickerArtwork
+                  sticker={sticker}
+                  selected={selectedStudioItem?.kind === 'sticker' && selectedStudioItem.id === sticker.id}
+                  groupRef={(node) => {
+                    const key = `sticker:${sticker.id}`
+                    if (node) studioRefs.current.set(key, node)
+                    else studioRefs.current.delete(key)
+                  }}
+                  groupProps={{
+                    draggable: true,
+                    onClick: () => onSelectStudioItem({ kind: 'sticker', id: sticker.id }),
+                    onTap: () => onSelectStudioItem({ kind: 'sticker', id: sticker.id }),
+                    onDragStart: () => onSelectStudioItem({ kind: 'sticker', id: sticker.id }),
+                    onDragEnd: (event) => {
+                      onTransformSticker(sticker.id, {
+                        x: snapToGrid(event.target.x(), GRID),
+                        y: snapToGrid(event.target.y(), GRID),
+                        rotation: sticker.rotation,
+                      })
+                    },
+                    onTransformEnd: (event) => {
+                      const node = event.target as Konva.Group
+                      node.scaleX(1)
+                      node.scaleY(1)
+                      onTransformSticker(sticker.id, {
+                        x: node.x(),
+                        y: node.y(),
                         rotation: node.rotation(),
                       })
                     },

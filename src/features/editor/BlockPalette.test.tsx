@@ -24,20 +24,44 @@ const ALL_BLOCK_TYPES: BlockType[] = [
 ]
 
 describe('BlockPalette', () => {
-  it('renders every v1 block type', () => {
-    render(<BlockPalette addBlock={vi.fn()} />)
+  function renderPalette(actions = {}) {
+    return {
+      addBlock: vi.fn(),
+      addSticker: vi.fn(),
+      addSpray: vi.fn(),
+      ...actions,
+    }
+  }
 
+  it('renders every v1 block type', () => {
+    const actions = renderPalette()
+    render(<BlockPalette {...actions} />)
+
+    expect(screen.getByRole('heading', { name: 'Tiles / Stickers / Spray' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Sticker badge' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Spray glow' })).toBeInTheDocument()
     for (const type of ALL_BLOCK_TYPES) {
       expect(screen.getByRole('button', { name: type })).toBeInTheDocument()
     }
   })
 
   it('adds newly exposed fantasy blocks', async () => {
-    const addBlock = vi.fn()
-    render(<BlockPalette addBlock={addBlock} />)
+    const actions = renderPalette()
+    render(<BlockPalette {...actions} />)
 
     await userEvent.click(screen.getByRole('button', { name: 'ConsciousnessProcessor' }))
 
-    expect(addBlock).toHaveBeenCalledWith('ConsciousnessProcessor')
+    expect(actions.addBlock).toHaveBeenCalledWith('ConsciousnessProcessor')
+  })
+
+  it('adds studio decorations from the creation rail', async () => {
+    const actions = renderPalette()
+    render(<BlockPalette {...actions} />)
+
+    await userEvent.click(screen.getByRole('button', { name: 'Sticker badge' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Spray glow' }))
+
+    expect(actions.addSticker).toHaveBeenCalledOnce()
+    expect(actions.addSpray).toHaveBeenCalledOnce()
   })
 })

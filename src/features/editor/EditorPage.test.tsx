@@ -20,6 +20,8 @@ describe('EditorPage', () => {
     expect(screen.getByRole('region', { name: 'Product analysis stage' })).toBeInTheDocument()
     expect(screen.getByRole('complementary', { name: 'Inspector and export rail' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'AURORA C-1 — Consciousness Processor' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Generated Fake Spec' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Sticker / Spray Controls' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Delete' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Download Poster PNG' })).toBeInTheDocument()
   })

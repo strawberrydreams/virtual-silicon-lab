@@ -2,7 +2,7 @@ import { Fragment } from 'react'
 import type { ComponentProps, ReactNode } from 'react'
 import type Konva from 'konva'
 import { Circle, Group, Line, Rect, RegularPolygon, Text } from 'react-konva'
-import type { Block, Decoration, Die, Project } from '../../../domain/project'
+import type { Block, Decoration, Die, Project, StudioSpray, StudioSticker } from '../../../domain/project'
 import { resolveTheme, type ThemeTokens } from '../../../themes/themeTokens'
 import { dieFillProps } from '../../../themes/gradients'
 import { resolveBlockStyle, resolveDecorationStyle } from '../../../themes/resolveStyle'
@@ -176,6 +176,141 @@ function GlassGlowOverlay({ die, layers }: { die: Die; layers: ChipLayerModel })
   )
 }
 
+export function StudioSprayArtwork({
+  spray,
+  selected = false,
+  groupRef,
+  groupProps,
+}: {
+  spray: StudioSpray
+  selected?: boolean
+  groupRef?: (node: Konva.Group | null) => void
+  groupProps?: ComponentProps<typeof Group>
+}) {
+  return (
+    <Group
+      ref={groupRef}
+      name="studio-spray"
+      x={spray.x}
+      y={spray.y}
+      listening={groupProps !== undefined}
+      {...groupProps}
+    >
+      <Circle
+        radius={spray.radius}
+        fill={spray.color}
+        opacity={Math.min(0.72, spray.intensity * 0.62)}
+        shadowColor={spray.color}
+        shadowBlur={Math.max(16, spray.radius * 0.34)}
+        globalCompositeOperation="screen"
+      />
+      {selected ? (
+        <Circle radius={spray.radius} stroke="#f9f4ff" strokeWidth={2} dash={[6, 6]} opacity={0.86} />
+      ) : null}
+    </Group>
+  )
+}
+
+function StudioSprayLayer({
+  project,
+  renderStudioSpray,
+}: {
+  project: Project
+  renderStudioSpray?: (spray: StudioSpray) => ReactNode
+}) {
+  if (project.studio.sprays.length === 0) return null
+  return (
+    <Group clipFunc={(context) => clipForDie(context, project.die)} listening={renderStudioSpray !== undefined}>
+      {project.studio.sprays.map((spray) => (
+        <Fragment key={spray.id}>{renderStudioSpray?.(spray) ?? <StudioSprayArtwork spray={spray} />}</Fragment>
+      ))}
+    </Group>
+  )
+}
+
+export function StudioStickerArtwork({
+  sticker,
+  selected = false,
+  groupRef,
+  groupProps,
+}: {
+  sticker: StudioSticker
+  selected?: boolean
+  groupRef?: (node: Konva.Group | null) => void
+  groupProps?: ComponentProps<typeof Group>
+}) {
+  const isBadge = sticker.kind === 'badge' || sticker.kind === 'mascot'
+  const width = isBadge ? 52 : Math.max(76, sticker.text.length * 9 + 18)
+  const height = isBadge ? 52 : 32
+  return (
+    <Group
+      ref={groupRef}
+      name="studio-sticker"
+      x={sticker.x}
+      y={sticker.y}
+      rotation={sticker.rotation}
+      listening={groupProps !== undefined}
+      {...groupProps}
+    >
+      {isBadge ? (
+        <Circle
+          radius={26}
+          fill={sticker.color}
+          stroke={selected ? '#ffffff' : '#0b1020'}
+          strokeWidth={selected ? 3 : 2}
+          shadowColor="#000000"
+          shadowBlur={12}
+          shadowOpacity={0.28}
+        />
+      ) : (
+        <Rect
+          x={-width / 2}
+          y={-height / 2}
+          width={width}
+          height={height}
+          cornerRadius={4}
+          fill={sticker.color}
+          stroke={selected ? '#ffffff' : '#0b1020'}
+          strokeWidth={selected ? 3 : 2}
+          shadowColor="#000000"
+          shadowBlur={12}
+          shadowOpacity={0.28}
+        />
+      )}
+      <Text
+        x={-width / 2}
+        y={-7}
+        width={width}
+        align="center"
+        text={sticker.text}
+        fontSize={isBadge ? 16 : 12}
+        fontStyle="bold"
+        letterSpacing={isBadge ? 0 : 1}
+        fill="#0b1020"
+      />
+    </Group>
+  )
+}
+
+function StudioStickerLayer({
+  project,
+  renderStudioSticker,
+}: {
+  project: Project
+  renderStudioSticker?: (sticker: StudioSticker) => ReactNode
+}) {
+  if (project.studio.stickers.length === 0) return null
+  return (
+    <Group clipFunc={(context) => clipForDie(context, project.die)} listening={renderStudioSticker !== undefined}>
+      {project.studio.stickers.map((sticker) => (
+        <Fragment key={sticker.id}>
+          {renderStudioSticker?.(sticker) ?? <StudioStickerArtwork sticker={sticker} />}
+        </Fragment>
+      ))}
+    </Group>
+  )
+}
+
 function ReadoutLayer({ layers, recipe }: { layers: ChipLayerModel; recipe: ChipMaterialRecipe }) {
   return (
     <Group listening={false}>
@@ -321,9 +456,17 @@ type Props = {
   project: Project
   renderMode?: 'full' | 'die-only'
   renderBlock?: (block: Block, tokens: ThemeTokens) => ReactNode
+  renderStudioSpray?: (spray: StudioSpray) => ReactNode
+  renderStudioSticker?: (sticker: StudioSticker) => ReactNode
 }
 
-export function ChipArtwork({ project, renderMode = 'full', renderBlock }: Props) {
+export function ChipArtwork({
+  project,
+  renderMode = 'full',
+  renderBlock,
+  renderStudioSpray,
+  renderStudioSticker,
+}: Props) {
   const tokens = resolveTheme(project.theme)
   const recipe = resolveMaterialRecipe(project.theme)
   const layers = buildChipLayers(project)
@@ -352,6 +495,8 @@ export function ChipArtwork({ project, renderMode = 'full', renderBlock }: Props
         .map((decoration) => (
           <DecorationNode key={decoration.id} decoration={decoration} tokens={tokens} />
         ))}
+      <StudioSprayLayer project={project} renderStudioSpray={renderStudioSpray} />
+      <StudioStickerLayer project={project} renderStudioSticker={renderStudioSticker} />
       <ReadoutLayer layers={layers} recipe={recipe} />
       <GlassGlowOverlay die={project.die} layers={layers} />
     </>

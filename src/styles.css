@@ -787,3 +787,119 @@ button {
   background: linear-gradient(135deg, rgba(18, 70, 88, 0.78), rgba(7, 22, 32, 0.92));
   color: var(--v2-accent-2);
 }
+
+.editor-studio-tools {
+  margin-top: 1.25rem;
+}
+
+.generated-spec-panel {
+  border: 1px solid rgba(91, 213, 240, 0.16);
+  background:
+    radial-gradient(circle at 20% 0%, rgba(91, 213, 240, 0.1), transparent 52%),
+    rgba(3, 10, 16, 0.74);
+  padding: 0.95rem;
+}
+
+.generated-spec-panel h2 {
+  margin: 0.25rem 0 0;
+  color: var(--v2-text);
+  font-size: 0.92rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.generated-spec-panel p {
+  margin: 0.8rem 0 0;
+  color: var(--v2-muted);
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
+.generated-spec-panel__metrics {
+  display: grid;
+  gap: 0.55rem;
+  margin-top: 0.9rem;
+}
+
+.generated-spec-panel__metric {
+  display: grid;
+  grid-template-columns: 5rem 1fr 2rem;
+  align-items: center;
+  gap: 0.55rem;
+  color: var(--v2-text);
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.generated-spec-panel__metric span {
+  color: var(--v2-muted);
+}
+
+.generated-spec-panel__metric strong {
+  text-align: right;
+}
+
+.generated-spec-panel__bar {
+  height: 0.45rem;
+  border: 1px solid rgba(91, 213, 240, 0.18);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.generated-spec-panel__bar div {
+  height: 100%;
+  background: linear-gradient(90deg, var(--v2-accent), var(--v2-accent-2));
+}
+
+.generated-spec-panel__features {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.85rem;
+}
+
+.generated-spec-panel__features span {
+  border: 1px solid rgba(91, 213, 240, 0.18);
+  color: var(--v2-accent-2);
+  padding: 0.28rem 0.42rem;
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.studio-item-inspector {
+  border: 1px solid rgba(91, 213, 240, 0.16);
+  background:
+    linear-gradient(180deg, rgba(91, 213, 240, 0.07), transparent 42%),
+    rgba(3, 10, 16, 0.68);
+  padding: 0.95rem;
+}
+
+.studio-item-inspector h2 {
+  margin: 0.25rem 0 0;
+  color: var(--v2-text);
+  font-size: 0.86rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.studio-item-inspector__empty {
+  margin: 0.75rem 0 0;
+  color: var(--v2-muted);
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
+.studio-item-inspector__fields {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 0.85rem;
+}
+
+.studio-item-inspector__pair {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0.55rem;
+}
