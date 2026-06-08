@@ -12,7 +12,7 @@ describe('PresetCard', () => {
     render(<PresetCard preset={preset} onRemix={remix} />)
 
     expect(screen.getByText('NEON DISTRICT N-9')).toBeInTheDocument()
-    expect(screen.getByText('hexagon / neon')).toBeInTheDocument()
+    expect(screen.getByText('hexagon / Cyan gradient')).toBeInTheDocument()
     expect(screen.getByText('EmotionEngine')).toBeInTheDocument()
 
     await userEvent.click(screen.getByRole('button', { name: 'Remix NEON DISTRICT N-9' }))

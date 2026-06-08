@@ -5,6 +5,8 @@ import type {
   DieShape,
   FakeSpec,
   Project,
+  StudioColorPaint,
+  StudioColorTarget,
   StudioSpray,
   StudioSticker,
   StudioStickerKind,
@@ -63,7 +65,9 @@ export type EditorState = {
   transformSpray: (id: string, transform: SprayTransform) => void
   updateSticker: (id: string, patch: Partial<Pick<StudioSticker, 'kind' | 'text' | 'color' | 'rotation'>>) => void
   updateSpray: (id: string, patch: Partial<Pick<StudioSpray, 'color' | 'intensity' | 'radius' | 'blend'>>) => void
+  updateBlockVisual: (id: string, patch: Partial<Pick<Block, 'colorOverride' | 'imageDataUrl'>>) => void
   setTileSettings: (patch: Partial<StudioTileSettings>) => void
+  setColorPaint: (target: StudioColorTarget, paint: StudioColorPaint) => void
   deleteSelected: () => void
   duplicateSelected: () => void
   bringForward: () => void
@@ -364,6 +368,18 @@ export function createEditorStore(initialProject: Project, options: Options = {}
         )
       },
 
+      updateBlockVisual(id, patch) {
+        const { project } = get()
+        commit(
+          replaceBlocks(
+            project,
+            project.blocks.map((block) => (block.id === id ? { ...block, ...patch } : block)),
+          ),
+          {},
+          `update-block-visual:${id}`,
+        )
+      },
+
       setTileSettings(patch) {
         const { project } = get()
         const tile = project.studio.tileSettings
@@ -378,6 +394,24 @@ export function createEditorStore(initialProject: Project, options: Options = {}
           { ...project, studio: { ...project.studio, tileSettings: next } },
           {},
           'set-tile-settings',
+        )
+      },
+
+      setColorPaint(target, paint) {
+        const { project } = get()
+        commit(
+          {
+            ...project,
+            studio: {
+              ...project.studio,
+              colorSettings: {
+                ...project.studio.colorSettings,
+                [target]: { ...paint },
+              },
+            },
+          },
+          {},
+          `set-color-paint:${target}`,
         )
       },
 

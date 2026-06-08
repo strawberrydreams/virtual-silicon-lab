@@ -2,6 +2,8 @@ import { useNavigate } from 'react-router-dom'
 import { Link } from 'react-router-dom'
 import type { Project } from '../../domain/project'
 import type { PresetId, PresetMetadata } from '../../presets/presetCatalog'
+import { MiniChipPreview } from './MiniChipPreview'
+import { chipFinishLabel } from '../../visual/themeFinish'
 import { PresetCard } from './PresetCard'
 
 type Props = {
@@ -71,7 +73,7 @@ export function ProjectDashboard({
           </div>
           <div className="v2-action-row">
             <Link className="v2-button v2-button--muted" to="/">
-              Back to Lab
+              Lab Home
             </Link>
             <button className="v2-button v2-button--primary" onClick={startProject}>
               New Project
@@ -116,7 +118,12 @@ export function ProjectDashboard({
             <div className="v2-project-grid">
               {projects.map((project) => (
                 <article className="v2-project-card" key={project.id}>
-                  <p className="v2-meta">{project.die.shape} / {project.theme}</p>
+                  <MiniChipPreview
+                    shape={project.die.shape}
+                    blocks={project.blocks.map((block) => block.type)}
+                    label={`${project.name} render preview`}
+                  />
+                  <p className="v2-meta">{project.die.shape} / {chipFinishLabel(project.theme)}</p>
                   <h2>{project.name}</h2>
                   <p>{project.blocks.length} blocks / {project.decorations.length} decorations</p>
                   <div>

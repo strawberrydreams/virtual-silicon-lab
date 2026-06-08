@@ -31,9 +31,10 @@ describe('GeneratedSpecPanel', () => {
 
     render(<GeneratedSpecPanel project={project} />)
 
-    expect(screen.getByRole('heading', { name: 'Generated Fake Spec' })).toBeInTheDocument()
-    expect(screen.getByText('Fantasy')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Generated Spec' })).toBeInTheDocument()
+    expect(screen.getByText('Signal')).toBeInTheDocument()
     expect(screen.getByText('Style')).toBeInTheDocument()
     expect(screen.getByText('Sticker-tuned signal layer')).toBeInTheDocument()
+    expect(screen.queryByText(/fake|fantasy|impossible/i)).not.toBeInTheDocument()
   })
 })

@@ -18,6 +18,7 @@ type OrderedBlock = {
 }
 
 type PackRegion = { x: number; y: number; width: number; height: number }
+type Zone = PackRegion & { id: 'nw' | 'ne' | 'sw' | 'se' }
 
 type FitExtents = {
   minX: number
@@ -37,14 +38,29 @@ type PlacedBlock = {
 
 export function reflowBlocksGlobally({ blocks, die, targetBlockId, target }: ReflowInput): Block[] {
   const region = packRegion(die)
+  const zones = packZones(region)
+  const buckets = new Map<Zone['id'], OrderedBlock[]>()
+  for (const zone of zones) buckets.set(zone.id, [])
 
-  const ordered = blocks
+  blocks
     .map((block): OrderedBlock => {
       if (block.id === targetBlockId) return { block, sortX: target.x, sortY: target.y }
       return { block, sortX: block.x, sortY: block.y }
     })
     .slice()
     .sort((a: OrderedBlock, b: OrderedBlock) => a.sortY - b.sortY || a.sortX - b.sortX || a.block.zIndex - b.block.zIndex)
+    .forEach((item) => {
+      const zone = nearestZone(zones, item.sortX + item.block.w / 2, item.sortY + item.block.h / 2)
+      buckets.get(zone.id)!.push(item)
+    })
+
+  const placedBlocks = zones.flatMap((zone) => packOrderedBlocks(buckets.get(zone.id) ?? [], zone))
+  const byId = new Map(placedBlocks.map((block) => [block.id, block]))
+  return blocks.map((block) => byId.get(block.id) ?? block)
+}
+
+function packOrderedBlocks(ordered: OrderedBlock[], region: PackRegion): Block[] {
+  if (ordered.length === 0) return []
 
   // Pack into the region using origin-relative cell coordinates so the layout can
   // be uniformly scaled down afterwards when the die is overcrowded.
@@ -85,6 +101,30 @@ export function reflowBlocksGlobally({ blocks, die, targetBlockId, target }: Ref
     h: scale * fit.blockH,
     rotation: block.rotation ?? 0,
   }))
+}
+
+function packZones(region: PackRegion): Zone[] {
+  const gap = GRID
+  const halfW = Math.max(GRID, (region.width - gap) / 2)
+  const halfH = Math.max(GRID, (region.height - gap) / 2)
+  return [
+    { id: 'nw', x: region.x, y: region.y, width: halfW, height: halfH },
+    { id: 'ne', x: region.x + halfW + gap, y: region.y, width: halfW, height: halfH },
+    { id: 'sw', x: region.x, y: region.y + halfH + gap, width: halfW, height: halfH },
+    { id: 'se', x: region.x + halfW + gap, y: region.y + halfH + gap, width: halfW, height: halfH },
+  ]
+}
+
+function nearestZone(zones: Zone[], x: number, y: number): Zone {
+  return zones.reduce((best, zone) => {
+    const zoneCenterX = zone.x + zone.width / 2
+    const zoneCenterY = zone.y + zone.height / 2
+    const bestCenterX = best.x + best.width / 2
+    const bestCenterY = best.y + best.height / 2
+    const distance = Math.hypot(x - zoneCenterX, y - zoneCenterY)
+    const bestDistance = Math.hypot(x - bestCenterX, y - bestCenterY)
+    return distance < bestDistance ? zone : best
+  }, zones[0])
 }
 
 // The packing region is the largest axis-aligned rectangle that stays inside the

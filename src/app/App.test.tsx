@@ -39,6 +39,7 @@ describe('App', () => {
 
     expect(shell).toHaveAttribute('data-page-theme', 'space')
     expect(localStorage.getItem('vsl.pageTheme')).toBe('space')
+    expect(screen.getByRole('banner')).toContainElement(screen.getByRole('button', { name: 'Space theme' }))
   })
 
   it('shows a not-found view for a missing project id instead of loading forever', async () => {

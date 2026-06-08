@@ -1,7 +1,7 @@
 import { CURRENT_SCHEMA_VERSION, type Project } from './project'
 import { cloneStudioState, createDefaultStudioState } from './studioDefaults'
 
-const SUPPORTED_SCHEMA_VERSIONS = new Set([1, 2, CURRENT_SCHEMA_VERSION])
+const SUPPORTED_SCHEMA_VERSIONS = new Set([1, 2, 3, CURRENT_SCHEMA_VERSION])
 
 export function migrateProject(value: unknown): Project {
   if (

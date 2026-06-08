@@ -423,7 +423,7 @@ export const HERO_SET_CATALOG: readonly HeroSetDefinition[] = [
       process: '1nm ceramic imagination package',
       cores: 64,
       bandwidth: '5.1 PB/s',
-      features: ['Orbital Readouts', 'Violet Cyan Die', 'Fantasy Core Mix'],
+      features: ['Orbital Readouts', 'Violet Cyan Die', 'Speculative Core Mix'],
       description: 'A space-themed closeup anchored by a concrete package and luminous die window.',
     },
   },

@@ -27,9 +27,12 @@ vi.mock('react-konva', async () => {
   return {
     Circle: node('Circle'),
     Group: node('Group'),
+    Image: node('Image'),
     Line: node('Line'),
     Rect: node('Rect'),
     RegularPolygon: node('RegularPolygon'),
+    Shape: node('Shape'),
+    Star: node('Star'),
     Text: node('Text'),
   }
 })
@@ -72,5 +75,26 @@ describe('ChipArtwork studio layers', () => {
 
     expect(screen.getByTestId('interactive-spray-1')).toBeInTheDocument()
     expect(screen.getByTestId('interactive-sticker-1')).toBeInTheDocument()
+  })
+
+  it('omits hidden render layers from the Konva artwork tree', () => {
+    const project = createProject('Layer Visibility', 'layer-visibility', 100)
+
+    render(
+      <ChipArtwork
+        project={project}
+        layerVisibility={{
+          M1: true,
+          M2: false,
+          M3: true,
+          M4: true,
+          M5: true,
+          Label: true,
+        }}
+      />,
+    )
+
+    expect(document.querySelector('[data-name="chip-layer-micro"]')).toBeInTheDocument()
+    expect(document.querySelector('[data-name="chip-layer-traces"]')).not.toBeInTheDocument()
   })
 })

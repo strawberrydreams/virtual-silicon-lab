@@ -58,7 +58,7 @@ describe('generateStudioSpec', () => {
     expect(spec.metrics.fantasy).toBeGreaterThan(80)
     expect(spec.metrics.style).toBeGreaterThan(80)
     expect(spec.features).toContain('Sticker-tuned signal layer')
-    expect(spec.description).toContain('impossible')
+    expect(spec.description).toContain('speculative')
   })
 
   it('lowers stability for a warning sticker compared with a badge sticker', () => {

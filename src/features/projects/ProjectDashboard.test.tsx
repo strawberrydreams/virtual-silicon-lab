@@ -23,7 +23,7 @@ describe('ProjectDashboard', () => {
     )
 
     expect(screen.getByText('No local projects yet')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Back to Lab' })).toHaveAttribute('href', '/')
+    expect(screen.getByRole('link', { name: 'Lab Home' })).toHaveAttribute('href', '/')
     expect(screen.getByRole('region', { name: 'Preset remix surface' })).toBeInTheDocument()
     expect(screen.getByRole('region', { name: 'Local project surface' })).toBeInTheDocument()
   })
@@ -111,6 +111,7 @@ describe('ProjectDashboard', () => {
     )
 
     expect(screen.getByText('1 Local Project')).toBeInTheDocument()
+    expect(screen.getByLabelText('Dream Chip render preview')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Duplicate Dream Chip' }))
     await userEvent.click(screen.getByRole('button', { name: 'Delete Dream Chip' }))
 

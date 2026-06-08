@@ -32,7 +32,7 @@ export function FakeSpecForm({ spec, onChange }: Props) {
 
   return (
     <div className="flex flex-col gap-3">
-      <h2 className="text-xs uppercase tracking-[0.25em] text-cyan-300">Fake Spec Sheet</h2>
+      <h2 className="text-xs uppercase tracking-[0.25em] text-cyan-300">Spec Sheet</h2>
 
       <div className="flex flex-wrap gap-2">
         {SPEC_EXAMPLES.map((example) => (

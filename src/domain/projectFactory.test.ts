@@ -6,7 +6,7 @@ describe('createProject', () => {
     const project = createProject('Dream Chip', 'project-1', 100)
 
     expect(project).toMatchObject({
-      schemaVersion: 3,
+      schemaVersion: 4,
       id: 'project-1',
       name: 'Dream Chip',
       createdAt: 100,

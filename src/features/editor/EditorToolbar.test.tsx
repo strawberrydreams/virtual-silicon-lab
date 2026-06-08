@@ -51,26 +51,50 @@ describe('EditorToolbar', () => {
     expect(props.onDelete).toHaveBeenCalledTimes(1)
   })
 
-  it('switches theme', async () => {
+  it('switches chip color preset', async () => {
     const props = renderToolbar()
-    await userEvent.click(screen.getByRole('button', { name: 'Keynote' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Graphite gradient' }))
     expect(props.onSetTheme).toHaveBeenCalledWith('keynote')
   })
 
   it('adds a decoration', async () => {
     const props = renderToolbar()
-    await userEvent.click(screen.getByRole('button', { name: 'Neon Line' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Glow Route' }))
     expect(props.onAddDecoration).toHaveBeenCalledWith('neonLine')
   })
 
   it('groups controls into stable tool clusters', () => {
     renderToolbar()
 
+    expect(screen.getByRole('region', { name: 'Shape and finish controls' })).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Editor operation strip' })).toBeInTheDocument()
     expect(screen.getByRole('group', { name: 'Die shape controls' })).toBeInTheDocument()
     expect(screen.getByRole('group', { name: 'Chip theme controls' })).toBeInTheDocument()
     expect(screen.getByRole('group', { name: 'Decoration controls' })).toBeInTheDocument()
     expect(screen.getByRole('group', { name: 'History controls' })).toBeInTheDocument()
     expect(screen.getByRole('group', { name: 'Selection controls' })).toBeInTheDocument()
+  })
+
+  it('exposes reference-style operation tools without changing existing handlers', async () => {
+    const props = renderToolbar()
+
+    expect(screen.getByRole('button', { name: 'Select' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Move' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Rotate' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Resize' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Copy' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Align' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Distribute' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Snap' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Move' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Rotate' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Resize' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Align' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Distribute' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Snap' })).toBeDisabled()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Copy' }))
+    expect(props.onDuplicate).toHaveBeenCalledTimes(1)
   })
 
   it('exposes the sci-fi object decoration command', async () => {

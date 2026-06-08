@@ -71,6 +71,19 @@ describe('reflowBlocksGlobally', () => {
     expect(movedNonTarget.length).toBeGreaterThan(0)
   })
 
+  it('packs a target near the bottom-right into a bottom-right die zone', () => {
+    const result = reflowBlocksGlobally({
+      blocks: [block('cpu', 32, 32), block('gpu', 160, 32), block('mem', 32, 160, 120, 64), block('io', 240, 160, 96, 64)],
+      die,
+      targetBlockId: 'io',
+      target: { x: die.width - 64, y: die.height - 48 },
+    })
+
+    const target = result.find((candidate) => candidate.id === 'io')!
+    expect(target.x).toBeGreaterThan(die.width / 2)
+    expect(target.y).toBeGreaterThan(die.height / 2)
+  })
+
   it('is deterministic and does not mutate source blocks', () => {
     const source = [block('cpu', 32, 32), block('gpu', 160, 32), block('mem', 32, 160, 240, 64)]
     const snapshot = structuredClone(source)

@@ -11,9 +11,12 @@ import { BlockArtwork, ChipArtwork, StudioSprayArtwork, StudioStickerArtwork } f
 import type { SelectedStudioItem, SprayTransform, StickerTransform } from '../../../stores/editorStore'
 import { reflowBlocksGlobally } from '../../../studio/globalReflow'
 import { resolveTileDetail } from '../../../visual/tileDetail'
+import { DEFAULT_LAYER_VISIBILITY, type ChipLayerVisibility } from '../layerVisibility'
 
 const GRID = 16
 const MIN_BLOCK = 48
+const COLUMN_COORDS = Array.from({ length: 16 }, (_, index) => String(index + 1).padStart(2, '0'))
+const ROW_COORDS = Array.from({ length: 16 }, (_, index) => String.fromCharCode(65 + index))
 
 type Props = {
   project: Project
@@ -21,6 +24,7 @@ type Props = {
   selectedStudioItem: SelectedStudioItem | null
   onSelectBlock: (id: string | null) => void
   onSelectStudioItem: (item: SelectedStudioItem | null) => void
+  layerVisibility?: ChipLayerVisibility
   onTransformBlock: (id: string, transform: BlockTransform) => void
   onTransformSticker: (id: string, transform: StickerTransform) => void
   onTransformSpray: (id: string, transform: SprayTransform) => void
@@ -32,6 +36,7 @@ export function ChipStage({
   selectedStudioItem,
   onSelectBlock,
   onSelectStudioItem,
+  layerVisibility = DEFAULT_LAYER_VISIBILITY,
   onTransformBlock,
   onTransformSticker,
   onTransformSpray,
@@ -43,6 +48,11 @@ export function ChipStage({
   const studioRefs = useRef(new Map<string, Konva.Group>())
   const transformerRef = useRef<Konva.Transformer>(null)
   const tokens = resolveTheme(project.theme)
+  const backgroundPaint = project.studio.colorSettings.background
+  const stageBackground =
+    backgroundPaint.mode === 'solid'
+      ? backgroundPaint.color
+      : `linear-gradient(135deg, ${backgroundPaint.from}, ${backgroundPaint.to})`
 
   useEffect(() => {
     const transformer = transformerRef.current
@@ -64,11 +74,19 @@ export function ChipStage({
   const tileDetail = resolveTileDetail(project.studio.tileSettings)
   const stageSize = editorStageSize(project.die)
   const frameSize = editorStageFrameSize(project.die)
+  const zoomLabel = `Zoom ${Math.round(scale * 100)}%`
+  const adjustZoom = (delta: number) => {
+    setScale((current) => Math.min(2, Math.max(0.5, Number((current + delta).toFixed(2)))))
+  }
+  const resetView = () => {
+    setScale(1)
+    setPosition({ x: 0, y: 0 })
+  }
 
   return (
     <div
       className="chip-stage-frame"
-      style={{ backgroundColor: tokens.background[tokens.background.length - 1].color }}
+      style={{ background: stageBackground || tokens.background[tokens.background.length - 1].color }}
     >
       <div className="chip-stage-frame__chrome" style={{ width: frameSize.width, minHeight: frameSize.height }}>
         <div className="chip-stage-frame__readout" aria-hidden="true">
@@ -76,191 +94,232 @@ export function ChipStage({
           <span>x {Math.round(position.x)}</span>
           <span>y {Math.round(position.y)}</span>
         </div>
-        <Stage
-          width={stageSize.width}
-          height={stageSize.height}
-          scaleX={scale}
-          scaleY={scale}
-          x={position.x}
-          y={position.y}
-          draggable
-          onWheel={(event) => {
-            event.evt.preventDefault()
-            const stage = event.target.getStage()
-            const pointer = stage?.getPointerPosition()
-            if (!stage || !pointer) return
-            const next = zoomAtPointer({
-              pointer,
-              stagePos: { x: stage.x(), y: stage.y() },
-              oldScale: scale,
-              deltaY: event.evt.deltaY,
-            })
-            setScale(next.scale)
-            setPosition(next.pos)
-          }}
-          onDragEnd={(event) => {
-            if (event.target === event.target.getStage()) {
-              setPosition({ x: event.target.x(), y: event.target.y() })
-            }
-          }}
-          onMouseDown={(event) => {
-            if (event.target === event.target.getStage()) onSelectBlock(null)
-          }}
-          className="chip-stage-canvas"
+        <div
+          aria-label="Chip coordinate workspace"
+          className="chip-coordinate-workspace"
+          role="region"
+          style={{ width: stageSize.width, height: stageSize.height }}
         >
-          <Layer>
-            <ChipArtwork
-              project={displayProject}
-              renderBlock={(block, tokens) => (
-                <BlockArtwork
-                  block={block}
-                  tokens={tokens}
-                  selected={block.id === selectedBlockId}
-                  detail={tileDetail}
-                  groupRef={(node) => {
-                    if (node) blockRefs.current.set(block.id, node)
-                    else blockRefs.current.delete(block.id)
-                  }}
-                  groupProps={{
-                    draggable: true,
-                    onClick: () => onSelectBlock(block.id),
-                    onTap: () => onSelectBlock(block.id),
-                    onDragStart: () => {
-                      onSelectBlock(block.id)
-                      setPreviewBlocks(project.blocks)
-                    },
-                    onDragMove: (event) => {
-                      if (project.studio.layoutMode !== 'global-reflow') return
-                      const pointerX = event.target.x()
-                      const pointerY = event.target.y()
-                      const blocks = project.blocks.map((candidate) =>
-                        candidate.id === block.id
-                          ? { ...candidate, x: pointerX, y: pointerY }
-                          : candidate,
-                      )
-                      const reflowed = reflowBlocksGlobally({
-                        blocks,
-                        die: project.die,
-                        targetBlockId: block.id,
-                        target: { x: pointerX, y: pointerY },
-                      })
-                      // Keep the dragged tile under the pointer so React's prop does
-                      // not fight Konva's live drag position; only the others reflow.
-                      setPreviewBlocks(
-                        reflowed.map((candidate) =>
-                          candidate.id === block.id ? { ...candidate, x: pointerX, y: pointerY } : candidate,
-                        ),
-                      )
-                    },
-                    onDragEnd: (event) => {
-                      setPreviewBlocks(null)
-                      onTransformBlock(block.id, {
-                        x: snapToGrid(event.target.x(), GRID),
-                        y: snapToGrid(event.target.y(), GRID),
-                        w: block.w,
-                        h: block.h,
-                        rotation: block.rotation,
-                      })
-                    },
-                    onTransformEnd: (event) => {
-                      const node = event.target as Konva.Group
-                      const scaleX = node.scaleX()
-                      const scaleY = node.scaleY()
-                      node.scaleX(1)
-                      node.scaleY(1)
-                      onTransformBlock(block.id, {
-                        x: node.x(),
-                        y: node.y(),
-                        w: Math.max(MIN_BLOCK, block.w * scaleX),
-                        h: Math.max(MIN_BLOCK, block.h * scaleY),
-                        rotation: node.rotation(),
-                      })
-                    },
-                  }}
-                />
-              )}
-              renderStudioSpray={(spray) => (
-                <StudioSprayArtwork
-                  spray={spray}
-                  selected={selectedStudioItem?.kind === 'spray' && selectedStudioItem.id === spray.id}
-                  groupRef={(node) => {
-                    const key = `spray:${spray.id}`
-                    if (node) studioRefs.current.set(key, node)
-                    else studioRefs.current.delete(key)
-                  }}
-                  groupProps={{
-                    draggable: true,
-                    onClick: () => onSelectStudioItem({ kind: 'spray', id: spray.id }),
-                    onTap: () => onSelectStudioItem({ kind: 'spray', id: spray.id }),
-                    onDragStart: () => onSelectStudioItem({ kind: 'spray', id: spray.id }),
-                    onDragEnd: (event) => {
-                      onTransformSpray(spray.id, {
-                        x: snapToGrid(event.target.x(), GRID),
-                        y: snapToGrid(event.target.y(), GRID),
-                        radius: spray.radius,
-                      })
-                    },
-                    onTransformEnd: (event) => {
-                      const node = event.target as Konva.Group
-                      const scaleX = node.scaleX()
-                      const scaleY = node.scaleY()
-                      node.scaleX(1)
-                      node.scaleY(1)
-                      onTransformSpray(spray.id, {
-                        x: node.x(),
-                        y: node.y(),
-                        radius: Math.max(24, spray.radius * Math.max(scaleX, scaleY)),
-                      })
-                    },
-                  }}
-                />
-              )}
-              renderStudioSticker={(sticker) => (
-                <StudioStickerArtwork
-                  sticker={sticker}
-                  selected={selectedStudioItem?.kind === 'sticker' && selectedStudioItem.id === sticker.id}
-                  groupRef={(node) => {
-                    const key = `sticker:${sticker.id}`
-                    if (node) studioRefs.current.set(key, node)
-                    else studioRefs.current.delete(key)
-                  }}
-                  groupProps={{
-                    draggable: true,
-                    onClick: () => onSelectStudioItem({ kind: 'sticker', id: sticker.id }),
-                    onTap: () => onSelectStudioItem({ kind: 'sticker', id: sticker.id }),
-                    onDragStart: () => onSelectStudioItem({ kind: 'sticker', id: sticker.id }),
-                    onDragEnd: (event) => {
-                      onTransformSticker(sticker.id, {
-                        x: snapToGrid(event.target.x(), GRID),
-                        y: snapToGrid(event.target.y(), GRID),
-                        rotation: sticker.rotation,
-                      })
-                    },
-                    onTransformEnd: (event) => {
-                      const node = event.target as Konva.Group
-                      node.scaleX(1)
-                      node.scaleY(1)
-                      onTransformSticker(sticker.id, {
-                        x: node.x(),
-                        y: node.y(),
-                        rotation: node.rotation(),
-                      })
-                    },
-                  }}
-                />
-              )}
-            />
-            <Transformer
-              ref={transformerRef}
-              rotateEnabled={transformerKind !== 'spray'}
-              resizeEnabled={transformerKind !== 'sticker'}
-              enabledAnchors={transformerKind === 'sticker' ? [] : undefined}
-              boundBoxFunc={(oldBox, newBox) =>
-                newBox.width < MIN_BLOCK || newBox.height < MIN_BLOCK ? oldBox : newBox
+          <div aria-label="Column coordinates" className="chip-coordinate-workspace__columns">
+            {COLUMN_COORDS.map((coord) => (
+              <span key={coord}>{coord}</span>
+            ))}
+          </div>
+          <div aria-label="Row coordinates" className="chip-coordinate-workspace__rows">
+            {ROW_COORDS.map((coord) => (
+              <span key={coord}>{coord}</span>
+            ))}
+          </div>
+          <Stage
+            width={stageSize.width}
+            height={stageSize.height}
+            scaleX={scale}
+            scaleY={scale}
+            x={position.x}
+            y={position.y}
+            draggable
+            onWheel={(event) => {
+              event.evt.preventDefault()
+              const stage = event.target.getStage()
+              const pointer = stage?.getPointerPosition()
+              if (!stage || !pointer) return
+              const next = zoomAtPointer({
+                pointer,
+                stagePos: { x: stage.x(), y: stage.y() },
+                oldScale: scale,
+                deltaY: event.evt.deltaY,
+              })
+              setScale(next.scale)
+              setPosition(next.pos)
+            }}
+            onDragEnd={(event) => {
+              if (event.target === event.target.getStage()) {
+                setPosition({ x: event.target.x(), y: event.target.y() })
               }
-            />
-          </Layer>
-        </Stage>
+            }}
+            onMouseDown={(event) => {
+              if (event.target === event.target.getStage()) onSelectBlock(null)
+            }}
+            className="chip-stage-canvas"
+          >
+            <Layer>
+              <ChipArtwork
+                project={displayProject}
+                layerVisibility={layerVisibility}
+                renderBlock={(block, tokens) => (
+                  <BlockArtwork
+                    block={block}
+                    tokens={tokens}
+                    selected={block.id === selectedBlockId}
+                    detail={tileDetail}
+                    colors={project.studio.colorSettings}
+                    showLabel={layerVisibility.Label}
+                    groupRef={(node) => {
+                      if (node) blockRefs.current.set(block.id, node)
+                      else blockRefs.current.delete(block.id)
+                    }}
+                    groupProps={{
+                      draggable: true,
+                      onClick: () => onSelectBlock(block.id),
+                      onTap: () => onSelectBlock(block.id),
+                      onDragStart: () => {
+                        onSelectBlock(block.id)
+                        setPreviewBlocks(project.blocks)
+                      },
+                      onDragMove: (event) => {
+                        if (project.studio.layoutMode !== 'global-reflow') return
+                        const pointerX = event.target.x()
+                        const pointerY = event.target.y()
+                        const blocks = project.blocks.map((candidate) =>
+                          candidate.id === block.id
+                            ? { ...candidate, x: pointerX, y: pointerY }
+                            : candidate,
+                        )
+                        const reflowed = reflowBlocksGlobally({
+                          blocks,
+                          die: project.die,
+                          targetBlockId: block.id,
+                          target: { x: pointerX, y: pointerY },
+                        })
+                        // Keep the dragged tile under the pointer so React's prop does
+                        // not fight Konva's live drag position; only the others reflow.
+                        setPreviewBlocks(
+                          reflowed.map((candidate) =>
+                            candidate.id === block.id ? { ...candidate, x: pointerX, y: pointerY } : candidate,
+                          ),
+                        )
+                      },
+                      onDragEnd: (event) => {
+                        setPreviewBlocks(null)
+                        onTransformBlock(block.id, {
+                          x: snapToGrid(event.target.x(), GRID),
+                          y: snapToGrid(event.target.y(), GRID),
+                          w: block.w,
+                          h: block.h,
+                          rotation: block.rotation,
+                        })
+                      },
+                      onTransformEnd: (event) => {
+                        const node = event.target as Konva.Group
+                        const scaleX = node.scaleX()
+                        const scaleY = node.scaleY()
+                        node.scaleX(1)
+                        node.scaleY(1)
+                        onTransformBlock(block.id, {
+                          x: node.x(),
+                          y: node.y(),
+                          w: Math.max(MIN_BLOCK, block.w * scaleX),
+                          h: Math.max(MIN_BLOCK, block.h * scaleY),
+                          rotation: node.rotation(),
+                        })
+                      },
+                    }}
+                  />
+                )}
+                renderStudioSpray={(spray) => (
+                  <StudioSprayArtwork
+                    spray={spray}
+                    selected={selectedStudioItem?.kind === 'spray' && selectedStudioItem.id === spray.id}
+                    groupRef={(node) => {
+                      const key = `spray:${spray.id}`
+                      if (node) studioRefs.current.set(key, node)
+                      else studioRefs.current.delete(key)
+                    }}
+                    groupProps={{
+                      draggable: true,
+                      onClick: () => onSelectStudioItem({ kind: 'spray', id: spray.id }),
+                      onTap: () => onSelectStudioItem({ kind: 'spray', id: spray.id }),
+                      onDragStart: () => onSelectStudioItem({ kind: 'spray', id: spray.id }),
+                      onDragEnd: (event) => {
+                        onTransformSpray(spray.id, {
+                          x: snapToGrid(event.target.x(), GRID),
+                          y: snapToGrid(event.target.y(), GRID),
+                          radius: spray.radius,
+                        })
+                      },
+                      onTransformEnd: (event) => {
+                        const node = event.target as Konva.Group
+                        const scaleX = node.scaleX()
+                        const scaleY = node.scaleY()
+                        node.scaleX(1)
+                        node.scaleY(1)
+                        onTransformSpray(spray.id, {
+                          x: node.x(),
+                          y: node.y(),
+                          radius: Math.max(24, spray.radius * Math.max(scaleX, scaleY)),
+                        })
+                      },
+                    }}
+                  />
+                )}
+                renderStudioSticker={(sticker) => (
+                  <StudioStickerArtwork
+                    sticker={sticker}
+                    selected={selectedStudioItem?.kind === 'sticker' && selectedStudioItem.id === sticker.id}
+                    groupRef={(node) => {
+                      const key = `sticker:${sticker.id}`
+                      if (node) studioRefs.current.set(key, node)
+                      else studioRefs.current.delete(key)
+                    }}
+                    groupProps={{
+                      draggable: true,
+                      onClick: () => onSelectStudioItem({ kind: 'sticker', id: sticker.id }),
+                      onTap: () => onSelectStudioItem({ kind: 'sticker', id: sticker.id }),
+                      onDragStart: () => onSelectStudioItem({ kind: 'sticker', id: sticker.id }),
+                      onDragEnd: (event) => {
+                        onTransformSticker(sticker.id, {
+                          x: snapToGrid(event.target.x(), GRID),
+                          y: snapToGrid(event.target.y(), GRID),
+                          rotation: sticker.rotation,
+                        })
+                      },
+                      onTransformEnd: (event) => {
+                        const node = event.target as Konva.Group
+                        node.scaleX(1)
+                        node.scaleY(1)
+                        onTransformSticker(sticker.id, {
+                          x: node.x(),
+                          y: node.y(),
+                          rotation: node.rotation(),
+                        })
+                      },
+                    }}
+                  />
+                )}
+              />
+              <Transformer
+                ref={transformerRef}
+                rotateEnabled={transformerKind !== 'spray'}
+                resizeEnabled={transformerKind !== 'sticker'}
+                enabledAnchors={transformerKind === 'sticker' ? [] : undefined}
+                boundBoxFunc={(oldBox, newBox) =>
+                  newBox.width < MIN_BLOCK || newBox.height < MIN_BLOCK ? oldBox : newBox
+                }
+              />
+            </Layer>
+          </Stage>
+          <div aria-label="Canvas zoom controls" className="chip-stage-zoom-controls" role="group">
+            <button aria-label="Fit view" type="button" onClick={resetView}>
+              []
+            </button>
+            <button aria-label="Zoom out" type="button" onClick={() => adjustZoom(-0.1)}>
+              -
+            </button>
+            <span>{zoomLabel}</span>
+            <button aria-label="Zoom in" type="button" onClick={() => adjustZoom(0.1)}>
+              +
+            </button>
+            <button aria-label="Reset view" type="button" onClick={resetView}>
+              R
+            </button>
+          </div>
+        </div>
+        <div aria-label="Canvas status readouts" className="chip-stage-status" role="region">
+          <span>VIEW {Math.round(scale * 100)}%</span>
+          <span>GRID 10µm</span>
+          <span>SNAP ON</span>
+          <span>DRC OFF</span>
+        </div>
       </div>
     </div>
   )

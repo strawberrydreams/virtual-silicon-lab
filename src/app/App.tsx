@@ -107,16 +107,51 @@ export function App() {
       data-testid="app-shell"
       style={pageTheme.cssVariables}
     >
-      <ThemeSwitcher current={themeName} onChange={setTheme} />
       <ProjectStoreProvider>
-        <Routes>
-          <Route path="/" element={<LandingRoute />} />
-          <Route path="/dashboard" element={<DashboardRoute />} />
-          <Route path="/editor/:projectId" element={<EditorRoute />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+        <SiteHeader themeName={themeName} onThemeChange={setTheme} />
+        <div className="app-shell__route">
+          <Routes>
+            <Route path="/" element={<LandingRoute />} />
+            <Route path="/dashboard" element={<DashboardRoute />} />
+            <Route path="/editor/:projectId" element={<EditorRoute />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </div>
+        <SiteFooter />
       </ProjectStoreProvider>
     </div>
+  )
+}
+
+function SiteHeader({
+  themeName,
+  onThemeChange,
+}: {
+  themeName: PageThemeName
+  onThemeChange: (theme: PageThemeName) => void
+}) {
+  return (
+    <header className="site-header">
+      <Link className="site-header__brand" to="/">
+        Virtual Silicon Lab
+      </Link>
+      <div className="site-header__right">
+        <nav aria-label="Primary navigation" className="site-header__nav">
+          <Link to="/">Lab</Link>
+          <Link to="/dashboard">Projects</Link>
+        </nav>
+        <ThemeSwitcher current={themeName} onChange={onThemeChange} />
+      </div>
+    </header>
+  )
+}
+
+function SiteFooter() {
+  return (
+    <footer className="site-footer">
+      <span>Local-first chip studio</span>
+      <span>Editor, projects, and exports stay in this browser.</span>
+    </footer>
   )
 }
 

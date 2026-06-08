@@ -1,4 +1,4 @@
-export const CURRENT_SCHEMA_VERSION = 3 as const
+export const CURRENT_SCHEMA_VERSION = 4 as const
 
 export type DieShape = 'rect' | 'square' | 'circle' | 'hexagon'
 export type StyleTheme = 'neon' | 'retro' | 'military' | 'keynote' | 'mono'
@@ -41,6 +41,7 @@ export type Block = {
   label?: string
   glow?: boolean
   colorOverride?: string
+  imageDataUrl?: string
   zIndex: number
 }
 
@@ -68,6 +69,22 @@ export type StudioTileSettings = {
   routeIntensity: number
   contactStyle: StudioContactStyle
 }
+
+export type StudioColorPaint =
+  | { mode: 'solid'; color: string }
+  | { mode: 'gradient'; from: string; to: string }
+
+export type StudioColorTarget =
+  | 'background'
+  | 'package'
+  | 'die'
+  | 'block'
+  | 'tile'
+  | 'trace'
+  | 'label'
+  | 'mark'
+
+export type StudioColorSettings = Record<StudioColorTarget, StudioColorPaint>
 
 export type StudioSprayBlend = 'screen' | 'lighten' | 'overlay'
 
@@ -97,6 +114,7 @@ export type StudioState = {
   layoutMode: 'global-reflow'
   detailMode: 'semi-auto'
   tileSettings: StudioTileSettings
+  colorSettings: StudioColorSettings
   sprays: StudioSpray[]
   stickers: StudioSticker[]
 }

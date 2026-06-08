@@ -48,7 +48,7 @@ export function generateStudioSpec(project: Project): GeneratedStudioSpec {
     features,
     description:
       metrics.fantasy > 70
-        ? 'A deliberately impossible custom SoC with studio-tuned fantasy signal layers.'
+        ? 'A speculative custom SoC with studio-tuned signal layers and expressive routing.'
         : 'A studio-generated SoC profile derived from tile layout, density, and decoration.',
   }
 }
@@ -69,7 +69,7 @@ function buildFeatures(metrics: StudioSpecMetrics, memoryArea: number, dieArea: 
   const features: string[] = []
   if (metrics.compute > 50) features.push('Compute island mesh')
   if (memoryArea / Math.max(1, dieArea) > 0.08) features.push('Wide memory spine')
-  if (metrics.fantasy > 70) features.push('Impossible fantasy fabric')
+  if (metrics.fantasy > 70) features.push('Speculative signal fabric')
   if (stickerCount > 0) features.push('Sticker-tuned signal layer')
   if (metrics.style > 75) features.push('Custom studio finish')
   return features.length > 0 ? features : ['Studio generated layout']

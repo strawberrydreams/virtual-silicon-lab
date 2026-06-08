@@ -8,7 +8,7 @@ type Props = {
 const metricLabels = {
   compute: 'Compute',
   bandwidth: 'Bandwidth',
-  fantasy: 'Fantasy',
+  fantasy: 'Signal',
   stability: 'Stability',
   style: 'Style',
 } as const
@@ -16,10 +16,10 @@ const metricLabels = {
 export function GeneratedSpecPanel({ project }: Props) {
   const spec = generateStudioSpec(project)
   return (
-    <section className="generated-spec-panel" aria-label="Generated studio fake spec">
+    <section className="generated-spec-panel" aria-label="Generated studio spec">
       <div>
         <p className="editor-kicker">Studio analysis</p>
-        <h2>Generated Fake Spec</h2>
+        <h2>Generated Spec</h2>
       </div>
       <div className="generated-spec-panel__metrics">
         {Object.entries(metricLabels).map(([key, label]) => {
