@@ -92,6 +92,47 @@ describe('buildChipLayers', () => {
     expect(trace.points[3]).toBeCloseTo(140)
   })
 
+  it('packs more micro tiles as studio detail density rises', () => {
+    const base = sampleProject()
+    const sparse = buildChipLayers({
+      ...base,
+      studio: { ...base.studio, tileSettings: { ...base.studio.tileSettings, detailDensity: 0 } },
+    })
+    const dense = buildChipLayers({
+      ...base,
+      studio: { ...base.studio, tileSettings: { ...base.studio.tileSettings, detailDensity: 1 } },
+    })
+
+    expect(dense.microTiles.length).toBeGreaterThan(sparse.microTiles.length)
+  })
+
+  it('thickens traces as studio route intensity rises', () => {
+    const base = sampleProject()
+    const quiet = buildChipLayers({
+      ...base,
+      studio: { ...base.studio, tileSettings: { ...base.studio.tileSettings, routeIntensity: 0 } },
+    })
+    const loud = buildChipLayers({
+      ...base,
+      studio: { ...base.studio, tileSettings: { ...base.studio.tileSettings, routeIntensity: 1 } },
+    })
+
+    expect(loud.traces[0].width).toBeGreaterThan(quiet.traces[0].width)
+    expect(loud.traces[0].opacity).toBeGreaterThan(quiet.traces[0].opacity)
+  })
+
+  it('caps micro-tile node count on a very large die at max density', () => {
+    const base = sampleProject()
+    const huge = buildChipLayers({
+      ...base,
+      die: { ...base.die, width: 4000, height: 3000 },
+      studio: { ...base.studio, tileSettings: { ...base.studio.tileSettings, detailDensity: 1 } },
+    })
+
+    expect(huge.microTiles.length).toBeLessThanOrEqual(4000)
+    expect(huge.microTiles.length).toBeGreaterThan(1000)
+  })
+
   it('supports a 150-block smoke layout without dropping render layers', () => {
     const project = manyBlockProject(150)
     const originalBlocks = structuredClone(project.blocks)

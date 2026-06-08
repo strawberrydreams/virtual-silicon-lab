@@ -26,7 +26,7 @@ function validProject(id: string) {
 }
 
 describe('migrateProject', () => {
-  it('migrates a schema version 1 project into schema version 2 studio defaults', () => {
+  it('migrates a schema version 1 project into the current studio defaults', () => {
     const project = migrateProject({
       schemaVersion: 1,
       id: 'project-1',
@@ -49,7 +49,7 @@ describe('migrateProject', () => {
       },
     })
 
-    expect(project.schemaVersion).toBe(2)
+    expect(project.schemaVersion).toBe(3)
     expect(project.studio).toEqual({
       layoutMode: 'global-reflow',
       detailMode: 'semi-auto',
@@ -63,7 +63,7 @@ describe('migrateProject', () => {
     })
   })
 
-  it('preserves a valid schema version 2 studio project', () => {
+  it('migrates a schema version 2 studio project to v3, defaulting spray blend', () => {
     const project = migrateProject({
       ...validProject('studio-1'),
       schemaVersion: 2,
@@ -99,8 +99,9 @@ describe('migrateProject', () => {
       },
     })
 
-    expect(project.schemaVersion).toBe(2)
+    expect(project.schemaVersion).toBe(3)
     expect(project.studio.sprays).toHaveLength(1)
+    expect(project.studio.sprays[0].blend).toBe('screen')
     expect(project.studio.stickers).toHaveLength(1)
     expect(project.studio.tileSettings.contactStyle).toBe('dense')
   })

@@ -2,11 +2,11 @@ import { describe, expect, it } from 'vitest'
 import { createProject } from './projectFactory'
 
 describe('createProject', () => {
-  it('creates a schema version 2 studio-ready project with an empty rectangular die', () => {
+  it('creates a current-schema studio-ready project with an empty rectangular die', () => {
     const project = createProject('Dream Chip', 'project-1', 100)
 
     expect(project).toMatchObject({
-      schemaVersion: 2,
+      schemaVersion: 3,
       id: 'project-1',
       name: 'Dream Chip',
       createdAt: 100,

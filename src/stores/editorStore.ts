@@ -7,6 +7,8 @@ import type {
   Project,
   StudioSpray,
   StudioSticker,
+  StudioStickerKind,
+  StudioTileSettings,
   StyleTheme,
 } from '../domain/project'
 import { buildBlock, nextZIndex } from '../domain/blockFactory'
@@ -15,6 +17,13 @@ import { clampBlockToDie, normalizeDie } from '../features/editor/canvas/geometr
 import { reflowBlocksGlobally } from '../studio/globalReflow'
 
 const MAX_HISTORY = 100
+
+const STICKER_PRESETS: Record<StudioStickerKind, { text: string; color: string; rotation: number }> = {
+  badge: { text: 'STAR', color: '#f9f4ff', rotation: -8 },
+  mascot: { text: 'MAX', color: '#ffd84d', rotation: -6 },
+  warning: { text: '!', color: '#ff5a5a', rotation: 0 },
+  label: { text: 'LABEL', color: '#9be7ff', rotation: 0 },
+}
 
 export type BlockTransform = {
   x: number
@@ -47,13 +56,14 @@ export type EditorState = {
   select: (id: string | null) => void
   selectStudioItem: (item: SelectedStudioItem | null) => void
   addBlock: (type: BlockType) => void
-  addSticker: () => void
-  addSpray: () => void
+  addSticker: (kind?: StudioStickerKind) => void
+  addSpray: (color?: string) => void
   transformBlock: (id: string, transform: BlockTransform) => void
   transformSticker: (id: string, transform: StickerTransform) => void
   transformSpray: (id: string, transform: SprayTransform) => void
   updateSticker: (id: string, patch: Partial<Pick<StudioSticker, 'kind' | 'text' | 'color' | 'rotation'>>) => void
-  updateSpray: (id: string, patch: Partial<Pick<StudioSpray, 'color' | 'intensity' | 'radius'>>) => void
+  updateSpray: (id: string, patch: Partial<Pick<StudioSpray, 'color' | 'intensity' | 'radius' | 'blend'>>) => void
+  setTileSettings: (patch: Partial<StudioTileSettings>) => void
   deleteSelected: () => void
   duplicateSelected: () => void
   bringForward: () => void
@@ -74,14 +84,24 @@ export function createEditorStore(initialProject: Project, options: Options = {}
   const createId = options.createId ?? (() => crypto.randomUUID())
 
   return createStore<EditorState>((set, get) => {
-    function commit(next: Project, extra: Partial<EditorState> = {}) {
+    // Consecutive commits sharing a tag (e.g. dragging a color picker or typing in
+    // a sticker field) collapse into one undo step instead of one per keystroke.
+    let lastCommitTag: string | null = null
+
+    function commit(next: Project, extra: Partial<EditorState> = {}, tag: string | null = null) {
       const { project, past } = get()
+      const coalesce = tag !== null && tag === lastCommitTag
+      lastCommitTag = tag
       set({
         project: next,
-        past: [...past, project].slice(-MAX_HISTORY),
+        past: coalesce ? past : [...past, project].slice(-MAX_HISTORY),
         future: [],
         ...extra,
       })
+    }
+
+    function resetCoalesce() {
+      lastCommitTag = null
     }
 
     function replaceBlocks(project: Project, blocks: Block[]): Project {
@@ -107,6 +127,15 @@ export function createEditorStore(initialProject: Project, options: Options = {}
       if (item === null) return false
       if (item.kind === 'sticker') return project.studio.stickers.some((sticker) => sticker.id === item.id)
       return project.studio.sprays.some((spray) => spray.id === item.id)
+    }
+
+    function offsetStudioCopy<T extends { id: string; x: number; y: number }>(project: Project, source: T): T {
+      return {
+        ...source,
+        id: createId(),
+        x: Math.min(project.die.width, source.x + 24),
+        y: Math.min(project.die.height, source.y + 24),
+      }
     }
 
     function swapZIndex(direction: 'forward' | 'backward') {
@@ -145,10 +174,12 @@ export function createEditorStore(initialProject: Project, options: Options = {}
       future: [],
 
       select(id) {
+        resetCoalesce()
         set({ selectedBlockId: id, selectedStudioItem: null })
       },
 
       selectStudioItem(item) {
+        resetCoalesce()
         set({ selectedBlockId: null, selectedStudioItem: item })
       },
 
@@ -168,16 +199,15 @@ export function createEditorStore(initialProject: Project, options: Options = {}
         commit(replaceBlocks(project, nextBlocks), { selectedBlockId: block.id, selectedStudioItem: null })
       },
 
-      addSticker() {
+      addSticker(kind = 'badge') {
         const { project } = get()
+        const preset = STICKER_PRESETS[kind]
         const sticker = {
           id: createId(),
-          kind: 'badge' as const,
+          kind,
           x: project.die.width / 2,
           y: project.die.height / 2,
-          text: 'STAR',
-          color: '#f9f4ff',
-          rotation: -8,
+          ...preset,
         }
         commit({
           ...project,
@@ -188,15 +218,16 @@ export function createEditorStore(initialProject: Project, options: Options = {}
         }, { selectedBlockId: null, selectedStudioItem: { kind: 'sticker', id: sticker.id } })
       },
 
-      addSpray() {
+      addSpray(color = '#ff70dc') {
         const { project } = get()
         const spray = {
           id: createId(),
           x: Math.round(project.die.width * 0.4),
           y: Math.round(project.die.height * 0.4),
           radius: Math.round(Math.min(project.die.width, project.die.height) * 0.24),
-          color: '#ff70dc',
+          color,
           intensity: 0.72,
+          blend: 'screen' as const,
         }
         commit({
           ...project,
@@ -290,39 +321,64 @@ export function createEditorStore(initialProject: Project, options: Options = {}
 
       updateSticker(id, patch) {
         const { project } = get()
-        commit({
-          ...project,
-          studio: {
-            ...project.studio,
-            stickers: project.studio.stickers.map((sticker) =>
-              sticker.id === id ? { ...sticker, ...patch } : sticker,
-            ),
+        commit(
+          {
+            ...project,
+            studio: {
+              ...project.studio,
+              stickers: project.studio.stickers.map((sticker) =>
+                sticker.id === id ? { ...sticker, ...patch } : sticker,
+              ),
+            },
           },
-        })
+          {},
+          `update-sticker:${id}`,
+        )
       },
 
       updateSpray(id, patch) {
         const { project } = get()
-        commit({
-          ...project,
-          studio: {
-            ...project.studio,
-            sprays: project.studio.sprays.map((spray) =>
-              spray.id === id
-                ? {
-                    ...spray,
-                    ...patch,
-                    intensity:
-                      patch.intensity === undefined
-                        ? spray.intensity
-                        : Math.min(Math.max(0, patch.intensity), 1),
-                    radius:
-                      patch.radius === undefined ? spray.radius : clampSprayRadius(project, patch.radius),
-                  }
-                : spray,
-            ),
+        commit(
+          {
+            ...project,
+            studio: {
+              ...project.studio,
+              sprays: project.studio.sprays.map((spray) =>
+                spray.id === id
+                  ? {
+                      ...spray,
+                      ...patch,
+                      intensity:
+                        patch.intensity === undefined
+                          ? spray.intensity
+                          : Math.min(Math.max(0, patch.intensity), 1),
+                      radius:
+                        patch.radius === undefined ? spray.radius : clampSprayRadius(project, patch.radius),
+                    }
+                  : spray,
+              ),
+            },
           },
-        })
+          {},
+          `update-spray:${id}`,
+        )
+      },
+
+      setTileSettings(patch) {
+        const { project } = get()
+        const tile = project.studio.tileSettings
+        const clamp01 = (value: number) => Math.min(1, Math.max(0, value))
+        const next: StudioTileSettings = {
+          ...tile,
+          ...patch,
+          detailDensity: patch.detailDensity === undefined ? tile.detailDensity : clamp01(patch.detailDensity),
+          routeIntensity: patch.routeIntensity === undefined ? tile.routeIntensity : clamp01(patch.routeIntensity),
+        }
+        commit(
+          { ...project, studio: { ...project.studio, tileSettings: next } },
+          {},
+          'set-tile-settings',
+        )
       },
 
       deleteSelected() {
@@ -362,12 +418,7 @@ export function createEditorStore(initialProject: Project, options: Options = {}
         if (selectedStudioItem?.kind === 'sticker') {
           const source = project.studio.stickers.find((sticker) => sticker.id === selectedStudioItem.id)
           if (source === undefined) return
-          const copy = {
-            ...source,
-            id: createId(),
-            x: Math.min(project.die.width, source.x + 24),
-            y: Math.min(project.die.height, source.y + 24),
-          }
+          const copy = offsetStudioCopy(project, source)
           commit(
             {
               ...project,
@@ -380,12 +431,7 @@ export function createEditorStore(initialProject: Project, options: Options = {}
         if (selectedStudioItem?.kind === 'spray') {
           const source = project.studio.sprays.find((spray) => spray.id === selectedStudioItem.id)
           if (source === undefined) return
-          const copy = {
-            ...source,
-            id: createId(),
-            x: Math.min(project.die.width, source.x + 24),
-            y: Math.min(project.die.height, source.y + 24),
-          }
+          const copy = offsetStudioCopy(project, source)
           commit(
             {
               ...project,
@@ -449,6 +495,7 @@ export function createEditorStore(initialProject: Project, options: Options = {}
       undo() {
         const { past, project, future, selectedBlockId, selectedStudioItem } = get()
         if (past.length === 0) return
+        resetCoalesce()
         const previous = past[past.length - 1]
         set({
           project: previous,
@@ -464,6 +511,7 @@ export function createEditorStore(initialProject: Project, options: Options = {}
       redo() {
         const { past, project, future, selectedBlockId, selectedStudioItem } = get()
         if (future.length === 0) return
+        resetCoalesce()
         const next = future[0]
         set({
           project: next,

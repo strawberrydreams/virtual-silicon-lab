@@ -1,5 +1,6 @@
 import type { Block, Project } from '../domain/project'
 import { resolveMaterialRecipe } from './materialRecipes'
+import { resolveTileDetail, type TileDetail } from './tileDetail'
 
 export type Bounds = { x: number; y: number; width: number; height: number }
 
@@ -44,24 +45,34 @@ function blockSurface(block: Block): Extract<ChipLayer, { kind: 'blockSurface' }
   }
 }
 
-function buildMicroTiles(project: Project, opacity: number): Extract<ChipLayer, { kind: 'microTile' }>[] {
+// Keep the micro-texture node count bounded so a large die at max density does not
+// flood the editor and both export stages with tens of thousands of Konva rects.
+const MAX_MICRO_TILES = 4000
+
+function buildMicroTiles(project: Project, opacity: number, detail: TileDetail): Extract<ChipLayer, { kind: 'microTile' }>[] {
   const tiles: Extract<ChipLayer, { kind: 'microTile' }>[] = []
-  const step = 56
   const tile = 18
+  let step = detail.microStep
+  const cols = Math.max(0, Math.floor((project.die.width - 24 - tile) / step) + 1)
+  const rows = Math.max(0, Math.floor((project.die.height - 24 - tile) / step) + 1)
+  if (cols * rows > MAX_MICRO_TILES) {
+    step = Math.ceil(step * Math.sqrt((cols * rows) / MAX_MICRO_TILES))
+  }
+  const tileOpacity = Math.min(1, opacity * detail.microOpacityScale)
   for (let y = 24; y + tile <= project.die.height; y += step) {
     for (let x = 24; x + tile <= project.die.width; x += step) {
       tiles.push({
         id: `micro-${x}-${y}`,
         kind: 'microTile',
         bounds: { x, y, width: tile, height: tile },
-        opacity,
+        opacity: tileOpacity,
       })
     }
   }
   return tiles
 }
 
-function buildTraces(project: Project): Extract<ChipLayer, { kind: 'trace' }>[] {
+function buildTraces(project: Project, detail: TileDetail): Extract<ChipLayer, { kind: 'trace' }>[] {
   const recipe = resolveMaterialRecipe(project.theme)
   const ordered = project.blocks.slice().sort((left, right) => left.zIndex - right.zIndex)
   return ordered.slice(1).map((block, index) => {
@@ -72,14 +83,15 @@ function buildTraces(project: Project): Extract<ChipLayer, { kind: 'trace' }>[] 
       kind: 'trace',
       points: [fromX, fromY, toX, toY],
       color: index % 2 === 0 ? recipe.metalTrace.color : recipe.metalTrace.secondaryColor,
-      width: recipe.metalTrace.width,
-      opacity: recipe.metalTrace.opacity,
+      width: recipe.metalTrace.width * detail.traceWidthScale,
+      opacity: Math.min(1, recipe.metalTrace.opacity * detail.traceOpacityScale),
     }
   })
 }
 
 export function buildChipLayers(project: Project): ChipLayerModel {
   const recipe = resolveMaterialRecipe(project.theme)
+  const detail = resolveTileDetail(project.studio.tileSettings)
   const margin = Math.max(28, Math.round(Math.min(project.die.width, project.die.height) * 0.05))
   return {
     package: {
@@ -99,9 +111,9 @@ export function buildChipLayers(project: Project): ChipLayerModel {
       kind: 'dieBase',
       bounds: { x: 0, y: 0, width: project.die.width, height: project.die.height },
     },
-    microTiles: buildMicroTiles(project, recipe.microTile.opacity),
+    microTiles: buildMicroTiles(project, recipe.microTile.opacity, detail),
     blockSurfaces: project.blocks.map(blockSurface),
-    traces: buildTraces(project),
+    traces: buildTraces(project, detail),
     readoutLabels: [
       {
         id: 'readout-label',

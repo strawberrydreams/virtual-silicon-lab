@@ -1,7 +1,7 @@
 import { CURRENT_SCHEMA_VERSION, type Project } from './project'
 import { cloneStudioState, createDefaultStudioState } from './studioDefaults'
 
-const SUPPORTED_SCHEMA_VERSIONS = new Set([1, CURRENT_SCHEMA_VERSION])
+const SUPPORTED_SCHEMA_VERSIONS = new Set([1, 2, CURRENT_SCHEMA_VERSION])
 
 export function migrateProject(value: unknown): Project {
   if (
@@ -30,12 +30,14 @@ export function migrateProject(value: unknown): Project {
   }
 
   const project = value as Project
-  if (candidate.schemaVersion === CURRENT_SCHEMA_VERSION) {
-    const studio = validateStudio(candidate.studio) ? cloneStudioState(candidate.studio) : createDefaultStudioState()
-    return { ...project, schemaVersion: CURRENT_SCHEMA_VERSION, studio }
+  // Schema 1 predates studio data; everything from schema 2 onward carries a
+  // studio object, which cloneStudioState normalizes (e.g. defaulting spray blend).
+  if (candidate.schemaVersion === 1) {
+    return { ...project, schemaVersion: CURRENT_SCHEMA_VERSION, studio: createDefaultStudioState() }
   }
 
-  return { ...project, schemaVersion: CURRENT_SCHEMA_VERSION, studio: createDefaultStudioState() }
+  const studio = validateStudio(candidate.studio) ? cloneStudioState(candidate.studio) : createDefaultStudioState()
+  return { ...project, schemaVersion: CURRENT_SCHEMA_VERSION, studio }
 }
 
 function validateStudio(value: unknown): value is Project['studio'] {

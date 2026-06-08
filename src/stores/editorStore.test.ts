@@ -239,6 +239,17 @@ describe('editorStore visual commands', () => {
     expect(store.getState().selectedStudioItem).toBeNull()
   })
 
+  it('adds stickers of a chosen kind with kind-specific defaults', () => {
+    const store = createEditorStore(createProject('p', 'p1', 0), { createId: fixedIds('warn-1') })
+
+    store.getState().addSticker('warning')
+
+    const sticker = store.getState().project.studio.stickers[0]
+    expect(sticker.kind).toBe('warning')
+    expect(sticker.text).toBe('!')
+    expect(store.getState().selectedStudioItem).toEqual({ kind: 'sticker', id: 'warn-1' })
+  })
+
   it('adds a studio spray and can undo it', () => {
     const store = createEditorStore(createProject('p', 'p1', 0), { createId: fixedIds('spray-1') })
 
@@ -252,12 +263,22 @@ describe('editorStore visual commands', () => {
         radius: 154,
         color: '#ff70dc',
         intensity: 0.72,
+        blend: 'screen',
       },
     ])
     expect(store.getState().selectedStudioItem).toEqual({ kind: 'spray', id: 'spray-1' })
     store.getState().undo()
     expect(store.getState().project.studio.sprays).toHaveLength(0)
     expect(store.getState().selectedStudioItem).toBeNull()
+  })
+
+  it('adds a spray with a chosen color', () => {
+    const store = createEditorStore(createProject('p', 'p1', 0), { createId: fixedIds('spray-1') })
+
+    store.getState().addSpray('#00ffee')
+
+    expect(store.getState().project.studio.sprays[0].color).toBe('#00ffee')
+    expect(store.getState().project.studio.sprays[0].blend).toBe('screen')
   })
 
   it('moves and updates selected studio items', () => {
@@ -286,6 +307,55 @@ describe('editorStore visual commands', () => {
       intensity: 0.35,
       color: '#00ffee',
     })
+  })
+
+  it('sets and clamps studio tile settings as a single undo step', () => {
+    const store = createEditorStore(createProject('p', 'p1', 0))
+    const before = store.getState().past.length
+
+    store.getState().setTileSettings({ detailDensity: 0.9 })
+    store.getState().setTileSettings({ routeIntensity: 5 })
+    store.getState().setTileSettings({ detailDensity: -1 })
+    store.getState().setTileSettings({ contactStyle: 'dense' })
+
+    const tile = store.getState().project.studio.tileSettings
+    expect(tile.detailDensity).toBe(0)
+    expect(tile.routeIntensity).toBe(1)
+    expect(tile.contactStyle).toBe('dense')
+    expect(store.getState().past.length).toBe(before + 1)
+
+    store.getState().undo()
+    expect(store.getState().project.studio.tileSettings.contactStyle).toBe('balanced')
+  })
+
+  it('coalesces repeated edits to one studio item into a single undo step', () => {
+    const store = createEditorStore(createProject('p', 'p1', 0), { createId: fixedIds('sticker-1') })
+
+    store.getState().addSticker()
+    const pastAfterAdd = store.getState().past.length
+
+    store.getState().updateSticker('sticker-1', { text: 'W' })
+    store.getState().updateSticker('sticker-1', { text: 'WO' })
+    store.getState().updateSticker('sticker-1', { text: 'WOW' })
+
+    expect(store.getState().past.length).toBe(pastAfterAdd + 1)
+    expect(store.getState().project.studio.stickers[0].text).toBe('WOW')
+
+    store.getState().undo()
+    expect(store.getState().project.studio.stickers[0].text).toBe('STAR')
+  })
+
+  it('starts a fresh undo step for edits made after an undo', () => {
+    const store = createEditorStore(createProject('p', 'p1', 0), { createId: fixedIds('sticker-1') })
+
+    store.getState().addSticker()
+    store.getState().updateSticker('sticker-1', { text: 'W' })
+    store.getState().undo()
+    expect(store.getState().project.studio.stickers[0].text).toBe('STAR')
+
+    store.getState().updateSticker('sticker-1', { text: 'X' })
+    store.getState().undo()
+    expect(store.getState().project.studio.stickers[0].text).toBe('STAR')
   })
 
   it('deletes and duplicates selected studio items', () => {

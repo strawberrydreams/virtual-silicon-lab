@@ -26,7 +26,7 @@ Target shape:
 
 ```ts
 type Project = {
-  schemaVersion: 2
+  schemaVersion: 3
   blocks: Block[]
   decorations: Decoration[]
   studio: StudioState
@@ -45,7 +45,9 @@ type StudioState = {
 }
 ```
 
-Existing projects migrate to schema v2 with `studio` defaults. Existing `blocks` remain the tile source of truth so old presets and exports still have a clear path forward.
+Existing projects migrate into the current schema with `studio` defaults. Existing `blocks` remain the tile source of truth so old presets and exports still have a clear path forward.
+
+The implemented schema has since advanced to v3 to add explicit spray `blend` (`screen` / `lighten` / `overlay`). Schema 1 records migrate to default studio data, schema 2 records keep their studio state and backfill `blend: 'screen'`.
 
 ## Global Reflow Behavior
 

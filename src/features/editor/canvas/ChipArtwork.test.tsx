@@ -40,7 +40,7 @@ describe('ChipArtwork studio layers', () => {
       ...createProject('Studio Artwork', 'studio-artwork', 100),
       studio: {
         ...createProject('Studio Artwork', 'studio-artwork', 100).studio,
-        sprays: [{ id: 'spray-1', x: 120, y: 120, radius: 90, color: '#ff70dc', intensity: 0.75 }],
+        sprays: [{ id: 'spray-1', x: 120, y: 120, radius: 90, color: '#ff70dc', intensity: 0.75, blend: 'screen' }],
         stickers: [{ id: 'sticker-1', kind: 'badge', x: 160, y: 140, text: 'STAR', color: '#f9f4ff', rotation: -8 }],
       },
     }
@@ -57,7 +57,7 @@ describe('ChipArtwork studio layers', () => {
       ...createProject('Studio Artwork', 'studio-artwork', 100),
       studio: {
         ...createProject('Studio Artwork', 'studio-artwork', 100).studio,
-        sprays: [{ id: 'spray-1', x: 120, y: 120, radius: 90, color: '#ff70dc', intensity: 0.75 }],
+        sprays: [{ id: 'spray-1', x: 120, y: 120, radius: 90, color: '#ff70dc', intensity: 0.75, blend: 'screen' }],
         stickers: [{ id: 'sticker-1', kind: 'badge', x: 160, y: 140, text: 'STAR', color: '#f9f4ff', rotation: -8 }],
       },
     }

@@ -1,4 +1,4 @@
-import type { BlockType } from '../../domain/project'
+import type { BlockType, StudioStickerKind } from '../../domain/project'
 
 const BLOCK_GROUPS: { label: string; blocks: BlockType[] }[] = [
   {
@@ -18,10 +18,24 @@ const BLOCK_GROUPS: { label: string; blocks: BlockType[] }[] = [
   },
 ]
 
+const STICKER_KINDS: { kind: StudioStickerKind; label: string }[] = [
+  { kind: 'badge', label: 'Round badge' },
+  { kind: 'mascot', label: 'Mascot mark' },
+  { kind: 'warning', label: 'Warning label' },
+  { kind: 'label', label: 'Text label' },
+]
+
+const SPRAY_COLORS: { color: string; label: string }[] = [
+  { color: '#ff70dc', label: 'Pink' },
+  { color: '#70eeff', label: 'Cyan' },
+  { color: '#ffd84d', label: 'Gold' },
+  { color: '#9b7bff', label: 'Violet' },
+]
+
 type Props = {
   addBlock: (type: BlockType) => void
-  addSticker: () => void
-  addSpray: () => void
+  addSticker: (kind: StudioStickerKind) => void
+  addSpray: (color: string) => void
 }
 
 export function BlockPalette({ addBlock, addSticker, addSpray }: Props) {
@@ -34,12 +48,28 @@ export function BlockPalette({ addBlock, addSticker, addSpray }: Props) {
       <section className="editor-studio-tools" aria-label="Studio decoration tools">
         <h3 className="editor-section-label">Decorate</h3>
         <div className="mt-2 grid gap-2">
-          <button className="editor-block-button" type="button" onClick={addSticker}>
-            Sticker badge
-          </button>
-          <button className="editor-block-button" type="button" onClick={addSpray}>
-            Spray glow
-          </button>
+          {STICKER_KINDS.map(({ kind, label }) => (
+            <button
+              className="editor-block-button"
+              key={kind}
+              type="button"
+              onClick={() => addSticker(kind)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        <div className="editor-spray-swatches mt-2" role="group" aria-label="Spray colors">
+          {SPRAY_COLORS.map(({ color, label }) => (
+            <button
+              key={color}
+              type="button"
+              aria-label={`Spray ${label}`}
+              title={`Spray ${label}`}
+              style={{ background: color }}
+              onClick={() => addSpray(color)}
+            />
+          ))}
         </div>
       </section>
       <div className="mt-5 grid gap-5">

@@ -37,13 +37,39 @@ describe('StudioInspector', () => {
     expect(screen.getByLabelText('Sticker y')).toHaveValue(160)
   })
 
+  it('changes the selected sticker kind', async () => {
+    const onUpdateSticker = vi.fn()
+    const project = {
+      ...createProject('p', 'p1', 0),
+      studio: {
+        ...createProject('p', 'p1', 0).studio,
+        stickers: [
+          { id: 'sticker-1', kind: 'badge' as const, x: 120, y: 160, text: 'STAR', color: '#f9f4ff', rotation: -8 },
+        ],
+      },
+    }
+
+    render(
+      <StudioInspector
+        project={project}
+        selectedStudioItem={{ kind: 'sticker', id: 'sticker-1' }}
+        onUpdateSticker={onUpdateSticker}
+        onUpdateSpray={vi.fn()}
+      />,
+    )
+
+    await userEvent.click(screen.getByRole('button', { name: 'Warning' }))
+
+    expect(onUpdateSticker).toHaveBeenCalledWith('sticker-1', { kind: 'warning' })
+  })
+
   it('edits the selected spray', async () => {
     const onUpdateSpray = vi.fn()
     const project = {
       ...createProject('p', 'p1', 0),
       studio: {
         ...createProject('p', 'p1', 0).studio,
-        sprays: [{ id: 'spray-1', x: 240, y: 240, radius: 120, color: '#ff70dc', intensity: 0.72 }],
+        sprays: [{ id: 'spray-1', x: 240, y: 240, radius: 120, color: '#ff70dc', intensity: 0.72, blend: 'screen' as const }],
       },
     }
 
@@ -55,6 +81,9 @@ describe('StudioInspector', () => {
         onUpdateSpray={onUpdateSpray}
       />,
     )
+
+    await userEvent.click(screen.getByRole('button', { name: 'Overlay' }))
+    expect(onUpdateSpray).toHaveBeenCalledWith('spray-1', { blend: 'overlay' })
 
     await userEvent.clear(screen.getByLabelText('Spray radius'))
     await userEvent.type(screen.getByLabelText('Spray radius'), '96')

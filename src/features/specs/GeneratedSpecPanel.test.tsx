@@ -25,7 +25,7 @@ describe('GeneratedSpecPanel', () => {
       studio: {
         ...createProject('Generated Spec Chip', 'generated-spec', 100).studio,
         stickers: [{ id: 'sticker-1', kind: 'badge', x: 40, y: 40, text: 'STAR', color: '#f9f4ff', rotation: -8 }],
-        sprays: [{ id: 'spray-1', x: 120, y: 120, radius: 120, color: '#ff70dc', intensity: 0.8 }],
+        sprays: [{ id: 'spray-1', x: 120, y: 120, radius: 120, color: '#ff70dc', intensity: 0.8, blend: 'screen' }],
       },
     }
 

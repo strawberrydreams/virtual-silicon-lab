@@ -792,6 +792,24 @@ button {
   margin-top: 1.25rem;
 }
 
+.editor-spray-swatches {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.4rem;
+}
+
+.editor-spray-swatches button {
+  height: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 6px;
+  cursor: pointer;
+  box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.3);
+}
+
+.editor-spray-swatches button:hover {
+  border-color: #ffffff;
+}
+
 .generated-spec-panel {
   border: 1px solid rgba(91, 213, 240, 0.16);
   background:
@@ -902,4 +920,81 @@ button {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 0.55rem;
+}
+
+.studio-item-inspector__kinds {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.34rem;
+}
+
+.studio-item-inspector__kinds button {
+  border: 1px solid rgba(91, 213, 240, 0.22);
+  background: rgba(7, 22, 32, 0.6);
+  color: var(--v2-muted);
+  padding: 0.3rem 0.12rem;
+  font-size: 0.56rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.studio-item-inspector__kinds button[aria-pressed='true'] {
+  border-color: var(--v2-accent-2);
+  background: linear-gradient(135deg, rgba(18, 70, 88, 0.78), rgba(7, 22, 32, 0.92));
+  color: var(--v2-accent-2);
+}
+
+.tile-settings-panel {
+  border: 1px solid rgba(91, 213, 240, 0.16);
+  background:
+    linear-gradient(180deg, rgba(91, 213, 240, 0.07), transparent 42%),
+    rgba(3, 10, 16, 0.68);
+  padding: 0.95rem;
+}
+
+.tile-settings-panel h2 {
+  margin: 0.25rem 0 0;
+  color: var(--v2-text);
+  font-size: 0.86rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.tile-settings-panel__fields {
+  display: grid;
+  gap: 0.8rem;
+  margin-top: 0.85rem;
+}
+
+.tile-settings-panel__fields input[type='range'] {
+  width: 100%;
+  margin-top: 0.4rem;
+  accent-color: var(--v2-accent-2);
+}
+
+.tile-settings-panel__contacts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.4rem;
+}
+
+.tile-settings-panel__contacts button {
+  border: 1px solid rgba(91, 213, 240, 0.22);
+  background: rgba(7, 22, 32, 0.6);
+  color: var(--v2-muted);
+  padding: 0.34rem 0.2rem;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.tile-settings-panel__contacts button[aria-pressed='true'] {
+  border-color: var(--v2-accent-2);
+  background: linear-gradient(135deg, rgba(18, 70, 88, 0.78), rgba(7, 22, 32, 0.92));
+  color: var(--v2-accent-2);
 }

@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Convert the v2 editor direction into a Chip Custom Studio foundation with schema v2 studio data, deterministic global reflow, generated fake spec, and the first UI/export-visible studio hooks.
+**Goal:** Convert the v2 editor direction into a Chip Custom Studio foundation with schema v3 studio data, deterministic global reflow, generated fake spec, semi-auto tile detail, and UI/export-visible studio hooks.
 
-**Architecture:** Keep one local-first Project JSON document, but evolve it to schema v2 with `studio` defaults. Build pure domain helpers first: migration, global reflow, and generated spec. Then wire a minimal editor slice that lets the app show studio tools and generated spec without replacing every canvas interaction in one pass.
+**Architecture:** Keep one local-first Project JSON document, but evolve it through schema v2 `studio` defaults and schema v3 spray blend detail. Build pure domain helpers first: migration, global reflow, and generated spec. Then wire editor slices that make studio tools, generated spec, semi-auto tile detail, and export-visible decoration share the same render path.
 
 **Tech Stack:** Vite, React 19, TypeScript, Zustand, Konva/React Konva, Vitest, React Testing Library.
 
@@ -12,8 +12,8 @@
 
 ## File Map
 
-- `src/domain/project.ts`: schema v2 types for `StudioState`, stickers, sprays, and generated spec profile.
-- `src/domain/projectMigration.ts`: migrate legacy projects into schema v2 with studio defaults.
+- `src/domain/project.ts`: schema v3 types for `StudioState`, stickers, sprays, spray blend, and generated spec profile.
+- `src/domain/projectMigration.ts`: migrate legacy projects through schema v2 studio defaults into schema v3.
 - `src/domain/studioDefaults.ts`: reusable default studio state and generated spec fallback.
 - `src/studio/globalReflow.ts`: pure deterministic grid reflow engine.
 - `src/studio/generatedSpec.ts`: pure generated Fake Spec metrics from blocks and studio decorations.
@@ -85,6 +85,23 @@
 - [x] Run targeted tests, full `npm test`, and `npm run build`.
 - [x] Run final Browser QA for sticker/spray click, drag/edit, generated spec update, export controls, and console health.
 
+## Task 8: Semi-Auto Tile Detail & Per-Kind Sticker Shapes
+
+- [x] Bump schema to v3 by adding `StudioSpray.blend` (`screen`/`lighten`/`overlay`); migrate v1→default studio and v2→v3 by backfilling `blend` via `cloneStudioState` without dropping existing studio data (migration test).
+- [x] Add pure `src/visual/tileDetail.ts` mapping `StudioTileSettings` (density/route/contact) to render knobs; consume it in `chipLayers` (micro tiles + traces) and `BlockArtwork` (memory contact cells + micro lines) so editor and PNG export share one detail path.
+- [x] Add pure `src/features/editor/canvas/stickerLayout.ts` giving each sticker kind a distinct form (badge=circle, mascot=star, warning=triangle, label=pill); render the forms in `StudioStickerArtwork`; add kind-specific presets in `editorStore`.
+- [x] Add `TileSettingsPanel` to the right rail and wire `setTileSettings` (clamp 0..1, single undo step). Add sticker-kind and spray-blend toggles to `StudioInspector`.
+- [x] Parameterize `addSticker(kind)` / `addSpray(color)`; add tag-based undo coalescing (`resetCoalesce` on select/undo/redo); extract `offsetStudioCopy`.
+- [x] Couple generated spec to tile detail (route→bandwidth/style, dense contact→compute, warning sticker→stability).
+- [x] Generalize `globalReflow` with a die-shape `packRegion`, rotated-AABB extents, and uniform scale-to-fit when overcrowded (replacing the old bottom-row clamp); preserve rotation. Adapt the shared Transformer per selected item kind.
+- [x] Run targeted tests, full `npm test` (48 files / 203 tests), and `npm run build`.
+- [x] Browser QA: tile-detail min↔max visibly changes the editor die AND the offscreen export canvas; the four sticker kinds render distinct shapes; generated spec + export controls intact; console clean (favicon 404 only).
+- [x] 7-angle code review: no merge blockers. The 4 minor items were then fixed via TDD: palette "Round badge" rename, reflow `rotation ?? 0` guard, `MAX_MICRO_TILES` cap, and `packRegion` min-axis radius.
+- [ ] Commit (deferred — user requested no commit for this slice).
+
 ## Current Execution Slice
 
-Tasks 1-7 are implemented and verified. The current SoC Custom Studio slice is complete.
+Tasks 1-8 are implemented and verified; Task 8 is uncommitted in the working tree per user instruction
+(build green, `npm test` 48 files / 203 tests, Browser QA + code review passed). The four minor review
+items were fixed via TDD (palette "Round badge" rename; reflow `rotation ?? 0` guard; `MAX_MICRO_TILES`
+cap in `buildMicroTiles`; `packRegion` circle/hex radius from `min(width,height)`); no backlog remains.

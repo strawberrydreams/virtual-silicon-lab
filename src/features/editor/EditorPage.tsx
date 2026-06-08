@@ -9,6 +9,7 @@ import { FakeSpecForm } from '../specs/FakeSpecForm'
 import { GeneratedSpecPanel } from '../specs/GeneratedSpecPanel'
 import { ExportPanel } from '../export/ExportPanel'
 import { StudioInspector } from './StudioInspector'
+import { TileSettingsPanel } from './TileSettingsPanel'
 import { useAutosave } from './useAutosave'
 import { useEditorShortcuts } from './useEditorShortcuts'
 
@@ -90,6 +91,7 @@ export function EditorPage({ project, persist }: Props) {
       </section>
       <aside aria-label="Inspector and export rail" className="editor-side-rail editor-inspector-rail">
         <GeneratedSpecPanel project={state.project} />
+        <TileSettingsPanel tileSettings={state.project.studio.tileSettings} onChange={state.setTileSettings} />
         <StudioInspector
           project={state.project}
           selectedStudioItem={state.selectedStudioItem}

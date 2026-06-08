@@ -19,7 +19,7 @@ export function cloneStudioState(studio: StudioState): StudioState {
     layoutMode: studio.layoutMode,
     detailMode: studio.detailMode,
     tileSettings: { ...studio.tileSettings },
-    sprays: studio.sprays.map((spray) => ({ ...spray })),
+    sprays: studio.sprays.map((spray) => ({ ...spray, blend: spray.blend ?? 'screen' })),
     stickers: studio.stickers.map((sticker) => ({ ...sticker })),
   }
 }

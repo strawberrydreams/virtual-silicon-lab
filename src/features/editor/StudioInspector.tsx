@@ -1,6 +1,25 @@
 import { useEffect, useState } from 'react'
-import type { Project, StudioSpray, StudioSticker } from '../../domain/project'
+import type {
+  Project,
+  StudioSpray,
+  StudioSprayBlend,
+  StudioSticker,
+  StudioStickerKind,
+} from '../../domain/project'
 import type { SelectedStudioItem } from '../../stores/editorStore'
+
+const STICKER_KINDS: { kind: StudioStickerKind; label: string }[] = [
+  { kind: 'badge', label: 'Badge' },
+  { kind: 'mascot', label: 'Mascot' },
+  { kind: 'warning', label: 'Warning' },
+  { kind: 'label', label: 'Label' },
+]
+
+const SPRAY_BLENDS: { blend: StudioSprayBlend; label: string }[] = [
+  { blend: 'screen', label: 'Screen' },
+  { blend: 'lighten', label: 'Lighten' },
+  { blend: 'overlay', label: 'Overlay' },
+]
 
 type Props = {
   project: Project
@@ -9,7 +28,10 @@ type Props = {
     id: string,
     patch: Partial<Pick<StudioSticker, 'kind' | 'text' | 'color' | 'rotation'>>,
   ) => void
-  onUpdateSpray: (id: string, patch: Partial<Pick<StudioSpray, 'color' | 'intensity' | 'radius'>>) => void
+  onUpdateSpray: (
+    id: string,
+    patch: Partial<Pick<StudioSpray, 'color' | 'intensity' | 'radius' | 'blend'>>,
+  ) => void
 }
 
 const fieldClass =
@@ -58,6 +80,18 @@ function StickerFields({
 
   return (
     <div className="studio-item-inspector__fields">
+      <div className="studio-item-inspector__kinds" role="group" aria-label="Sticker kind">
+        {STICKER_KINDS.map(({ kind, label }) => (
+          <button
+            key={kind}
+            type="button"
+            aria-pressed={sticker.kind === kind}
+            onClick={() => onUpdate({ kind })}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
       <div className="studio-item-inspector__pair">
         <label className={labelClass}>
           Sticker x
@@ -112,7 +146,7 @@ function SprayFields({
   onUpdate,
 }: {
   spray: StudioSpray
-  onUpdate: (patch: Partial<Pick<StudioSpray, 'color' | 'intensity' | 'radius'>>) => void
+  onUpdate: (patch: Partial<Pick<StudioSpray, 'color' | 'intensity' | 'radius' | 'blend'>>) => void
 }) {
   const [radius, setRadius] = useState(String(spray.radius))
   const [intensity, setIntensity] = useState(String(spray.intensity))
@@ -174,6 +208,21 @@ function SprayFields({
           }}
         />
       </label>
+      <div>
+        <span className={labelClass}>Spray blend</span>
+        <div className="studio-item-inspector__kinds mt-1" role="group" aria-label="Spray blend">
+          {SPRAY_BLENDS.map(({ blend, label }) => (
+            <button
+              key={blend}
+              type="button"
+              aria-pressed={spray.blend === blend}
+              onClick={() => onUpdate({ blend })}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
     </div>
   )
 }

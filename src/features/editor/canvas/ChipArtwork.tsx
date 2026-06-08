@@ -1,14 +1,16 @@
 import { Fragment } from 'react'
 import type { ComponentProps, ReactNode } from 'react'
 import type Konva from 'konva'
-import { Circle, Group, Line, Rect, RegularPolygon, Text } from 'react-konva'
+import { Circle, Group, Line, Rect, RegularPolygon, Star, Text } from 'react-konva'
 import type { Block, Decoration, Die, Project, StudioSpray, StudioSticker } from '../../../domain/project'
 import { resolveTheme, type ThemeTokens } from '../../../themes/themeTokens'
 import { dieFillProps } from '../../../themes/gradients'
 import { resolveBlockStyle, resolveDecorationStyle } from '../../../themes/resolveStyle'
 import { buildChipLayers, type ChipLayerModel } from '../../../visual/chipLayers'
 import { resolveMaterialRecipe, type ChipMaterialRecipe } from '../../../visual/materialRecipes'
+import { resolveTileDetail, type TileDetail } from '../../../visual/tileDetail'
 import { blockMicroLines, blockVisual, memoryCells } from './blockTexture'
+import { resolveStickerLayout } from './stickerLayout'
 import { blocksByZIndex } from './artworkLayout'
 
 const GRID = 16
@@ -202,7 +204,7 @@ export function StudioSprayArtwork({
         opacity={Math.min(0.72, spray.intensity * 0.62)}
         shadowColor={spray.color}
         shadowBlur={Math.max(16, spray.radius * 0.34)}
-        globalCompositeOperation="screen"
+        globalCompositeOperation={spray.blend}
       />
       {selected ? (
         <Circle radius={spray.radius} stroke="#f9f4ff" strokeWidth={2} dash={[6, 6]} opacity={0.86} />
@@ -239,9 +241,10 @@ export function StudioStickerArtwork({
   groupRef?: (node: Konva.Group | null) => void
   groupProps?: ComponentProps<typeof Group>
 }) {
-  const isBadge = sticker.kind === 'badge' || sticker.kind === 'mascot'
-  const width = isBadge ? 52 : Math.max(76, sticker.text.length * 9 + 18)
-  const height = isBadge ? 52 : 32
+  const layout = resolveStickerLayout(sticker.kind, sticker.text)
+  const stroke = selected ? '#ffffff' : '#0b1020'
+  const strokeWidth = selected ? 3 : 2
+  const shadow = { shadowColor: '#000000', shadowBlur: 12, shadowOpacity: 0.28 } as const
   return (
     <Group
       ref={groupRef}
@@ -252,40 +255,34 @@ export function StudioStickerArtwork({
       listening={groupProps !== undefined}
       {...groupProps}
     >
-      {isBadge ? (
-        <Circle
-          radius={26}
-          fill={sticker.color}
-          stroke={selected ? '#ffffff' : '#0b1020'}
-          strokeWidth={selected ? 3 : 2}
-          shadowColor="#000000"
-          shadowBlur={12}
-          shadowOpacity={0.28}
-        />
+      {layout.form === 'circle' ? (
+        <Circle radius={26} fill={sticker.color} stroke={stroke} strokeWidth={strokeWidth} {...shadow} />
+      ) : layout.form === 'star' ? (
+        <Star numPoints={5} innerRadius={12} outerRadius={28} fill={sticker.color} stroke={stroke} strokeWidth={strokeWidth} {...shadow} />
+      ) : layout.form === 'triangle' ? (
+        <RegularPolygon sides={3} radius={30} fill={sticker.color} stroke={stroke} strokeWidth={strokeWidth} {...shadow} />
       ) : (
         <Rect
-          x={-width / 2}
-          y={-height / 2}
-          width={width}
-          height={height}
-          cornerRadius={4}
+          x={-layout.width / 2}
+          y={-layout.height / 2}
+          width={layout.width}
+          height={layout.height}
+          cornerRadius={6}
           fill={sticker.color}
-          stroke={selected ? '#ffffff' : '#0b1020'}
-          strokeWidth={selected ? 3 : 2}
-          shadowColor="#000000"
-          shadowBlur={12}
-          shadowOpacity={0.28}
+          stroke={stroke}
+          strokeWidth={strokeWidth}
+          {...shadow}
         />
       )}
       <Text
-        x={-width / 2}
-        y={-7}
-        width={width}
+        x={-layout.width / 2}
+        y={layout.form === 'triangle' ? 4 : -layout.fontSize / 2}
+        width={layout.width}
         align="center"
         text={sticker.text}
-        fontSize={isBadge ? 16 : 12}
+        fontSize={layout.fontSize}
         fontStyle="bold"
-        letterSpacing={isBadge ? 0 : 1}
+        letterSpacing={layout.letterSpacing}
         fill="#0b1020"
       />
     </Group>
@@ -390,16 +387,21 @@ export function BlockArtwork({
   block,
   tokens,
   selected = false,
+  detail,
   groupRef,
   groupProps,
 }: {
   block: Block
   tokens: ThemeTokens
   selected?: boolean
+  detail?: TileDetail
   groupRef?: (node: Konva.Group | null) => void
   groupProps?: ComponentProps<typeof Group>
 }) {
   const style = resolveBlockStyle(block, tokens, selected)
+  const contactCell = detail?.contactCell ?? 10
+  const contactGap = detail?.contactGap ?? 4
+  const blockStride = detail?.blockStride ?? 18
   return (
     <Group
       ref={groupRef}
@@ -422,7 +424,7 @@ export function BlockArtwork({
       />
       {blockVisual(block.type) === 'memory' ? (
         <Group clipFunc={(context) => context.rect(0, 0, block.w, block.h)}>
-          {memoryCells(block.w, block.h).map((cell, index) => (
+          {memoryCells(block.w, block.h, contactCell, contactGap).map((cell, index) => (
             <Rect
               key={index}
               x={cell.x}
@@ -436,7 +438,7 @@ export function BlockArtwork({
         </Group>
       ) : null}
       <Group clipFunc={(context) => context.rect(0, 0, block.w, block.h)} listening={false}>
-        {blockMicroLines(block.w, block.h).map((line, index) => (
+        {blockMicroLines(block.w, block.h, blockStride).map((line, index) => (
           <Line
             key={index}
             points={line.points}
@@ -470,6 +472,7 @@ export function ChipArtwork({
   const tokens = resolveTheme(project.theme)
   const recipe = resolveMaterialRecipe(project.theme)
   const layers = buildChipLayers(project)
+  const detail = resolveTileDetail(project.studio.tileSettings)
   return (
     <>
       {renderMode === 'full' ? <PackageShape die={project.die} layers={layers} recipe={recipe} /> : null}
@@ -479,7 +482,7 @@ export function ChipArtwork({
       <TraceLayer die={project.die} layers={layers} />
       {blocksByZIndex(project.blocks).map((block) => (
         <Fragment key={block.id}>
-          {renderBlock?.(block, tokens) ?? <BlockArtwork block={block} tokens={tokens} />}
+          {renderBlock?.(block, tokens) ?? <BlockArtwork block={block} tokens={tokens} detail={detail} />}
         </Fragment>
       ))}
       {/*

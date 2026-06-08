@@ -1,4 +1,4 @@
-export const CURRENT_SCHEMA_VERSION = 2 as const
+export const CURRENT_SCHEMA_VERSION = 3 as const
 
 export type DieShape = 'rect' | 'square' | 'circle' | 'hexagon'
 export type StyleTheme = 'neon' | 'retro' | 'military' | 'keynote' | 'mono'
@@ -69,6 +69,8 @@ export type StudioTileSettings = {
   contactStyle: StudioContactStyle
 }
 
+export type StudioSprayBlend = 'screen' | 'lighten' | 'overlay'
+
 export type StudioSpray = {
   id: string
   x: number
@@ -76,6 +78,7 @@ export type StudioSpray = {
   radius: number
   color: string
   intensity: number
+  blend: StudioSprayBlend
 }
 
 export type StudioStickerKind = 'badge' | 'label' | 'mascot' | 'warning'

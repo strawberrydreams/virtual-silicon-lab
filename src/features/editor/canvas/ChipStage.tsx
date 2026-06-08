@@ -10,6 +10,7 @@ import { editorStageFrameSize, editorStageSize } from './artworkLayout'
 import { BlockArtwork, ChipArtwork, StudioSprayArtwork, StudioStickerArtwork } from './ChipArtwork'
 import type { SelectedStudioItem, SprayTransform, StickerTransform } from '../../../stores/editorStore'
 import { reflowBlocksGlobally } from '../../../studio/globalReflow'
+import { resolveTileDetail } from '../../../visual/tileDetail'
 
 const GRID = 16
 const MIN_BLOCK = 48
@@ -57,6 +58,10 @@ export function ChipStage({
   }, [selectedBlockId, selectedStudioItem, project.blocks, project.studio.stickers, project.studio.sprays])
 
   const displayProject = previewBlocks === null ? project : { ...project, blocks: previewBlocks }
+  // Stickers are fixed-size (rotate only); sprays scale to a radius (no rotation);
+  // blocks support both — so the shared Transformer adapts to what is selected.
+  const transformerKind = selectedStudioItem?.kind ?? (selectedBlockId ? 'block' : null)
+  const tileDetail = resolveTileDetail(project.studio.tileSettings)
   const stageSize = editorStageSize(project.die)
   const frameSize = editorStageFrameSize(project.die)
 
@@ -111,6 +116,7 @@ export function ChipStage({
                   block={block}
                   tokens={tokens}
                   selected={block.id === selectedBlockId}
+                  detail={tileDetail}
                   groupRef={(node) => {
                     if (node) blockRefs.current.set(block.id, node)
                     else blockRefs.current.delete(block.id)
@@ -125,18 +131,25 @@ export function ChipStage({
                     },
                     onDragMove: (event) => {
                       if (project.studio.layoutMode !== 'global-reflow') return
+                      const pointerX = event.target.x()
+                      const pointerY = event.target.y()
                       const blocks = project.blocks.map((candidate) =>
                         candidate.id === block.id
-                          ? { ...candidate, x: event.target.x(), y: event.target.y() }
+                          ? { ...candidate, x: pointerX, y: pointerY }
                           : candidate,
                       )
+                      const reflowed = reflowBlocksGlobally({
+                        blocks,
+                        die: project.die,
+                        targetBlockId: block.id,
+                        target: { x: pointerX, y: pointerY },
+                      })
+                      // Keep the dragged tile under the pointer so React's prop does
+                      // not fight Konva's live drag position; only the others reflow.
                       setPreviewBlocks(
-                        reflowBlocksGlobally({
-                          blocks,
-                          die: project.die,
-                          targetBlockId: block.id,
-                          target: { x: event.target.x(), y: event.target.y() },
-                        }),
+                        reflowed.map((candidate) =>
+                          candidate.id === block.id ? { ...candidate, x: pointerX, y: pointerY } : candidate,
+                        ),
                       )
                     },
                     onDragEnd: (event) => {
@@ -239,7 +252,9 @@ export function ChipStage({
             />
             <Transformer
               ref={transformerRef}
-              rotateEnabled
+              rotateEnabled={transformerKind !== 'spray'}
+              resizeEnabled={transformerKind !== 'sticker'}
+              enabledAnchors={transformerKind === 'sticker' ? [] : undefined}
               boundBoxFunc={(oldBox, newBox) =>
                 newBox.width < MIN_BLOCK || newBox.height < MIN_BLOCK ? oldBox : newBox
               }

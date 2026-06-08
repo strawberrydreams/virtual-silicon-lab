@@ -49,7 +49,7 @@ describe('generateStudioSpec', () => {
     ])
     project.studio = {
       ...project.studio,
-      sprays: [{ id: 'spray-1', x: 20, y: 20, radius: 160, color: '#ff70dc', intensity: 0.8 }],
+      sprays: [{ id: 'spray-1', x: 20, y: 20, radius: 160, color: '#ff70dc', intensity: 0.8, blend: 'screen' }],
       stickers: [{ id: 'sticker-1', kind: 'badge', x: 80, y: 80, text: 'STAR', color: '#f9f4ff', rotation: -8 }],
     }
 
@@ -61,6 +61,44 @@ describe('generateStudioSpec', () => {
     expect(spec.description).toContain('impossible')
   })
 
+  it('lowers stability for a warning sticker compared with a badge sticker', () => {
+    const blocks = [block('cpu', 'CPU', 'real'), block('gpu', 'GPU', 'real')]
+    const badge = withBlocks(blocks)
+    badge.studio = {
+      ...badge.studio,
+      stickers: [{ id: 's1', kind: 'badge', x: 40, y: 40, text: 'STAR', color: '#fff', rotation: 0 }],
+    }
+    const warning = withBlocks(blocks)
+    warning.studio = {
+      ...warning.studio,
+      stickers: [{ id: 's1', kind: 'warning', x: 40, y: 40, text: '!', color: '#f55', rotation: 0 }],
+    }
+
+    expect(generateStudioSpec(warning).metrics.stability).toBeLessThan(
+      generateStudioSpec(badge).metrics.stability,
+    )
+  })
+
+  it('raises bandwidth as route intensity rises', () => {
+    const blocks = [block('cpu', 'CPU', 'real'), block('gpu', 'GPU', 'real')]
+    const quiet = withBlocks(blocks)
+    quiet.studio = { ...quiet.studio, tileSettings: { ...quiet.studio.tileSettings, routeIntensity: 0 } }
+    const loud = withBlocks(blocks)
+    loud.studio = { ...loud.studio, tileSettings: { ...loud.studio.tileSettings, routeIntensity: 1 } }
+
+    expect(generateStudioSpec(loud).metrics.bandwidth).toBeGreaterThan(generateStudioSpec(quiet).metrics.bandwidth)
+  })
+
+  it('raises compute for a denser contact style', () => {
+    const blocks = [block('cpu', 'CPU', 'real'), block('gpu', 'GPU', 'real')]
+    const minimal = withBlocks(blocks)
+    minimal.studio = { ...minimal.studio, tileSettings: { ...minimal.studio.tileSettings, contactStyle: 'minimal' } }
+    const dense = withBlocks(blocks)
+    dense.studio = { ...dense.studio, tileSettings: { ...dense.studio.tileSettings, contactStyle: 'dense' } }
+
+    expect(generateStudioSpec(dense).metrics.compute).toBeGreaterThan(generateStudioSpec(minimal).metrics.compute)
+  })
+
   it('reduces stability when the die is overcrowded and heavily sprayed', () => {
     const crowdedBlocks = Array.from({ length: 10 }, (_, index) =>
       block(`tile-${index}`, index % 2 === 0 ? 'CPU' : 'RealityDistortionUnit', index % 2 === 0 ? 'real' : 'fantasy', 180, 120),
@@ -69,8 +107,8 @@ describe('generateStudioSpec', () => {
     project.studio = {
       ...project.studio,
       sprays: [
-        { id: 'spray-1', x: 20, y: 20, radius: 180, color: '#ff70dc', intensity: 0.9 },
-        { id: 'spray-2', x: 300, y: 220, radius: 180, color: '#70eeff', intensity: 0.9 },
+        { id: 'spray-1', x: 20, y: 20, radius: 180, color: '#ff70dc', intensity: 0.9, blend: 'screen' },
+        { id: 'spray-2', x: 300, y: 220, radius: 180, color: '#70eeff', intensity: 0.9, blend: 'screen' },
       ],
     }
 

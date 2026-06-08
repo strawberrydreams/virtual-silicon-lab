@@ -29,13 +29,17 @@ export function generateStudioSpec(project: Project): GeneratedStudioSpec {
   const density = dieArea > 0 ? blockArea / dieArea : 0
   const sprayIntensity = project.studio.sprays.reduce((sum, spray) => sum + spray.intensity, 0)
   const stickerCount = project.studio.stickers.length
+  const warningCount = project.studio.stickers.filter((sticker) => sticker.kind === 'warning').length
+  const tile = project.studio.tileSettings
+  const routeIntensity = Math.min(1, Math.max(0, tile.routeIntensity))
+  const contactDensity = tile.contactStyle === 'dense' ? 1 : tile.contactStyle === 'minimal' ? 0 : 0.5
 
   const metrics: StudioSpecMetrics = {
-    compute: clampMetric(28 + computeCount * 18 + blockCount * 2),
-    bandwidth: clampMetric(24 + (memoryArea / Math.max(1, dieArea)) * 340 + ioCount * 5),
+    compute: clampMetric(28 + computeCount * 18 + blockCount * 2 + contactDensity * 10),
+    bandwidth: clampMetric(24 + (memoryArea / Math.max(1, dieArea)) * 340 + ioCount * 5 + routeIntensity * 18),
     fantasy: clampMetric(18 + fantasyCount * 24 + sprayIntensity * 12 + stickerCount * 5),
-    stability: clampMetric(94 - Math.max(0, density - 0.34) * 130 - sprayIntensity * 13 - fantasyCount * 4),
-    style: clampMetric(34 + stickerCount * 18 + sprayIntensity * 22 + project.studio.tileSettings.detailDensity * 22),
+    stability: clampMetric(94 - Math.max(0, density - 0.34) * 130 - sprayIntensity * 13 - fantasyCount * 4 - contactDensity * 6 - warningCount * 7),
+    style: clampMetric(34 + stickerCount * 18 + sprayIntensity * 22 + tile.detailDensity * 22 + routeIntensity * 8),
   }
 
   const features = buildFeatures(metrics, memoryArea, dieArea, stickerCount)
