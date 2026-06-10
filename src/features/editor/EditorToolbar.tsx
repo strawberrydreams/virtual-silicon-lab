@@ -1,6 +1,7 @@
 import type { DieShape, StyleTheme } from '../../domain/project'
 import type { DecorationKind } from '../../domain/decorationFactory'
 import { chipFinishLabel } from '../../visual/themeFinish'
+import { MoveIcon, RedoIcon, ResizeIcon, RotateIcon, SelectIcon, UndoIcon } from './icons'
 
 type Props = {
   dieShape: DieShape
@@ -8,6 +9,7 @@ type Props = {
   canUndo: boolean
   canRedo: boolean
   hasSelection: boolean
+  hasBlockSelection: boolean
   onSetDieShape: (shape: DieShape) => void
   onSetTheme: (theme: StyleTheme) => void
   onAddDecoration: (kind: DecorationKind) => void
@@ -46,6 +48,7 @@ export function EditorToolbar({
   canUndo,
   canRedo,
   hasSelection,
+  hasBlockSelection,
   onSetDieShape,
   onSetTheme,
   onAddDecoration,
@@ -89,20 +92,25 @@ export function EditorToolbar({
       <section aria-label="Editor operation strip" className="editor-toolbar__row editor-toolbar__row--operations">
         <div aria-label="Canvas interaction tools" className="editor-tool-group" role="group">
           <button className={activeButtonClass} type="button">
+            <span className="editor-tool-button__icon" aria-hidden="true"><SelectIcon /></span>
             Select
           </button>
           <button className={buttonClass} type="button" disabled>
+            <span className="editor-tool-button__icon" aria-hidden="true"><MoveIcon /></span>
             Move
           </button>
           <button className={buttonClass} type="button" disabled>
+            <span className="editor-tool-button__icon" aria-hidden="true"><RotateIcon /></span>
             Rotate
           </button>
           <button className={buttonClass} type="button" disabled>
+            <span className="editor-tool-button__icon" aria-hidden="true"><ResizeIcon /></span>
             Resize
           </button>
         </div>
         <div aria-label="Selection controls" className="editor-tool-group" role="group">
-          <button className={buttonClass} disabled={!hasSelection} onClick={onDuplicate}>
+          {/* Reference placeholder until a real clipboard command exists. */}
+          <button className={buttonClass} disabled type="button">
             Copy
           </button>
           <button className={buttonClass} disabled={!hasSelection} onClick={onDuplicate}>
@@ -111,10 +119,11 @@ export function EditorToolbar({
           <button className={buttonClass} disabled={!hasSelection} onClick={onDelete}>
             Delete
           </button>
-          <button className={buttonClass} disabled={!hasSelection} onClick={onBringForward}>
+          {/* Z-order only applies to blocks; stickers/sprays have no zIndex. */}
+          <button className={buttonClass} disabled={!hasBlockSelection} onClick={onBringForward}>
             Forward
           </button>
-          <button className={buttonClass} disabled={!hasSelection} onClick={onSendBackward}>
+          <button className={buttonClass} disabled={!hasBlockSelection} onClick={onSendBackward}>
             Backward
           </button>
         </div>
@@ -131,9 +140,11 @@ export function EditorToolbar({
         </div>
         <div aria-label="History controls" className="editor-tool-group" role="group">
           <button className={buttonClass} disabled={!canUndo} onClick={onUndo}>
+            <span className="editor-tool-button__icon" aria-hidden="true"><UndoIcon /></span>
             Undo
           </button>
           <button className={buttonClass} disabled={!canRedo} onClick={onRedo}>
+            <span className="editor-tool-button__icon" aria-hidden="true"><RedoIcon /></span>
             Redo
           </button>
         </div>

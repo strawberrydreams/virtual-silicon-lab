@@ -10,6 +10,7 @@ function renderToolbar(overrides = {}) {
     canUndo: true,
     canRedo: false,
     hasSelection: true,
+    hasBlockSelection: true,
     onSetDieShape: vi.fn(),
     onSetTheme: vi.fn(),
     onAddDecoration: vi.fn(),
@@ -38,9 +39,17 @@ describe('EditorToolbar', () => {
   })
 
   it('disables selection commands when nothing is selected', () => {
-    renderToolbar({ hasSelection: false })
+    renderToolbar({ hasSelection: false, hasBlockSelection: false })
     expect(screen.getByRole('button', { name: 'Delete' })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'Duplicate' })).toBeDisabled()
+  })
+
+  it('disables z-order commands for studio-item selections that have no z-order', () => {
+    renderToolbar({ hasSelection: true, hasBlockSelection: false }) // sticker/spray selected
+    expect(screen.getByRole('button', { name: 'Forward' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Backward' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Delete' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Duplicate' })).toBeEnabled()
   })
 
   it('invokes undo and delete handlers', async () => {
@@ -75,8 +84,8 @@ describe('EditorToolbar', () => {
     expect(screen.getByRole('group', { name: 'Selection controls' })).toBeInTheDocument()
   })
 
-  it('exposes reference-style operation tools without changing existing handlers', async () => {
-    const props = renderToolbar()
+  it('exposes reference-style operation tools without changing existing handlers', () => {
+    renderToolbar()
 
     expect(screen.getByRole('button', { name: 'Select' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Move' })).toBeInTheDocument()
@@ -92,9 +101,9 @@ describe('EditorToolbar', () => {
     expect(screen.getByRole('button', { name: 'Align' })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'Distribute' })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'Snap' })).toBeDisabled()
-
-    await userEvent.click(screen.getByRole('button', { name: 'Copy' }))
-    expect(props.onDuplicate).toHaveBeenCalledTimes(1)
+    // Copy is a reference placeholder until clipboard lands — it must not
+    // silently mirror the adjacent Duplicate button.
+    expect(screen.getByRole('button', { name: 'Copy' })).toBeDisabled()
   })
 
   it('exposes the sci-fi object decoration command', async () => {

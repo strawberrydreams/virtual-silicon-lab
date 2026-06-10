@@ -116,15 +116,15 @@ export function createEditorStore(initialProject: Project, options: Options = {}
       return { ...block, ...clampBlockToDie(block, project.die) }
     }
 
-    function clampPoint(project: Project, x: number, y: number) {
+    function clampPoint(die: Project['die'], x: number, y: number) {
       return {
-        x: Math.min(Math.max(0, x), project.die.width),
-        y: Math.min(Math.max(0, y), project.die.height),
+        x: Math.min(Math.max(0, x), die.width),
+        y: Math.min(Math.max(0, y), die.height),
       }
     }
 
-    function clampSprayRadius(project: Project, radius: number) {
-      return Math.min(Math.max(24, radius), Math.max(24, Math.min(project.die.width, project.die.height) / 2))
+    function clampSprayRadius(die: Project['die'], radius: number) {
+      return Math.min(Math.max(24, radius), Math.max(24, Math.min(die.width, die.height) / 2))
     }
 
     function hasSelectedStudioItem(project: Project, item: SelectedStudioItem | null) {
@@ -282,7 +282,7 @@ export function createEditorStore(initialProject: Project, options: Options = {}
 
       transformSticker(id, transform) {
         const { project } = get()
-        const point = clampPoint(project, transform.x, transform.y)
+        const point = clampPoint(project.die, transform.x, transform.y)
         commit({
           ...project,
           studio: {
@@ -302,7 +302,7 @@ export function createEditorStore(initialProject: Project, options: Options = {}
 
       transformSpray(id, transform) {
         const { project } = get()
-        const point = clampPoint(project, transform.x, transform.y)
+        const point = clampPoint(project.die, transform.x, transform.y)
         commit({
           ...project,
           studio: {
@@ -315,7 +315,7 @@ export function createEditorStore(initialProject: Project, options: Options = {}
                     radius:
                       transform.radius === undefined
                         ? spray.radius
-                        : clampSprayRadius(project, transform.radius),
+                        : clampSprayRadius(project.die, transform.radius),
                   }
                 : spray,
             ),
@@ -357,7 +357,7 @@ export function createEditorStore(initialProject: Project, options: Options = {}
                           ? spray.intensity
                           : Math.min(Math.max(0, patch.intensity), 1),
                       radius:
-                        patch.radius === undefined ? spray.radius : clampSprayRadius(project, patch.radius),
+                        patch.radius === undefined ? spray.radius : clampSprayRadius(project.die, patch.radius),
                     }
                   : spray,
               ),
@@ -506,7 +506,18 @@ export function createEditorStore(initialProject: Project, options: Options = {}
           ...block,
           ...clampBlockToDie(block, die),
         }))
-        commit({ ...project, die, blocks })
+        // Studio items are clipped to the die outline when rendered, so anything
+        // left outside a shrunken die would become invisible and unselectable.
+        const stickers = project.studio.stickers.map((sticker) => ({
+          ...sticker,
+          ...clampPoint(die, sticker.x, sticker.y),
+        }))
+        const sprays = project.studio.sprays.map((spray) => ({
+          ...spray,
+          ...clampPoint(die, spray.x, spray.y),
+          radius: clampSprayRadius(die, spray.radius),
+        }))
+        commit({ ...project, die, blocks, studio: { ...project.studio, stickers, sprays } })
       },
 
       setTheme(theme) {

@@ -1,8 +1,15 @@
 import type { Block, Project } from '../domain/project'
 import { resolveMaterialRecipe } from './materialRecipes'
 import { resolveTileDetail, type TileDetail } from './tileDetail'
+import { buildFillerCells, dieIncircle, type FillerCell } from '../studio/floorplan'
 
 export type Bounds = { x: number; y: number; width: number; height: number }
+export type FabricCell = { x: number; y: number; w: number; h: number }
+
+export type FabricDetail =
+  | { id: string; kind: 'padArray'; cells: FabricCell[]; opacity: number }
+  | { id: string; kind: 'powerRail'; points: number[]; width: number; opacity: number }
+  | { id: string; kind: 'viaCluster'; cells: FabricCell[]; opacity: number }
 
 export type ChipLayer =
   | { id: string; kind: 'package'; bounds: Bounds; radius: number; color: string }
@@ -21,6 +28,8 @@ export type ChipLayerModel = {
   traces: Extract<ChipLayer, { kind: 'trace' }>[]
   readoutLabels: Extract<ChipLayer, { kind: 'readoutLabel' }>[]
   glowOverlay: Extract<ChipLayer, { kind: 'glassGlow' }>
+  fillerCells: FillerCell[]
+  fabricDetails: FabricDetail[]
 }
 
 function center(block: Block): [number, number] {
@@ -89,6 +98,99 @@ function buildTraces(project: Project, detail: TileDetail): Extract<ChipLayer, {
   })
 }
 
+type DieIncircle = ReturnType<typeof dieIncircle>
+
+// Whole pad cells must stay inside the die outline: a pad that crosses the
+// circle/hexagon boundary would be hard-cut mid-cell by the renderer clip.
+function cellInsideOutline(cell: FabricCell, incircle: DieIncircle): boolean {
+  if (incircle === null) return true
+  const corners = [
+    [cell.x, cell.y],
+    [cell.x + cell.w, cell.y],
+    [cell.x, cell.y + cell.h],
+    [cell.x + cell.w, cell.y + cell.h],
+  ]
+  return corners.every(([x, y]) => Math.hypot(x - incircle.cx, y - incircle.cy) <= incircle.r)
+}
+
+function padCellsForEdge(project: Project, edge: 'top' | 'right' | 'bottom' | 'left', incircle: DieIncircle): FabricCell[] {
+  const cells: FabricCell[] = []
+  const spacing = 18
+  const pad = 10
+  if (edge === 'top' || edge === 'bottom') {
+    for (let x = 22; x <= project.die.width - 30; x += spacing) {
+      cells.push({ x, y: edge === 'top' ? pad : project.die.height - pad - 4, w: 8, h: 4 })
+    }
+  } else {
+    for (let y = 22; y <= project.die.height - 30; y += spacing) {
+      cells.push({ x: edge === 'left' ? pad : project.die.width - pad - 4, y, w: 4, h: 8 })
+    }
+  }
+  return cells.filter((cell) => cellInsideOutline(cell, incircle))
+}
+
+// Chord span for an axis-aligned rail crossing the incircle at `offset` from
+// the perpendicular center axis, inset so both endpoints stay inside the outline.
+function railSpan(offset: number, axisCenter: number, spanCenter: number, r: number): [number, number] | null {
+  const distance = Math.abs(offset - axisCenter)
+  if (distance >= r - 24) return null
+  const halfChord = Math.sqrt(r * r - distance * distance)
+  const from = spanCenter - halfChord + 24
+  const to = spanCenter + halfChord - 24
+  return to - from < 40 ? null : [from, to]
+}
+
+function buildFabricDetails(project: Project, detail: TileDetail): FabricDetail[] {
+  const incircle = dieIncircle(project.die)
+  const details: FabricDetail[] = [
+    { id: 'pad-array-top', kind: 'padArray', cells: padCellsForEdge(project, 'top', incircle), opacity: 0.28 },
+    { id: 'pad-array-right', kind: 'padArray', cells: padCellsForEdge(project, 'right', incircle), opacity: 0.24 },
+    { id: 'pad-array-bottom', kind: 'padArray', cells: padCellsForEdge(project, 'bottom', incircle), opacity: 0.24 },
+    { id: 'pad-array-left', kind: 'padArray', cells: padCellsForEdge(project, 'left', incircle), opacity: 0.24 },
+  ]
+
+  const railStep = Math.max(74, Math.round(112 - detail.traceWidthScale * 20))
+  for (let y = 54; y < project.die.height - 40; y += railStep) {
+    const span = incircle ? railSpan(y, incircle.cy, incircle.cx, incircle.r) : [24, project.die.width - 24]
+    if (span === null) continue
+    details.push({
+      id: `power-rail-h-${Math.round(y)}`,
+      kind: 'powerRail',
+      points: [span[0], y, span[1], y],
+      width: 0.8,
+      opacity: 0.16,
+    })
+  }
+  for (let x = 54; x < project.die.width - 40; x += railStep) {
+    const span = incircle ? railSpan(x, incircle.cx, incircle.cy, incircle.r) : [24, project.die.height - 24]
+    if (span === null) continue
+    details.push({
+      id: `power-rail-v-${Math.round(x)}`,
+      kind: 'powerRail',
+      points: [x, span[0], x, span[1]],
+      width: 0.7,
+      opacity: 0.12,
+    })
+  }
+
+  for (const block of project.blocks) {
+    const x = Math.round(block.x + block.w / 2)
+    const y = Math.round(block.y + block.h / 2)
+    details.push({
+      id: `via-cluster-${block.id}`,
+      kind: 'viaCluster',
+      cells: [
+        { x: x - 5, y: y - 5, w: 3, h: 3 },
+        { x: x + 2, y: y - 5, w: 3, h: 3 },
+        { x: x - 5, y: y + 2, w: 3, h: 3 },
+        { x: x + 2, y: y + 2, w: 3, h: 3 },
+      ],
+      opacity: 0.42,
+    })
+  }
+  return details
+}
+
 export function buildChipLayers(project: Project): ChipLayerModel {
   const recipe = resolveMaterialRecipe(project.theme)
   const detail = resolveTileDetail(project.studio.tileSettings)
@@ -131,5 +233,7 @@ export function buildChipLayers(project: Project): ChipLayerModel {
       blur: recipe.glassGlow.blur,
       opacity: recipe.glassGlow.opacity,
     },
+    fillerCells: buildFillerCells(project),
+    fabricDetails: buildFabricDetails(project, detail),
   }
 }

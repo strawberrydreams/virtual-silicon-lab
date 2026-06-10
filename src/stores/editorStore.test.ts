@@ -174,6 +174,22 @@ describe('editor store commands', () => {
       expect(block.x + block.w).toBeLessThanOrEqual(640)
     }
   })
+
+  it('re-clamps studio stickers and sprays when the die shape shrinks', () => {
+    const store = createEditorStore(seededProject(), { createId: fixedIds('sticker-1', 'spray-1') })
+    store.getState().addSticker('badge')
+    store.getState().addSpray()
+    store.getState().transformSticker('sticker-1', { x: 900, y: 600 })
+    store.getState().transformSpray('spray-1', { x: 920, y: 40 })
+
+    store.getState().setDieShape('circle') // 960x640 rect → 640x640 circle
+
+    const { stickers, sprays } = store.getState().project.studio
+    expect(stickers[0].x).toBeLessThanOrEqual(640)
+    expect(stickers[0].y).toBeLessThanOrEqual(640)
+    expect(sprays[0].x).toBeLessThanOrEqual(640)
+    expect(sprays[0].y).toBeLessThanOrEqual(640)
+  })
 })
 
 function rotatedCorners(block: { x: number; y: number; w: number; h: number; rotation?: number }) {

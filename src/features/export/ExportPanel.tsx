@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react'
 import type Konva from 'konva'
 import type { Project } from '../../domain/project'
 import { resolveHeroSetForProject } from '../../visual/heroSetCatalog'
-import type { ChipLayerVisibility } from '../editor/layerVisibility'
 import { DieExportStage } from './DieExportStage'
 import { PosterExportStage } from './PosterExportStage'
 import { DIE_EXPORT_PIXEL_RATIO, POSTER_EXPORT } from './exportLayout'
@@ -12,13 +11,7 @@ import { POSTER_FORMATS, type PosterFormat } from './posterCompositions'
 const buttonClass =
   'w-full rounded border border-cyan-700 px-3 py-2 text-xs uppercase tracking-wider text-cyan-100 transition-colors hover:border-cyan-400 hover:bg-cyan-950'
 
-export function ExportPanel({
-  project,
-  layerVisibility,
-}: {
-  project: Project
-  layerVisibility?: ChipLayerVisibility
-}) {
+export function ExportPanel({ project }: { project: Project }) {
   const dieStageRef = useRef<Konva.Stage>(null)
   const posterStageRef = useRef<Konva.Stage>(null)
   const defaultPosterFormat = resolveHeroSetForProject(project)?.posterFormat ?? 'press-hero'
@@ -83,13 +76,8 @@ export function ExportPanel({
       </button>
 
       <div className="pointer-events-none absolute left-[-10000px] top-[-10000px]" aria-hidden="true">
-        <DieExportStage ref={dieStageRef} project={project} layerVisibility={layerVisibility} />
-        <PosterExportStage
-          ref={posterStageRef}
-          project={project}
-          format={posterFormat}
-          layerVisibility={layerVisibility}
-        />
+        <DieExportStage ref={dieStageRef} project={project} />
+        <PosterExportStage ref={posterStageRef} project={project} format={posterFormat} />
       </div>
     </div>
   )

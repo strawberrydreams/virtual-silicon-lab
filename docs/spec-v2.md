@@ -49,7 +49,7 @@ v2는 v1 MVP의 기능 폭을 크게 늘리는 버전이 아니라, **웹 페이
 - 게시판, gallery, ranking, contest, 공개 커뮤니티 기능.
 - 공개 서비스 운영.
 
-초기 `docs/v2-questions.md`에는 백엔드/게시판을 v2에 포함한다는 답변이 남아 있지만, 이후 결정으로 v2는 visual/design 범위만 다루고 백엔드/계정/게시판은 v3 이후로 연기한다.
+초기 결정 단계(현재는 삭제된 `docs/v2-questions.md`)에는 백엔드/게시판을 v2에 포함한다는 답변이 남아 있었지만, 이후 결정으로 v2는 visual/design 범위만 다루고 백엔드/계정/게시판은 v3 이후로 연기한다.
 
 ## 유지할 계약
 
@@ -58,6 +58,8 @@ v2는 v1 MVP의 기능 폭을 크게 늘리는 버전이 아니라, **웹 페이
 - local-first 구조와 IndexedDB/localStorage fallback은 유지한다.
 - export는 editor DOM 캡처가 아니라 dedicated Konva stage 기반이어야 한다.
 - v1 기능은 더 나은 UX를 위해 바꿀 수 있지만, 프로젝트 생성/저장/편집/export의 기본 흐름은 깨지면 안 된다.
+- 프리셋 리믹스 중심 구조는 유지하되, 자유 편집(custom die/decoration 편집 등) 확장은 추후 고려한다.
+- v2 결과물은 비공개로 유지하며, 별도 지시 전까지 공개 배포는 하지 않는다.
 
 ## 디자인 방향
 

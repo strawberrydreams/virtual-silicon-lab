@@ -1,54 +1,37 @@
-# Virtual Silicon Lab
+# Virtual Silicon Lab 0.1 v2
 
-Local-first creative web app for designing fictional semiconductor die shots and exporting
-high-resolution chip PNGs and press-style posters. Not an EDA tool; no real manufacturing.
+가상의 반도체 다이를 디자인하고, 고해상도 칩 PNG와 보도자료 스타일 포스터를 내보내는
+로컬 우선(local-first) 크리에이티브 웹 앱입니다. EDA 툴이 아니며 실제 제조와는 무관합니다.
 
-## v2 Private Release
+## v2 비주얼 메이저 릴리스
 
-v2 is a visual major release. The app keeps the v1 local-first editor and single JSON project
-model, but rebuilds the page shell, editor chrome, chip material renderer, and poster output
-around a premium semiconductor press-image direction.
+v2는 비주얼을 전면 개편한 릴리스입니다. v1의 로컬 우선 에디터와 단일 JSON 프로젝트 모델은
+그대로 유지하면서, 페이지 셸·에디터 화면·칩 머티리얼 렌더러·포스터 출력을 프리미엄
+반도체 보도자료 이미지 방향으로 다시 디자인했습니다.
 
-## Features
+## 주요 기능
 
-- No-login start; projects persist in IndexedDB (localStorage fallback).
-- React + Konva editor: four die shapes, grid/snap/zoom/pan, resize/rotate/reorder, undo/redo,
-  16 real/fantasy block types, decorations, and page themes.
-- Three page themes: `laboratory`, `anime`, and `space`.
-- 16 remixable presets: 10 v2 hero chip/poster sets plus the original six base presets.
-- Deterministic non-AI random chip generator for fast visual exploration.
-- Editable fake spec sheets and three poster formats: `press-hero`, `architecture-slide`, and
-  `product-closeup`.
-- Two PNG exports rendered on dedicated Konva stages:
-  - die-only at `pixelRatio: 4`
-  - poster at logical `1600x900` with `pixelRatio: 2`, producing `3200x1800`
+- 로그인 없이 바로 시작; 프로젝트는 IndexedDB(로컬스토리지 폴백)에 저장됩니다.
+- React + Konva 에디터: 다이 4종(rect/square/circle/hexagon), 그리드/스냅/줌/팬,
+  리사이즈/회전/순서 변경, undo/redo, 실제·판타지 블록 16종, 장식, 페이지 테마.
+- 페이지 테마 3종: `laboratory`, `anime`, `space`.
+- 리믹스 가능한 프리셋 16종(v2 히어로 칩/포스터 10종 + 기본 프리셋 6종).
+- AI 없이 동작하는 결정론적 랜덤 칩 생성기.
+- 편집 가능한 가짜 스펙 시트 + 포스터 포맷 3종(`press-hero`, `architecture-slide`,
+  `product-closeup`).
+- 전용 Konva 스테이지에서 렌더링되는 PNG 내보내기 2종:
+  - 다이 단독: `pixelRatio: 4`
+  - 포스터: 논리 해상도 `1600x900` × `pixelRatio: 2` → 최종 `3200x1800`
 
-## Develop
+## 시작하기
 
 ```bash
 npm install
-npm run dev -- --host 127.0.0.1   # open the printed URL in desktop Chrome
-npm test                          # vitest (unit tests)
-npm run build                     # static bundle in dist/
+npm run dev -- --host 127.0.0.1   # 출력된 URL을 데스크탑 Chrome에서 열기
+npm test                          # 단위 테스트 (vitest)
+npm run build                     # dist/에 정적 번들 생성
 ```
 
-The bundle exceeds Vite's 500 kB warning because Konva and the editor runtime ship in one chunk.
-That warning is expected for the current private release and is tracked as a future code-splitting
-candidate.
+Konva와 에디터 런타임이 하나의 청크로 번들되어 Vite의 500kB 경고 기준을 초과합니다.
+현재는 의도된 상태이며, 추후 코드 스플리팅으로 개선할 예정입니다.
 
-## Deploy
-
-Static-host `dist/`. `netlify.toml` sets the build command, publish dir, and SPA fallback so deep
-links such as `/editor/:id` resolve to `index.html`. Any static host (Vercel, GitHub Pages) works
-with the same fallback.
-
-## QA Snapshot
-
-Final v2 QA verified:
-
-- `npm test`: 39 files / 146 tests.
-- `npm run build`: passes with only the known Vite chunk-size warning.
-- Desktop Browser flow: landing, theme switching, dashboard, v2 hero remix, random chip creation,
-  editor workspace, export controls, and console health.
-- Export contract: all hero sets use the dedicated Konva poster path and the `3200x1800` poster
-  raster contract.

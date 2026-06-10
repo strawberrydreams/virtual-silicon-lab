@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState } from 'react'
+import { Fragment, memo, useEffect, useMemo, useState } from 'react'
 import type { ComponentProps, ReactNode } from 'react'
 import type Konva from 'konva'
 import { Circle, Group, Image as KonvaImage, Line, Rect, RegularPolygon, Shape, Star, Text } from 'react-konva'
@@ -19,8 +19,8 @@ import {
   type MicroLine,
 } from './blockTexture'
 import { resolveStickerLayout } from './stickerLayout'
-import { busBundle } from './busRouting'
-import { blocksByZIndex } from './artworkLayout'
+import { busBundle, routedBusPairs } from './busRouting'
+import { blocksByZIndex, splitTileLabel } from './artworkLayout'
 import { DEFAULT_LAYER_VISIBILITY, type ChipLayerVisibility } from '../layerVisibility'
 
 const GRID = 16
@@ -202,21 +202,102 @@ function MaterialMicroLayer({
   colors: StudioColorSettings
 }) {
   const tileColor = paintColor(colors.tile)
+  const tiles = layers.microTiles
+  if (tiles.length === 0) return null
+  // All micro tiles share one color/opacity, so draw the whole grid (up to
+  // 4000 cells) in a single Shape instead of one Konva node per tile — same
+  // pixels, but block dragging no longer redraws thousands of nodes per frame.
+  const opacity = tiles[0].opacity
   return (
     <Group name="chip-layer-micro" clipFunc={(context) => clipForDie(context, die)} listening={false}>
-      {layers.microTiles.map((tile) => (
-        <Rect
-          key={tile.id}
-          x={tile.bounds.x}
-          y={tile.bounds.y}
-          width={tile.bounds.width}
-          height={tile.bounds.height}
-          fill={tileColor}
-          stroke={tileColor}
-          strokeWidth={0.5}
-          opacity={tile.opacity}
-        />
-      ))}
+      <Shape
+        listening={false}
+        perfectDrawEnabled={false}
+        fill={tileColor}
+        stroke={tileColor}
+        strokeWidth={0.5}
+        opacity={opacity}
+        sceneFunc={(context, shape) => {
+          context.beginPath()
+          for (const tile of tiles) {
+            context.rect(tile.bounds.x, tile.bounds.y, tile.bounds.width, tile.bounds.height)
+          }
+          context.fillStrokeShape(shape)
+        }}
+      />
+    </Group>
+  )
+}
+
+function FillerLayer({
+  die,
+  layers,
+  recipe,
+}: {
+  die: Die
+  layers: ChipLayerModel
+  recipe: ChipMaterialRecipe
+}) {
+  const filler = recipe.fillerCell
+  if (layers.fillerCells.length === 0) return null
+  // Every filler cell in one build shares the same w/h, so the two texture
+  // grids are computed once instead of once per cell (up to 600 cells).
+  const { w, h } = layers.fillerCells[0]
+  const sramTexture = memoryCells(w, h, 8, 3)
+  const rowTexture = standardCellRows(w, h)
+  return (
+    <Group name="chip-layer-filler" clipFunc={(context) => clipForDie(context, die)} listening={false}>
+      {layers.fillerCells.map((cell) => {
+        const accent = filler.accentColors[Math.abs(cell.seed) % filler.accentColors.length]
+        const texture = cell.kind === 'sram' ? sramTexture : rowTexture
+        return (
+          <Group key={cell.id} x={cell.x} y={cell.y} listening={false}>
+            <Rect
+              width={cell.w}
+              height={cell.h}
+              cornerRadius={1.5}
+              fill={filler.fill}
+              stroke={filler.stroke}
+              strokeWidth={1}
+              opacity={filler.opacity}
+            />
+            <Group clipFunc={(context) => context.rect(0, 0, cell.w, cell.h)} listening={false}>
+              <CellPattern cells={texture} color={accent} opacity={cell.kind === 'io' ? 0.16 : 0.2} />
+            </Group>
+          </Group>
+        )
+      })}
+    </Group>
+  )
+}
+
+function FabricDetailLayer({ die, layers, colors }: { die: Die; layers: ChipLayerModel; colors: StudioColorSettings }) {
+  const markColor = paintColor(colors.mark)
+  const traceColor = paintColor(colors.trace)
+  return (
+    <Group name="chip-layer-fabric-detail" clipFunc={(context) => clipForDie(context, die)} listening={false}>
+      {layers.fabricDetails.map((detail) => {
+        if (detail.kind === 'powerRail') {
+          return (
+            <Line
+              key={detail.id}
+              points={detail.points}
+              stroke={traceColor}
+              strokeWidth={detail.width}
+              opacity={detail.opacity}
+              dash={[12, 8]}
+            />
+          )
+        }
+        return (
+          <CellPattern
+            key={detail.id}
+            cells={detail.cells}
+            color={detail.kind === 'padArray' ? markColor : traceColor}
+            opacity={detail.opacity}
+          />
+        )
+      })}
     </Group>
   )
 }
@@ -450,27 +531,18 @@ function SoCPeripheryLayer({ project, colors }: { project: Project; colors: Stud
 
 function BusInterconnectLayer({ project, colors }: { project: Project; colors: StudioColorSettings }) {
   const traceColor = paintColor(colors.trace)
-  const compute = project.blocks.filter((block) => ['CPU', 'GPU', 'DSP', 'ConsciousnessProcessor'].includes(block.type))
-  const memory = project.blocks.filter((block) => ['SRAM', 'Cache', 'QuantumMemory'].includes(block.type))
-  const io = project.blocks.filter((block) => ['IO', 'USB', 'DAC', 'ADC', 'PLL'].includes(block.type))
-  const source = compute[0] ?? project.blocks[0]
-  if (!source) return null
-  const from = { x: source.x + source.w / 2, y: source.y + source.h / 2 }
-  const targets = [
-    ...memory.slice(0, 3).map((target) => ({ target, kind: 'memory' as const })),
-    ...io.slice(0, 3).map((target) => ({ target, kind: 'io' as const })),
-  ]
+  const pairs = useMemo(() => routedBusPairs(project.blocks), [project.blocks])
+  if (pairs.length === 0) return null
   return (
     <Group name="chip-layer-bus" clipFunc={(context) => clipForDie(context, project.die)} listening={false}>
-      {targets.map(({ target, kind }) => {
-        const to = { x: target.x + target.w / 2, y: target.y + target.h / 2 }
+      {pairs.map(({ from, to, kind }, index) => {
         // Memory buses are wide multi-wire bundles; IO links are thin.
         const bundle = busBundle(from, to, { wires: kind === 'memory' ? 5 : 2, spacing: kind === 'memory' ? 3 : 4 })
         const width = kind === 'memory' ? 1.4 : 1.1
         const opacity = kind === 'memory' ? 0.6 : 0.42
         const viaCells = bundle.vias.map((via) => ({ x: via.x - 1.5, y: via.y - 1.5, w: 3, h: 3 }))
         return (
-          <Fragment key={`bus-${source.id}-${target.id}`}>
+          <Fragment key={`bus-${index}`}>
             <LinePattern
               lines={bundle.wires.map((points) => ({ points, opacity }))}
               color={traceColor}
@@ -842,6 +914,7 @@ export function BlockArtwork({
   const blockFill = block.colorOverride ?? (colors ? paintColor(colors.block) : style.fill)
   const labelFill = colors ? paintColor(colors.label) : tokens.text
   const blockStride = detail?.blockStride ?? 18
+  const labelParts = splitTileLabel(block.label, block.type)
   return (
     <Group
       ref={groupRef}
@@ -898,16 +971,30 @@ export function BlockArtwork({
         listening={false}
       />
       {showLabel ? (
-        <Text
-          x={8}
-          y={7}
-          text={(block.label ?? block.type).toUpperCase()}
-          fontSize={10}
-          letterSpacing={1.2}
-          opacity={0.66}
-          fill={labelFill}
-          listening={false}
-        />
+        <>
+          <Text
+            x={8}
+            y={7}
+            text={labelParts.title}
+            fontSize={10}
+            letterSpacing={1.2}
+            opacity={0.74}
+            fill={labelFill}
+            listening={false}
+          />
+          {labelParts.sub ? (
+            <Text
+              x={8}
+              y={20}
+              text={labelParts.sub}
+              fontSize={8}
+              letterSpacing={1}
+              opacity={0.5}
+              fill={labelFill}
+              listening={false}
+            />
+          ) : null}
+        </>
       ) : null}
     </Group>
   )
@@ -958,7 +1045,10 @@ type Props = {
   renderStudioSticker?: (sticker: StudioSticker) => ReactNode
 }
 
-export function ChipArtwork({
+// Memoized: the editor re-renders its stage on every zoom/pan/selection state
+// change, and the derived layer model (micro tiles, filler cells, traces,
+// fabric details) is expensive to rebuild — key it on the immutable project.
+export const ChipArtwork = memo(function ChipArtwork({
   project,
   renderMode = 'full',
   layerVisibility = DEFAULT_LAYER_VISIBILITY,
@@ -968,8 +1058,8 @@ export function ChipArtwork({
 }: Props) {
   const tokens = resolveTheme(project.theme)
   const recipe = resolveMaterialRecipe(project.theme)
-  const layers = buildChipLayers(project)
-  const detail = resolveTileDetail(project.studio.tileSettings)
+  const layers = useMemo(() => buildChipLayers(project), [project])
+  const detail = useMemo(() => resolveTileDetail(project.studio.tileSettings), [project.studio.tileSettings])
   const colors = project.studio.colorSettings
   return (
     <>
@@ -981,6 +1071,8 @@ export function ChipArtwork({
       {layerVisibility.M5 ? <SoCPeripheryLayer project={project} colors={colors} /> : null}
       {layerVisibility.M1 ? <MaterialMicroLayer die={project.die} layers={layers} colors={colors} /> : null}
       {layerVisibility.M1 ? <GridLines die={project.die} tokens={tokens} /> : null}
+      {layerVisibility.M1 ? <FillerLayer die={project.die} layers={layers} recipe={recipe} /> : null}
+      {layerVisibility.M1 ? <FabricDetailLayer die={project.die} layers={layers} colors={colors} /> : null}
       {layerVisibility.M2 ? <TraceLayer die={project.die} layers={layers} colors={colors} /> : null}
       {layerVisibility.M2 ? <BusInterconnectLayer project={project} colors={colors} /> : null}
       {layerVisibility.M3
@@ -1020,4 +1112,4 @@ export function ChipArtwork({
       {layerVisibility.M5 ? <GlassGlowOverlay die={project.die} layers={layers} /> : null}
     </>
   )
-}
+})

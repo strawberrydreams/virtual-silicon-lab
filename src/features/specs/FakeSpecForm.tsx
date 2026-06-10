@@ -6,6 +6,12 @@ function featureLines(value: string) {
   return value.split('\n').map((line) => line.trim()).filter(Boolean)
 }
 
+function coreCountFromInput(value: string) {
+  const parsed = Number(value)
+  if (!Number.isFinite(parsed)) return 0
+  return Math.max(0, Math.floor(parsed))
+}
+
 type Props = {
   spec: FakeSpec
   onChange: (spec: FakeSpec) => void
@@ -72,8 +78,9 @@ export function FakeSpecForm({ spec, onChange }: Props) {
         <input
           className={fieldClass}
           type="number"
+          min={0}
           value={spec.cores}
-          onChange={(event) => emit({ cores: Number(event.target.value) || 0 })}
+          onChange={(event) => emit({ cores: coreCountFromInput(event.target.value) })}
         />
       </label>
       <label className={labelClass}>

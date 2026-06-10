@@ -1,5 +1,38 @@
 import { describe, expect, it } from 'vitest'
-import { busBundle } from './busRouting'
+import { busBundle, routedBusPairs } from './busRouting'
+
+describe('routedBusPairs', () => {
+  const block = (type: string, x: number, y: number) => ({ type: type as never, x, y, w: 40, h: 40 })
+
+  it('routes each memory and io block to its nearest compute block', () => {
+    const pairs = routedBusPairs([
+      block('CPU', 0, 0),
+      block('GPU', 200, 0),
+      block('Cache', 10, 100), // nearest compute: CPU (0,0)
+      block('IO', 210, 100), // nearest compute: GPU (200,0)
+    ])
+    expect(pairs).toHaveLength(2)
+    const memory = pairs.find((pair) => pair.kind === 'memory')!
+    const io = pairs.find((pair) => pair.kind === 'io')!
+    // memory route starts at the CPU center (20,20)
+    expect(memory.from).toEqual({ x: 20, y: 20 })
+    // io route starts at the GPU center (220,20)
+    expect(io.from).toEqual({ x: 220, y: 20 })
+  })
+
+  it('anchors the mesh at the largest block when there is no compute block', () => {
+    const cache = { type: 'Cache' as never, x: 0, y: 0, w: 80, h: 80 } // largest → anchor
+    const pairs = routedBusPairs([cache, block('IO', 200, 0), block('USB', 100, 150)])
+
+    expect(pairs).toHaveLength(2) // the anchor block itself is not routed
+    for (const pair of pairs) expect(pair.from).toEqual({ x: 40, y: 40 })
+  })
+
+  it('returns no pairs when there is nothing to route to the anchor', () => {
+    expect(routedBusPairs([block('Cache', 0, 0)])).toEqual([])
+    expect(routedBusPairs([])).toEqual([])
+  })
+})
 
 describe('busBundle', () => {
   it('routes N parallel L-shaped wires with a via at each elbow', () => {

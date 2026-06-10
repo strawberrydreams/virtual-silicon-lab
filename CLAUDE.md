@@ -110,8 +110,12 @@ Rules:
 
 ## Document Map
 
-- `virtual_silicon_lab_v1.md` — product/requirements spec (v1 / post-MVP / excluded) **[Korean]**.
+- `README.md` — project overview, features, dev/deploy, docs index, reference board summary, and export QA flow.
+- `docs/spec-v1.md` — product/requirements spec (v1 / post-MVP / excluded) **[Korean]**.
+- `docs/spec-v2.md` — v2 visual major scope, design direction, and decisions **[Korean]**.
+- `docs/reference/` — visual reference board: per-theme tokens, hero compositions, v2 audit/style/hero-set notes.
 - `docs/superpowers/plans/` — milestone roadmap + condensed per-milestone plan summaries (goal, decisions, outcome). Full bite-sized TDD steps remain in git history.
+- `docs/superpowers/specs/` — design specs for in-progress features.
 - `implementation.md` — condensed running log of per-milestone decisions and outcomes **[Korean]**.
 
 ## Explicitly Out Of Scope / v3 Deferred

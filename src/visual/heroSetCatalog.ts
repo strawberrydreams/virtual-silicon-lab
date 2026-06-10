@@ -43,12 +43,20 @@ export type HeroSetDefinition = {
   spec: FakeSpec
 }
 
-function real(type: BlockType, x: number, y: number, w: number, h: number): BlockBlueprint {
-  return { type, category: 'real', x, y, w, h, rotation: 0, glow: false }
+function real(type: BlockType, x: number, y: number, w: number, h: number, label?: string): BlockBlueprint {
+  return { type, category: 'real', x, y, w, h, rotation: 0, glow: false, label }
 }
 
-function fantasy(type: BlockType, x: number, y: number, w: number, h: number, colorOverride?: string): BlockBlueprint {
-  return { type, category: 'fantasy', x, y, w, h, rotation: 0, glow: true, colorOverride }
+function fantasy(
+  type: BlockType,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  colorOverride?: string,
+  label?: string,
+): BlockBlueprint {
+  return { type, category: 'fantasy', x, y, w, h, rotation: 0, glow: true, colorOverride, label }
 }
 
 export const HERO_SET_CATALOG: readonly HeroSetDefinition[] = [
@@ -141,19 +149,28 @@ export const HERO_SET_CATALOG: readonly HeroSetDefinition[] = [
     materialIntent: 'graphite package, recessed die window, green circuit-floor glow',
     accent: '#4ade80',
     featured: true,
-    previewBlocks: ['GPU', 'CPU', 'QuantumMemory', 'IO'],
+    previewBlocks: ['CPU', 'GPU', 'Cache', 'ConsciousnessProcessor'],
     die: { shape: 'square', width: 760, height: 760, background: 'v2-n1-green-horizon' },
     blocks: [
-      real('GPU', 138, 118, 484, 174),
-      fantasy('QuantumMemory', 138, 328, 484, 88, '#4ade80'),
-      real('CPU', 138, 452, 216, 126),
-      real('DSP', 406, 452, 216, 126),
-      real('IO', 94, 628, 572, 56),
+      // Top band
+      real('CPU', 28, 28, 222, 170, 'CPU CLUSTER\n8-CORE'),
+      fantasy('ConsciousnessProcessor', 264, 28, 204, 170, '#a855f7', 'NPU\nAI ENGINE'),
+      real('GPU', 482, 28, 250, 170, 'GPU CLUSTER\n12-CORE'),
+      // Middle band
+      real('SRAM', 28, 212, 222, 168, 'MEMORY CTRL\nLPDDR5X'),
+      real('Cache', 264, 212, 204, 168, 'L3 CACHE\n16MB'),
+      real('DSP', 482, 212, 250, 168, 'ISP\n6-LANE'),
+      // Lower band
+      real('IO', 28, 394, 222, 132, 'PCIe 4.0'),
+      real('DSP', 264, 394, 204, 132, 'DSP\nAUDIO'),
+      real('USB', 482, 394, 250, 132, 'DISPLAY CTRL\n4K120'),
+      // Bottom band
+      real('DAC', 28, 540, 222, 192, 'MODEM\n5G NR'),
+      fantasy('RealityDistortionUnit', 264, 540, 204, 192, '#a855f7', 'SECURITY\nENCLAVE'),
+      real('IO', 482, 540, 250, 192, 'I/O COMPLEX'),
     ],
     decorations: [
-      { kind: 'label', x: 138, y: 74, text: 'N1 GREEN HORIZON' },
-      { kind: 'neonLine', points: [380, 292, 380, 328], color: '#4ade80' },
-      { kind: 'neonLine', points: [354, 515, 406, 515], color: '#22d3ee' },
+      { kind: 'label', x: 28, y: 12, text: 'N1 GREEN HORIZON' },
     ],
     spec: {
       brand: 'NOVA',
@@ -162,8 +179,8 @@ export const HERO_SET_CATALOG: readonly HeroSetDefinition[] = [
       process: '1.4nm AI reveal package',
       cores: 192,
       bandwidth: '7.8 PB/s',
-      features: ['Green Horizon Light', 'AI Compute Slab', 'Circuit Floor Glow'],
-      description: 'A staged product lighting chip for a product reveal, not a generic neon wallpaper.',
+      features: ['8-Core CPU Cluster', 'AI NPU Engine', '16MB L3 Cache'],
+      description: 'A staged AI product reveal floorplan: compute, memory, and I/O laid out as a readable SoC.',
     },
   },
   {

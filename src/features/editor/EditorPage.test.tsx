@@ -66,11 +66,13 @@ describe('EditorPage', () => {
 
     await user.click(screen.getByRole('button', { name: 'CPU' }))
 
+    const selectedPanel = within(inspector).getByRole('region', { name: 'Selected tile summary' })
+    const basicMetricLabels = Array.from(
+      selectedPanel.querySelectorAll('.selected-tile-panel__metrics .selected-tile-panel__metric span'),
+    ).map((label) => label.textContent)
+
     expect(within(inspector).getAllByText('CPU').length).toBeGreaterThan(0)
-    expect(within(inspector).getByText('Type')).toBeInTheDocument()
-    expect(within(inspector).getByText('Size')).toBeInTheDocument()
-    expect(within(inspector).getByText('Utilization')).toBeInTheDocument()
-    expect(within(inspector).getByText('Power')).toBeInTheDocument()
+    expect(basicMetricLabels).toEqual(['Type', 'Size', 'Utilization', 'Power'])
   })
 
   it('updates the stage layer visibility when layer toggles are clicked', async () => {

@@ -48,6 +48,24 @@ describe('buildChipLayers', () => {
     expect(layers.glowOverlay.kind).toBe('glassGlow')
   })
 
+  it('includes derived filler cells in the layer model', () => {
+    const project = sampleProject()
+    const layers = buildChipLayers(project)
+    expect(Array.isArray(layers.fillerCells)).toBe(true)
+    expect(layers.fillerCells.length).toBeGreaterThan(0)
+  })
+
+  it('adds derived SoC fabrication details for pad arrays, rails, and via clusters', () => {
+    const project = sampleProject()
+    const layers = buildChipLayers(project)
+    const detailKinds = new Set(layers.fabricDetails.map((detail) => detail.kind))
+
+    expect(detailKinds).toContain('padArray')
+    expect(detailKinds).toContain('powerRail')
+    expect(detailKinds).toContain('viaCluster')
+    expect(layers.fabricDetails.length).toBeGreaterThan(project.blocks.length)
+  })
+
   it('keeps generated micro tiles inside die bounds', () => {
     const project = sampleProject()
     const layers = buildChipLayers(project)
@@ -131,6 +149,53 @@ describe('buildChipLayers', () => {
 
     expect(huge.microTiles.length).toBeLessThanOrEqual(4000)
     expect(huge.microTiles.length).toBeGreaterThan(1000)
+  })
+
+  it('keeps pad cells and power rails inside a circular die outline', () => {
+    const base = sampleProject()
+    const project: Project = { ...base, die: { shape: 'circle', width: 760, height: 760, background: 'circle-fabric' } }
+    const cx = 380
+    const cy = 380
+    const r = 380
+
+    const layers = buildChipLayers(project)
+
+    const pads = layers.fabricDetails.filter((detail) => detail.kind === 'padArray')
+    expect(pads.some((detail) => detail.cells.length > 0)).toBe(true) // ring survives near edge centers
+    for (const detail of pads) {
+      for (const cell of detail.cells) {
+        const corners = [
+          [cell.x, cell.y],
+          [cell.x + cell.w, cell.y],
+          [cell.x, cell.y + cell.h],
+          [cell.x + cell.w, cell.y + cell.h],
+        ]
+        for (const [x, y] of corners) expect(Math.hypot(x - cx, y - cy)).toBeLessThanOrEqual(r + 0.001)
+      }
+    }
+    const rails = layers.fabricDetails.filter((detail) => detail.kind === 'powerRail')
+    expect(rails.length).toBeGreaterThan(0)
+    for (const rail of rails) {
+      if (rail.kind !== 'powerRail') continue
+      const [x1, y1, x2, y2] = rail.points
+      expect(Math.hypot(x1 - cx, y1 - cy)).toBeLessThanOrEqual(r + 0.001)
+      expect(Math.hypot(x2 - cx, y2 - cy)).toBeLessThanOrEqual(r + 0.001)
+    }
+  })
+
+  it('keeps power rails inside a hexagonal die incircle', () => {
+    const base = sampleProject()
+    const project: Project = { ...base, die: { shape: 'hexagon', width: 760, height: 760, background: 'hex-fabric' } }
+    const r = 380 * (Math.sqrt(3) / 2)
+
+    const layers = buildChipLayers(project)
+
+    for (const rail of layers.fabricDetails.filter((detail) => detail.kind === 'powerRail')) {
+      if (rail.kind !== 'powerRail') continue
+      const [x1, y1, x2, y2] = rail.points
+      expect(Math.hypot(x1 - 380, y1 - 380)).toBeLessThanOrEqual(r + 0.001)
+      expect(Math.hypot(x2 - 380, y2 - 380)).toBeLessThanOrEqual(r + 0.001)
+    }
   })
 
   it('supports a 150-block smoke layout without dropping render layers', () => {

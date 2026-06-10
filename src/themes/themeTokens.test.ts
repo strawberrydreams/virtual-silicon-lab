@@ -37,3 +37,16 @@ describe('theme catalog', () => {
     }
   })
 })
+
+describe('neon blueprint palette', () => {
+  it('uses cyan + green + amber accents (no magenta/purple)', () => {
+    const neon = resolveTheme('neon')
+    expect(neon.accents).toEqual(['#22d3ee', '#34d399', '#fbbf24'])
+  })
+
+  it('keeps a bright cyan die edge and a near-black navy backdrop', () => {
+    const neon = resolveTheme('neon')
+    expect(neon.dieStroke).toBe('#2dd4ee')
+    expect(neon.background[1].color).toBe('#03050c')
+  })
+})

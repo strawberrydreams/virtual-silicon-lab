@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import type { BlockType } from '../../domain/project'
+import type { DecorationKind } from '../../domain/decorationFactory'
 import { BlockPalette } from './BlockPalette'
 
 const ALL_BLOCK_TYPES: BlockType[] = [
@@ -27,6 +28,7 @@ describe('BlockPalette', () => {
   function renderPalette(actions = {}) {
     return {
       addBlock: vi.fn(),
+      addDecoration: vi.fn(),
       addSticker: vi.fn(),
       addSpray: vi.fn(),
       ...actions,
@@ -112,5 +114,29 @@ describe('BlockPalette', () => {
 
     expect(screen.getByRole('button', { name: 'Decorate' })).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByRole('button', { name: 'Tiles' })).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  it('switches the left rail to mode-specific content and actions', async () => {
+    const user = userEvent.setup()
+    const actions = renderPalette()
+    render(<BlockPalette {...actions} />)
+
+    await user.click(screen.getByRole('button', { name: 'Decorate' }))
+    expect(screen.getByRole('heading', { name: 'Decoration Tools' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Hardware Tiles' })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Connect' }))
+    expect(screen.getByRole('heading', { name: 'Connection Tools' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Add route guide' }))
+    expect(actions.addDecoration).toHaveBeenCalledWith('neonLine' satisfies DecorationKind)
+
+    await user.click(screen.getByRole('button', { name: 'Text' }))
+    expect(screen.getByRole('heading', { name: 'Text Tools' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Add text label' }))
+    expect(actions.addDecoration).toHaveBeenCalledWith('label' satisfies DecorationKind)
+
+    await user.click(screen.getByRole('button', { name: 'Layers' }))
+    expect(screen.getByRole('heading', { name: 'Layer Controls' })).toBeInTheDocument()
+    expect(screen.getByText('Use the right inspector to toggle M1-M5 and label visibility.')).toBeInTheDocument()
   })
 })

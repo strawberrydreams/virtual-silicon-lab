@@ -50,6 +50,22 @@ describe('hero set catalog', () => {
     }
   })
 
+  it('reproduces the N1 GREEN HORIZON reference floorplan', () => {
+    const project = createHeroSetProject('n1-green-horizon', 'n1', 100)
+    expect(project.blocks).toHaveLength(12)
+    const labels = project.blocks.map((block) => block.label)
+    expect(labels).toContain('CPU CLUSTER\n8-CORE')
+    expect(labels).toContain('GPU CLUSTER\n12-CORE')
+    expect(labels).toContain('L3 CACHE\n16MB')
+    expect(labels).toContain('NPU\nAI ENGINE')
+    for (const block of project.blocks) {
+      expect(block.x).toBeGreaterThanOrEqual(0)
+      expect(block.y).toBeGreaterThanOrEqual(0)
+      expect(block.x + block.w).toBeLessThanOrEqual(project.die.width)
+      expect(block.y + block.h).toBeLessThanOrEqual(project.die.height)
+    }
+  })
+
   it('recognizes only hero set ids', () => {
     expect(isHeroSetId('aurora-m5')).toBe(true)
     expect(isHeroSetId('aurora-c1')).toBe(false)

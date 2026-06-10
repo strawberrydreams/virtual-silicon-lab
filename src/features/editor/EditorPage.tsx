@@ -6,6 +6,7 @@ import { createEditorStore } from '../../stores/editorStore'
 import { BlockPalette } from './BlockPalette'
 import { EditorInspectorRail } from './EditorInspectorRail'
 import { EditorToolbar } from './EditorToolbar'
+import { PlayIcon, RedoIcon, UndoIcon } from './icons'
 import { ChipStage } from './canvas/ChipStage'
 import { DEFAULT_LAYER_VISIBILITY, type ChipLayerId } from './layerVisibility'
 import { chipFinishLabel } from '../../visual/themeFinish'
@@ -50,6 +51,7 @@ export function EditorPage({ project, persist }: Props) {
     >
       <BlockPalette
         addBlock={state.addBlock}
+        addDecoration={state.addDecoration}
         addSticker={state.addSticker}
         addSpray={state.addSpray}
       />
@@ -76,12 +78,15 @@ export function EditorPage({ project, persist }: Props) {
             </div>
             <div className="editor-topbar-actions">
               <button className="editor-icon-button" type="button" onClick={state.undo} disabled={state.past.length === 0}>
+                <span className="editor-icon-button__icon" aria-hidden="true"><UndoIcon /></span>
                 Undo
               </button>
               <button className="editor-icon-button" type="button" onClick={state.redo} disabled={state.future.length === 0}>
+                <span className="editor-icon-button__icon" aria-hidden="true"><RedoIcon /></span>
                 Redo
               </button>
               <button className="editor-simulate-button" type="button" disabled>
+                <span className="editor-icon-button__icon" aria-hidden="true"><PlayIcon /></span>
                 Simulate
               </button>
               <Link className="editor-exit-link" to="/dashboard">
@@ -96,6 +101,7 @@ export function EditorPage({ project, persist }: Props) {
             canUndo={state.past.length > 0}
             canRedo={state.future.length > 0}
             hasSelection={state.selectedBlockId !== null || state.selectedStudioItem !== null}
+            hasBlockSelection={state.selectedBlockId !== null}
             onSetDieShape={state.setDieShape}
             onSetTheme={state.setTheme}
             onAddDecoration={state.addDecoration}

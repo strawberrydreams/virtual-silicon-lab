@@ -36,6 +36,12 @@ export type ChipMaterialRecipe = {
     blur: number
     opacity: number
   }
+  fillerCell: {
+    fill: string
+    stroke: string
+    accentColors: string[]
+    opacity: number
+  }
   readoutLabel: {
     subduedColor: string
   }
@@ -87,6 +93,12 @@ export function resolveMaterialRecipe(theme: StyleTheme): ChipMaterialRecipe {
       color: tokens.glow.shadowColor,
       blur: Math.max(8, tokens.glow.shadowBlur),
       opacity: Math.max(0.12, tokens.glow.shadowOpacity * 0.35),
+    },
+    fillerCell: {
+      fill: tokens.dieFill[1].color,
+      stroke: tokens.gridColor,
+      accentColors: tokens.accents,
+      opacity: theme === 'military' || theme === 'mono' ? 0.5 : 0.6,
     },
     readoutLabel: {
       subduedColor: tokens.gridColor,

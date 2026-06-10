@@ -26,4 +26,11 @@ describe('resolveMaterialRecipe', () => {
       resolveMaterialRecipe('military').package.shadowBlur,
     )
   })
+
+  it('exposes a theme-driven filler palette for the dense floorplan', () => {
+    const recipe = resolveMaterialRecipe('neon')
+    expect(recipe.fillerCell.accentColors).toEqual(['#22d3ee', '#34d399', '#fbbf24'])
+    expect(recipe.fillerCell.fill).toBe('#070f1d')
+    expect(recipe.fillerCell.opacity).toBeGreaterThan(0)
+  })
 })

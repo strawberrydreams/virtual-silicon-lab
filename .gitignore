@@ -4,3 +4,17 @@ dist
 coverage
 .worktrees
 .playwright-mcp
+.claude
+
+# env files
+.env
+.env.*
+!.env.example
+
+# editor/IDE
+.vscode
+.idea
+
+# build artifacts / logs
+*.tsbuildinfo
+npm-debug.log*

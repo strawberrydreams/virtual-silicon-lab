@@ -1,6 +1,20 @@
 import { describe, expect, it } from 'vitest'
 import type { Block } from '../../../domain/project'
-import { blocksByZIndex, editorStageFrameSize, editorStageSize } from './artworkLayout'
+import { blocksByZIndex, editorStageFrameSize, editorStageSize, splitTileLabel } from './artworkLayout'
+
+describe('splitTileLabel', () => {
+  it('splits a two-line label into upper-cased title and sub', () => {
+    expect(splitTileLabel('GPU Cluster\n12-core', 'GPU')).toEqual({ title: 'GPU CLUSTER', sub: '12-CORE' })
+  })
+
+  it('returns an empty sub for a single-line label', () => {
+    expect(splitTileLabel('PCIe 4.0', 'IO')).toEqual({ title: 'PCIE 4.0', sub: '' })
+  })
+
+  it('falls back to the block type when no label is set', () => {
+    expect(splitTileLabel(undefined, 'CPU')).toEqual({ title: 'CPU', sub: '' })
+  })
+})
 
 describe('editorStageSize', () => {
   it('keeps the blank rectangular canvas at its established size', () => {

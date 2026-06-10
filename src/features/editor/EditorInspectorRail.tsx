@@ -78,7 +78,9 @@ export function EditorInspectorRail({
           onUpdateSpray={onUpdateSpray}
         />
         <FakeSpecForm spec={project.spec} onChange={onSetSpec} />
-        <ExportPanel project={project} layerVisibility={layerVisibility} />
+        {/* Exports always composite the full artwork from project data; the
+            editor's ephemeral layer toggles must never leak into the PNGs. */}
+        <ExportPanel project={project} />
       </section>
     </aside>
   )

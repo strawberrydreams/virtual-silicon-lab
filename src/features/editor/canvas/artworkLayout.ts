@@ -22,3 +22,12 @@ export function editorStageFrameSize(die: Die) {
 export function blocksByZIndex(blocks: Block[]) {
   return blocks.slice().sort((left, right) => left.zIndex - right.zIndex)
 }
+
+// Tile labels may carry a second line (e.g. "GPU CLUSTER\n12-CORE"); split into an
+// upper-cased title + sub line so BlockArtwork can render the reference's two-line tags
+// without a schema change. Falls back to the block type when no label is set.
+export function splitTileLabel(label: string | undefined, type: string): { title: string; sub: string } {
+  const source = (label ?? type).trim()
+  const [first, ...rest] = source.split('\n')
+  return { title: first.toUpperCase(), sub: rest.join(' ').trim().toUpperCase() }
+}

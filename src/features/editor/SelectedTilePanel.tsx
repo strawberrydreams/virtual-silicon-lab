@@ -1,4 +1,6 @@
 import type { Block, Project } from '../../domain/project'
+import { deriveComponentSpec } from '../../studio/componentSpec'
+import { splitTileLabel } from './canvas/artworkLayout'
 
 type Props = {
   block: Block | null
@@ -17,6 +19,8 @@ function blockPowerEstimate(block: Block) {
 }
 
 export function SelectedTilePanel({ block, project }: Props) {
+  const componentSpec = block === null ? null : deriveComponentSpec(block, project)
+  const labelParts = block === null ? null : splitTileLabel(block.label, block.type)
   return (
     <section aria-label="Selected tile summary" className="editor-inspector-card selected-tile-panel">
       <div className="selected-tile-panel__header">
@@ -34,7 +38,8 @@ export function SelectedTilePanel({ block, project }: Props) {
       ) : (
         <div className="selected-tile-panel__body">
           <div className="selected-tile-panel__info">
-            <h3 className="selected-tile-panel__name">{block.label ?? block.type}</h3>
+            <h3 className="selected-tile-panel__name">{labelParts?.title}</h3>
+            {labelParts?.sub ? <p className="selected-tile-panel__subname">{labelParts.sub}</p> : null}
             <p className="selected-tile-panel__category">
               {block.category === 'real' ? 'Hardware tile' : 'Speculative tile'}
             </p>
@@ -60,6 +65,23 @@ export function SelectedTilePanel({ block, project }: Props) {
           <div className="selected-tile-panel__mini" aria-hidden="true">
             <span />
           </div>
+          {componentSpec ? (
+            <div className="selected-tile-panel__component-spec">
+              <div className="selected-tile-panel__component-head">
+                <span className="editor-kicker">Component spec</span>
+                <strong>{componentSpec.title}</strong>
+                <p>{componentSpec.subtitle}</p>
+              </div>
+              <div className="selected-tile-panel__component-grid">
+                {componentSpec.rows.map((row) => (
+                  <div key={row.label} className="selected-tile-panel__component-row">
+                    <span>{row.label}</span>
+                    <strong>{row.value}</strong>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
         </div>
       )}
     </section>

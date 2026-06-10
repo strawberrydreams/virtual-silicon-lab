@@ -5,15 +5,13 @@ import type { Project } from '../../domain/project'
 import { resolveTheme } from '../../themes/themeTokens'
 import { linearGradientProps } from '../../themes/gradients'
 import { ChipArtwork } from '../editor/canvas/ChipArtwork'
-import type { ChipLayerVisibility } from '../editor/layerVisibility'
 import { POSTER_EXPORT } from './exportLayout'
 import { resolvePosterComposition, type PosterFormat } from './posterCompositions'
 
-export const PosterExportStage = forwardRef<
-  Konva.Stage,
-  { project: Project; format?: PosterFormat; layerVisibility?: ChipLayerVisibility }
->(
-  function PosterExportStage({ project, format = 'press-hero', layerVisibility }, ref) {
+// Export stages composite the full artwork from serializable project data only;
+// editor-ephemeral layer toggles deliberately have no input here.
+export const PosterExportStage = forwardRef<Konva.Stage, { project: Project; format?: PosterFormat }>(
+  function PosterExportStage({ project, format = 'press-hero' }, ref) {
     const tokens = resolveTheme(project.theme)
     const composition = resolvePosterComposition(project.die, format)
     const chip = composition.chip
@@ -58,7 +56,7 @@ export const PosterExportStage = forwardRef<
             fill={tokens.text}
           />
           <Group x={chip.x} y={chip.y} scaleX={chip.scale} scaleY={chip.scale}>
-            <ChipArtwork project={project} layerVisibility={layerVisibility} />
+            <ChipArtwork project={project} />
           </Group>
           <Group x={composition.specs.x} y={composition.specs.y}>
             <Text
