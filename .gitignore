@@ -18,3 +18,4 @@ coverage
 # build artifacts / logs
 *.tsbuildinfo
 npm-debug.log*
+server/data/
