@@ -5,6 +5,7 @@ import type { AppDeps } from '../app'
 import {
   changePassword,
   createAccount,
+  deleteAccount,
   createSession,
   deleteSession,
   getSessionUser,
@@ -118,6 +119,21 @@ export function accountRoutes({ db, sessionSecret, now = Date.now }: AppDeps) {
       }
     }
     return c.json({ user })
+  })
+
+  routes.delete('/me', async (c) => {
+    const session = await readSession(c)
+    if (session === null) return fail(c, 401, 'UNAUTHORIZED', 'Sign in required.')
+    const body = (await c.req.json().catch(() => null)) as Record<string, unknown> | null
+    if (body === null || typeof body.password !== 'string') {
+      return fail(c, 400, 'INVALID_INPUT', 'password is required to delete the account.')
+    }
+    const result = await deleteAccount(db, session.user.id, body.password)
+    if (result === 'wrong-password') {
+      return fail(c, 401, 'WRONG_PASSWORD', 'Password is incorrect.')
+    }
+    clearSessionCookie(c)
+    return c.body(null, 204)
   })
 
   return routes
