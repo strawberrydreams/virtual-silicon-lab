@@ -19,9 +19,12 @@ Completion and "looks great at a glance" beat feature breadth.
 ## Commands
 
 ```bash
-npm test          # vitest run — all unit tests
+npm test          # client (vitest run) + server suites
+npm run test:client   # client vitest only
 npm run build     # tsc -b && vite build
-npm run dev -- --host 127.0.0.1   # dev server for browser verification
+npm run dev -- --host 127.0.0.1   # client dev server for browser verification
+npm run dev:server               # API server on http://127.0.0.1:8787
+npm run typecheck --workspace server   # server typecheck (tsc --noEmit)
 ```
 
 Run `npm test` and `npm run build` after every task. Exercise the milestone acceptance gate in a
@@ -52,10 +55,14 @@ src/
   visual/     v2 page themes, material recipes, hero sets, random generator
   lib/        framework-agnostic utilities (zero deps; e.g. debouncer)
   test/       test setup (fake-indexeddb + jest-dom)
+server/       npm workspace `@vsl/server` (v3 Share Core backend)
+  src/        Hono app, SQLite open/migration runner, entry point
+  test/       node-environment Vitest suite
 ```
 
 Rules:
 - `src/domain/` is pure: no React/Konva/Zustand/IndexedDB/browser imports.
+- The server reuses `src/domain/` via the `@domain/*` alias (tsconfig paths + vitest alias) and must not import from any other client directory.
 - Canvas components receive serializable project data and emit domain-level changes.
 - Export stages receive the same serializable data and **must not scrape editor DOM**; they composite on a dedicated Konva stage.
 - Every persisted schema change bumps `schemaVersion`, adds a migration test, and is noted in `implementation.md`.
@@ -82,7 +89,7 @@ Rules:
 
 ### v3 Share Core (in progress — spec: `docs/superpowers/specs/2026-06-12-v3-v4-roadmap-design.md`)
 
-- **V3-M0 Workspace & Server Skeleton**: ⏳ planned — npm workspaces, server entry, SQLite + migrations, server test infra, shared `src/domain/` wiring.
+- **V3-M0 Workspace & Server Skeleton**: ✅ done — npm workspaces conversion, Hono + better-sqlite3 server skeleton, transaction-safe migration runner (duplicate-id guard, empty production list until M1), `/api/health` reporting the shared domain `CURRENT_SCHEMA_VERSION`, shared-domain smoke tests pinning `migrateProject` as the publish validation entry; server suite 4 files / 11 tests.
 - **V3-M1 Accounts** · **V3-M2 Publish Pipeline** · **V3-M3 Public Gallery** · **V3-M4 Share Links** · **V3-M5 Remix Import** · **V3-M6 Deploy Packaging & QA**: ⏳ planned.
 - v4 "Community" (moderation, reactions, ranking, contests, remix lineage) is direction-approved in the same spec; detailed design happens after v3.
 
