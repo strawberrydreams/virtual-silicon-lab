@@ -19,7 +19,7 @@ Completion and "looks great at a glance" beat feature breadth.
 ## Commands
 
 ```bash
-npm test          # client (vitest run) + server suites
+npm test          # client suite first, then server suite (server skipped if client fails)
 npm run test:client   # client vitest only
 npm run build     # tsc -b && vite build
 npm run dev -- --host 127.0.0.1   # client dev server for browser verification
@@ -34,6 +34,7 @@ browser after frontend changes, then record decisions in `implementation.md`.
 
 Vite · React + TypeScript · Tailwind CSS v4 · Zustand (`zustand/vanilla` + `useStore`) ·
 Konva + React Konva · `idb` (IndexedDB) · Vitest + React Testing Library + `fake-indexeddb`.
+Server (`server/` workspace): Hono + `@hono/node-server` · better-sqlite3 (no ORM) · tsx dev runtime.
 
 ## Architecture & Boundaries
 
