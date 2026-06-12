@@ -27,13 +27,20 @@ export type AuthApi = {
   deleteAccount: (password: string) => Promise<void>
 }
 
+// A proxy in front of a down API server (Vite dev proxy, nginx) answers with a
+// gateway error instead of failing the fetch, so both paths map to "unreachable".
+const GATEWAY_ERROR_STATUSES = new Set([502, 503, 504])
+
 async function request(path: string, init?: RequestInit): Promise<Response> {
+  let res: Response
   try {
-    return await fetch(path, init)
+    res = await fetch(path, init)
   } catch {
     // Local-first: an absent share server is a normal state, surfaced as one error type.
     throw new ServerUnreachableError()
   }
+  if (GATEWAY_ERROR_STATUSES.has(res.status)) throw new ServerUnreachableError()
+  return res
 }
 
 async function toApiError(res: Response): Promise<AuthApiError> {

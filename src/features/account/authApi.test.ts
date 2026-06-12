@@ -43,6 +43,14 @@ describe('liveAuthApi', () => {
     await expect(liveAuthApi.me()).rejects.toThrowError(ServerUnreachableError)
   })
 
+  it.each([502, 503, 504])(
+    'treats a %i gateway response as ServerUnreachableError (proxy in front of a down server)',
+    async (status) => {
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('Bad Gateway', { status })))
+      await expect(liveAuthApi.me()).rejects.toThrowError(ServerUnreachableError)
+    },
+  )
+
   it('login posts JSON and returns the user', async () => {
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse(200, { user }))
     vi.stubGlobal('fetch', fetchMock)
