@@ -173,10 +173,124 @@ function SignupForm() {
 
 function ProfilePanel() {
   const auth = useAuthStore()
+  const [displayName, setDisplayName] = useState(auth.user?.displayName ?? '')
+  const [currentPassword, setCurrentPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [deletePassword, setDeletePassword] = useState('')
+  const [message, setMessage] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  async function run(action: () => Promise<void>, successMessage: string | null) {
+    setMessage(null)
+    setError(null)
+    try {
+      await action()
+      setMessage(successMessage)
+    } catch (caught) {
+      setError(describeAuthError(caught))
+    }
+  }
+
   return (
     <section className={`${panelClass} mt-8`}>
       <h2 className="text-sm uppercase tracking-[0.18em]">{auth.user?.displayName}</h2>
       <p className="mt-2 text-sm text-[var(--v2-muted)]">{auth.user?.email}</p>
+
+      <form
+        className="mt-6"
+        onSubmit={(e) => {
+          e.preventDefault()
+          void run(() => auth.updateDisplayName(displayName), 'Display name updated.')
+        }}
+      >
+        <label className={labelClass} htmlFor="profile-display-name">
+          Display Name
+        </label>
+        <input
+          className={fieldClass}
+          id="profile-display-name"
+          value={displayName}
+          onChange={(e) => setDisplayName(e.target.value)}
+        />
+        <button className={buttonClass} type="submit">
+          Save Name
+        </button>
+      </form>
+
+      <form
+        className="mt-6 border-t border-[var(--v2-border)] pt-6"
+        onSubmit={(e) => {
+          e.preventDefault()
+          void run(async () => {
+            await auth.changePassword({ currentPassword, newPassword })
+            setCurrentPassword('')
+            setNewPassword('')
+          }, 'Password updated.')
+        }}
+      >
+        <label className={labelClass} htmlFor="profile-current-password">
+          Current Password
+        </label>
+        <input
+          className={fieldClass}
+          id="profile-current-password"
+          type="password"
+          value={currentPassword}
+          onChange={(e) => setCurrentPassword(e.target.value)}
+        />
+        <label className={`${labelClass} mt-3`} htmlFor="profile-new-password">
+          New Password
+        </label>
+        <input
+          className={fieldClass}
+          id="profile-new-password"
+          type="password"
+          value={newPassword}
+          onChange={(e) => setNewPassword(e.target.value)}
+        />
+        <button className={buttonClass} type="submit">
+          Change Password
+        </button>
+      </form>
+
+      <div className="mt-6 border-t border-[var(--v2-border)] pt-6">
+        <button
+          className={buttonClass}
+          type="button"
+          onClick={() => void run(() => auth.logout(), null)}
+        >
+          Sign Out
+        </button>
+      </div>
+
+      <form
+        className="mt-6 border-t border-[var(--v2-border)] pt-6"
+        onSubmit={(e) => {
+          e.preventDefault()
+          void run(() => auth.deleteAccount(deletePassword), null)
+        }}
+      >
+        <p className="text-xs uppercase tracking-[0.18em] text-red-400">Danger Zone</p>
+        <label className={`${labelClass} mt-3`} htmlFor="profile-delete-password">
+          Confirm Password
+        </label>
+        <input
+          className={fieldClass}
+          id="profile-delete-password"
+          type="password"
+          value={deletePassword}
+          onChange={(e) => setDeletePassword(e.target.value)}
+        />
+        <button
+          className="mt-4 rounded border border-red-400 px-4 py-2 text-xs uppercase tracking-[0.18em] text-red-400 hover:bg-red-400 hover:text-[var(--v2-bg)]"
+          type="submit"
+        >
+          Delete Account
+        </button>
+      </form>
+
+      {message !== null && <p className="mt-4 text-sm text-[var(--v2-accent)]">{message}</p>}
+      {error !== null && <p className="mt-4 text-sm text-red-400">{error}</p>}
     </section>
   )
 }

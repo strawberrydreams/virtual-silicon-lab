@@ -93,3 +93,69 @@ describe('AccountPage anonymous forms', () => {
     expect(await screen.findByText('Email or password is incorrect.')).toBeInTheDocument()
   })
 })
+
+describe('AccountPage profile management', () => {
+  function authedApi(overrides: Partial<AuthApi> = {}) {
+    return fakeApi({ me: vi.fn().mockResolvedValue(testUser), ...overrides })
+  }
+
+  it('renames the account', async () => {
+    const api = authedApi({
+      updateDisplayName: vi.fn().mockResolvedValue({ ...testUser, displayName: 'Lady Lovelace' }),
+    })
+    renderAccountPage(api)
+
+    const nameField = await screen.findByLabelText('Display Name')
+    await userEvent.clear(nameField)
+    await userEvent.type(nameField, 'Lady Lovelace')
+    await userEvent.click(screen.getByRole('button', { name: 'Save Name' }))
+
+    expect(await screen.findByRole('heading', { name: 'Lady Lovelace' })).toBeInTheDocument()
+    expect(api.updateDisplayName).toHaveBeenCalledWith('Lady Lovelace')
+  })
+
+  it('changes the password and reports success', async () => {
+    const api = authedApi()
+    renderAccountPage(api)
+
+    await userEvent.type(await screen.findByLabelText('Current Password'), 'hunter22hunter22')
+    await userEvent.type(screen.getByLabelText('New Password'), 'new-password-99')
+    await userEvent.click(screen.getByRole('button', { name: 'Change Password' }))
+
+    expect(await screen.findByText('Password updated.')).toBeInTheDocument()
+    expect(api.changePassword).toHaveBeenCalledWith({
+      currentPassword: 'hunter22hunter22',
+      newPassword: 'new-password-99',
+    })
+  })
+
+  it('signs out back to the anonymous panels', async () => {
+    renderAccountPage(authedApi())
+    await userEvent.click(await screen.findByRole('button', { name: 'Sign Out' }))
+    expect(await screen.findByRole('heading', { name: 'Sign In' })).toBeInTheDocument()
+  })
+
+  it('deletes the account after password confirmation', async () => {
+    const api = authedApi()
+    renderAccountPage(api)
+
+    await userEvent.type(await screen.findByLabelText('Confirm Password'), 'hunter22hunter22')
+    await userEvent.click(screen.getByRole('button', { name: 'Delete Account' }))
+
+    expect(await screen.findByRole('heading', { name: 'Sign In' })).toBeInTheDocument()
+    expect(api.deleteAccount).toHaveBeenCalledWith('hunter22hunter22')
+  })
+
+  it('surfaces a wrong delete password without leaving the profile', async () => {
+    const api = authedApi({
+      deleteAccount: vi.fn().mockRejectedValue(new AuthApiError('WRONG_PASSWORD', 'Password is incorrect.')),
+    })
+    renderAccountPage(api)
+
+    await userEvent.type(await screen.findByLabelText('Confirm Password'), 'wrong')
+    await userEvent.click(screen.getByRole('button', { name: 'Delete Account' }))
+
+    expect(await screen.findByText('Password is incorrect.')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Ada' })).toBeInTheDocument()
+  })
+})
