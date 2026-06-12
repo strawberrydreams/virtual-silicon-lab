@@ -48,4 +48,22 @@ describe('runMigrations', () => {
     expect(tables).toEqual([])
     expect(db.prepare('SELECT id FROM schema_migrations').all()).toEqual([])
   })
+
+  it('rejects duplicate migration ids before running anything', () => {
+    const db = openDatabase(':memory:')
+    const dupe: Migration = { id: '001_create_notes', up: () => {} }
+    expect(() => runMigrations(db, [createNotes, dupe])).toThrow(
+      'Duplicate migration id: 001_create_notes',
+    )
+    const tables = db
+      .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'notes'")
+      .all()
+    expect(tables).toEqual([])
+  })
+
+  it('creates the bookkeeping table even with no migrations', () => {
+    const db = openDatabase(':memory:')
+    expect(runMigrations(db, [])).toEqual([])
+    expect(db.prepare('SELECT id FROM schema_migrations').all()).toEqual([])
+  })
 })

@@ -18,6 +18,14 @@ export function openDatabase(path: string): Database.Database {
 }
 
 export function runMigrations(db: Database.Database, migrations: Migration[]): string[] {
+  const seen = new Set<string>()
+  for (const migration of migrations) {
+    if (seen.has(migration.id)) {
+      throw new Error(`Duplicate migration id: ${migration.id}`)
+    }
+    seen.add(migration.id)
+  }
+
   db.exec(
     'CREATE TABLE IF NOT EXISTS schema_migrations (id TEXT PRIMARY KEY, applied_at TEXT NOT NULL)',
   )
@@ -26,8 +34,11 @@ export function runMigrations(db: Database.Database, migrations: Migration[]): s
   const insertApplied = db.prepare('INSERT INTO schema_migrations (id, applied_at) VALUES (?, ?)')
 
   const newlyApplied: string[] = []
+  // Migration lists are append-only: never reorder or insert before applied entries.
   for (const migration of migrations) {
     if (alreadyApplied.has(migration.id)) continue
+    // Runs inside a transaction: SQLite silently ignores PRAGMA foreign_keys here,
+    // so migrations must not try to toggle FK enforcement.
     db.transaction(() => {
       migration.up(db)
       insertApplied.run(migration.id, new Date().toISOString())
