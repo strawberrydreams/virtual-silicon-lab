@@ -1,8 +1,9 @@
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it, vi } from 'vitest'
 import type { AuthApi, AuthUser } from './authApi'
-import { ServerUnreachableError } from './authApi'
+import { AuthApiError, ServerUnreachableError } from './authApi'
 import { AuthStoreProvider } from '../../stores/authStoreContext'
 import { AccountPage } from './AccountPage'
 
@@ -47,5 +48,48 @@ describe('AccountPage states', () => {
     renderAccountPage(fakeApi())
     expect(await screen.findByRole('heading', { name: 'Sign In' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Create Account' })).toBeInTheDocument()
+  })
+})
+
+describe('AccountPage anonymous forms', () => {
+  it('signs up and lands on the profile panel', async () => {
+    const api = fakeApi()
+    renderAccountPage(api)
+
+    await userEvent.type(await screen.findByLabelText('New Email'), 'ada@example.com')
+    await userEvent.type(screen.getByLabelText('Display Name'), 'Ada')
+    await userEvent.type(screen.getByLabelText('New Password'), 'hunter22hunter22')
+    await userEvent.click(screen.getByRole('button', { name: 'Create Account' }))
+
+    expect(await screen.findByText('ada@example.com')).toBeInTheDocument()
+    expect(api.signup).toHaveBeenCalledWith({
+      email: 'ada@example.com',
+      displayName: 'Ada',
+      password: 'hunter22hunter22',
+    })
+  })
+
+  it('logs in and lands on the profile panel', async () => {
+    const api = fakeApi()
+    renderAccountPage(api)
+
+    await userEvent.type(await screen.findByLabelText('Email'), 'ada@example.com')
+    await userEvent.type(screen.getByLabelText('Password'), 'hunter22hunter22')
+    await userEvent.click(screen.getByRole('button', { name: 'Sign In' }))
+
+    expect(await screen.findByText('ada@example.com')).toBeInTheDocument()
+  })
+
+  it('shows the server error message when login fails', async () => {
+    const api = fakeApi({
+      login: vi.fn().mockRejectedValue(new AuthApiError('INVALID_CREDENTIALS', 'Email or password is incorrect.')),
+    })
+    renderAccountPage(api)
+
+    await userEvent.type(await screen.findByLabelText('Email'), 'ada@example.com')
+    await userEvent.type(screen.getByLabelText('Password'), 'wrong-password')
+    await userEvent.click(screen.getByRole('button', { name: 'Sign In' }))
+
+    expect(await screen.findByText('Email or password is incorrect.')).toBeInTheDocument()
   })
 })

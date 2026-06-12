@@ -1,3 +1,4 @@
+import { useState, type FormEvent } from 'react'
 import { useAuthStore } from '../../stores/authStoreContext'
 import { AuthApiError, ServerUnreachableError } from './authApi'
 
@@ -48,22 +49,134 @@ export function AccountPage() {
 function AnonymousPanels() {
   return (
     <div className="mt-8 grid gap-6 md:grid-cols-2">
-      <section className={panelClass}>
-        <h2 className="text-sm uppercase tracking-[0.18em]">Sign In</h2>
-        {/* Task 14: sign-in form */}
-      </section>
-      <section className={panelClass}>
-        <h2 className="text-sm uppercase tracking-[0.18em]">Create Account</h2>
-        {/* Task 14: signup form */}
-      </section>
+      <SignInForm />
+      <SignupForm />
     </div>
   )
 }
 
+function SignInForm() {
+  const auth = useAuthStore()
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+
+  async function submit(event: FormEvent) {
+    event.preventDefault()
+    setBusy(true)
+    setError(null)
+    try {
+      await auth.login({ email, password })
+    } catch (caught) {
+      setError(describeAuthError(caught))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <section className={panelClass}>
+      <h2 className="text-sm uppercase tracking-[0.18em]">Sign In</h2>
+      <form className="mt-4" onSubmit={submit}>
+        <label className={labelClass} htmlFor="signin-email">
+          Email
+        </label>
+        <input
+          className={fieldClass}
+          id="signin-email"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+        <label className={`${labelClass} mt-3`} htmlFor="signin-password">
+          Password
+        </label>
+        <input
+          className={fieldClass}
+          id="signin-password"
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+        {error !== null && <p className="mt-3 text-sm text-red-400">{error}</p>}
+        <button className={buttonClass} disabled={busy} type="submit">
+          Sign In
+        </button>
+      </form>
+    </section>
+  )
+}
+
+function SignupForm() {
+  const auth = useAuthStore()
+  const [email, setEmail] = useState('')
+  const [displayName, setDisplayName] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+
+  async function submit(event: FormEvent) {
+    event.preventDefault()
+    setBusy(true)
+    setError(null)
+    try {
+      await auth.signup({ email, displayName, password })
+    } catch (caught) {
+      setError(describeAuthError(caught))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <section className={panelClass}>
+      <h2 className="text-sm uppercase tracking-[0.18em]">Create Account</h2>
+      <form className="mt-4" onSubmit={submit}>
+        <label className={labelClass} htmlFor="signup-email">
+          New Email
+        </label>
+        <input
+          className={fieldClass}
+          id="signup-email"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+        <label className={`${labelClass} mt-3`} htmlFor="signup-display-name">
+          Display Name
+        </label>
+        <input
+          className={fieldClass}
+          id="signup-display-name"
+          value={displayName}
+          onChange={(e) => setDisplayName(e.target.value)}
+        />
+        <label className={`${labelClass} mt-3`} htmlFor="signup-password">
+          New Password
+        </label>
+        <input
+          className={fieldClass}
+          id="signup-password"
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+        {error !== null && <p className="mt-3 text-sm text-red-400">{error}</p>}
+        <button className={buttonClass} disabled={busy} type="submit">
+          Create Account
+        </button>
+      </form>
+    </section>
+  )
+}
+
 function ProfilePanel() {
+  const auth = useAuthStore()
   return (
     <section className={`${panelClass} mt-8`}>
-      {/* Task 15: profile management */}
+      <h2 className="text-sm uppercase tracking-[0.18em]">{auth.user?.displayName}</h2>
+      <p className="mt-2 text-sm text-[var(--v2-muted)]">{auth.user?.email}</p>
     </section>
   )
 }
