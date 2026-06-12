@@ -91,7 +91,8 @@ Rules:
 ### v3 Share Core (in progress — spec: `docs/superpowers/specs/2026-06-12-v3-v4-roadmap-design.md`)
 
 - **V3-M0 Workspace & Server Skeleton**: ✅ done — npm workspaces conversion, Hono + better-sqlite3 server skeleton, transaction-safe migration runner (duplicate-id guard, empty production list until M1), `/api/health` reporting the shared domain `CURRENT_SCHEMA_VERSION`, shared-domain smoke tests pinning `migrateProject` as the publish validation entry; server suite 4 files / 11 tests.
-- **V3-M1 Accounts** · **V3-M2 Publish Pipeline** · **V3-M3 Public Gallery** · **V3-M4 Share Links** · **V3-M5 Remix Import** · **V3-M6 Deploy Packaging & QA**: ⏳ planned.
+- **V3-M1 Accounts**: ✅ done — `001_accounts` migration (users + sessions, FK cascade), argon2id (`@node-rs/argon2`, OWASP m=19456/t=2/p=1), signed `vsl_session` cookie carrying a raw token whose sha256 lives in SQLite (30-day TTL, lazy expiry), full account CRUD API (`/api/auth/signup·login·logout`, `GET/PATCH/DELETE /api/me`) with `{ error: { code, message } }` contract, password change revokes other sessions; client adds `/api` dev proxy, 4-state `authStore` (`offline` = normal, incl. 502/503/504 gateway mapping), `/account` page + header link themed via `--v2-*` vars. Suites: client 62 files / 296 tests, server 12 files / 54 tests. Plan: `docs/superpowers/plans/2026-06-12-v3-m1-accounts.md`.
+- **V3-M2 Publish Pipeline** · **V3-M3 Public Gallery** · **V3-M4 Share Links** · **V3-M5 Remix Import** · **V3-M6 Deploy Packaging & QA**: ⏳ planned (M6 owns rate limiting, Secure cookie flag, and production secret enforcement).
 - v4 "Community" (moderation, reactions, ranking, contests, remix lineage) is direction-approved in the same spec; detailed design happens after v3.
 
 ### SoC Custom Studio (post-v2, on `main`)
