@@ -12,7 +12,6 @@
     "resolveJsonModule": true,
     "noEmit": true,
     "types": ["node"],
-    "baseUrl": ".",
     "paths": { "@domain/*": ["../src/domain/*"] }
   },
   "include": ["src", "test", "../src/domain"]
