@@ -1,8 +1,11 @@
-import { Algorithm, hash, verify } from '@node-rs/argon2'
+import { hash, verify } from '@node-rs/argon2'
+
+// Algorithm.Argon2id — the package's const enum is ambient and unusable under isolatedModules.
+const ARGON2ID = 2
 
 // OWASP baseline for argon2id: m=19456 KiB, t=2, p=1.
 const ARGON2_OPTIONS = {
-  algorithm: Algorithm.Argon2id,
+  algorithm: ARGON2ID,
   memoryCost: 19456,
   timeCost: 2,
   parallelism: 1,

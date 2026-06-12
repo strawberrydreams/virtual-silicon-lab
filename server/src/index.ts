@@ -13,7 +13,15 @@ if (applied.length > 0) {
   console.log(`applied migrations: ${applied.join(', ')}`)
 }
 
+const sessionSecret = process.env.VSL_SESSION_SECRET ?? ''
+if (sessionSecret === '') {
+  console.warn('VSL_SESSION_SECRET is not set; using an insecure development-only secret.')
+}
+
 const port = Number(process.env.PORT ?? 8787)
-serve({ fetch: createApp().fetch, port }, (info) => {
-  console.log(`vsl server listening on http://127.0.0.1:${info.port}`)
-})
+serve(
+  { fetch: createApp({ db, sessionSecret: sessionSecret || 'dev-insecure-session-secret' }).fetch, port },
+  (info) => {
+    console.log(`vsl server listening on http://127.0.0.1:${info.port}`)
+  },
+)
