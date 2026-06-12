@@ -3,15 +3,22 @@ import type { Context } from 'hono'
 import { deleteCookie, getSignedCookie, setSignedCookie } from 'hono/cookie'
 import type { AppDeps } from '../app'
 import {
+  changePassword,
   createAccount,
   createSession,
   deleteSession,
   getSessionUser,
   SESSION_TTL_MS,
+  updateDisplayName,
   verifyCredentials,
   type AccountUser,
 } from './service'
-import { validateLoginInput, validateSignupInput } from './validation'
+import {
+  validateDisplayName,
+  validateLoginInput,
+  validatePassword,
+  validateSignupInput,
+} from './validation'
 
 const SESSION_COOKIE = 'vsl_session'
 
@@ -76,6 +83,41 @@ export function accountRoutes({ db, sessionSecret, now = Date.now }: AppDeps) {
     const session = await readSession(c)
     if (session === null) return fail(c, 401, 'UNAUTHORIZED', 'Sign in required.')
     return c.json({ user: session.user })
+  })
+
+  routes.patch('/me', async (c) => {
+    const session = await readSession(c)
+    if (session === null) return fail(c, 401, 'UNAUTHORIZED', 'Sign in required.')
+    const body = (await c.req.json().catch(() => null)) as Record<string, unknown> | null
+    if (body === null || typeof body !== 'object') {
+      return fail(c, 400, 'INVALID_INPUT', 'Expected a JSON object.')
+    }
+
+    let user = session.user
+    if (body.displayName !== undefined) {
+      const displayName = validateDisplayName(body.displayName)
+      if (!displayName.ok) return fail(c, 400, 'INVALID_INPUT', displayName.message)
+      user = updateDisplayName(db, user.id, displayName.value, now)
+    }
+    if (body.newPassword !== undefined) {
+      const newPassword = validatePassword(body.newPassword)
+      if (!newPassword.ok) return fail(c, 400, 'INVALID_INPUT', newPassword.message)
+      if (typeof body.currentPassword !== 'string') {
+        return fail(c, 400, 'INVALID_INPUT', 'currentPassword is required to change the password.')
+      }
+      const result = await changePassword(
+        db,
+        user.id,
+        body.currentPassword,
+        newPassword.value,
+        session.token,
+        now,
+      )
+      if (result === 'wrong-password') {
+        return fail(c, 401, 'WRONG_PASSWORD', 'Current password is incorrect.')
+      }
+    }
+    return c.json({ user })
   })
 
   return routes
