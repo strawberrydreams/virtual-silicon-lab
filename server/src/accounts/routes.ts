@@ -7,9 +7,10 @@ import {
   createSession,
   getSessionUser,
   SESSION_TTL_MS,
+  verifyCredentials,
   type AccountUser,
 } from './service'
-import { validateSignupInput } from './validation'
+import { validateLoginInput, validateSignupInput } from './validation'
 
 const SESSION_COOKIE = 'vsl_session'
 
@@ -41,7 +42,6 @@ export function accountRoutes({ db, sessionSecret, now = Date.now }: AppDeps) {
     const user = getSessionUser(db, token, now)
     return user === null ? null : { token, user }
   }
-  void readSession // used from Task 6 onward
   void clearSessionCookie // used from Task 7 onward
 
   routes.post('/auth/signup', async (c) => {
@@ -53,6 +53,23 @@ export function accountRoutes({ db, sessionSecret, now = Date.now }: AppDeps) {
     }
     await setSessionCookie(c, createSession(db, user.id, now))
     return c.json({ user }, 201)
+  })
+
+  routes.post('/auth/login', async (c) => {
+    const input = validateLoginInput(await c.req.json().catch(() => null))
+    if (!input.ok) return fail(c, 400, 'INVALID_INPUT', input.message)
+    const user = await verifyCredentials(db, input.value.email, input.value.password)
+    if (user === null) {
+      return fail(c, 401, 'INVALID_CREDENTIALS', 'Email or password is incorrect.')
+    }
+    await setSessionCookie(c, createSession(db, user.id, now))
+    return c.json({ user })
+  })
+
+  routes.get('/me', async (c) => {
+    const session = await readSession(c)
+    if (session === null) return fail(c, 401, 'UNAUTHORIZED', 'Sign in required.')
+    return c.json({ user: session.user })
   })
 
   return routes
