@@ -10,10 +10,10 @@ Completion and "looks great at a glance" beat feature breadth.
 
 ## Working Context
 
-- The v1 MVP (M0–M6) is complete and lives on `main`.
-- The current v2 visual major work lives on branch `v2-m2-editor-redesign`; do not merge it until the user explicitly asks.
-- v2 scope is visual/design only: page design, editor design, chip renderer quality, poster output, 10 hero sets, and random generator.
-- Package manager: **npm**. No backend; static hosting; storage is IndexedDB with localStorage fallback.
+- The v1 MVP (M0–M6), the v2 visual major (V2-M0–M6), and the SoC Custom Studio work are all complete and live on `main`.
+- Current work: **v3 "Share Core"** on branch `v3-share-core`; do not merge into `main` until the user explicitly asks. Goals/spec: `docs/superpowers/specs/2026-06-12-v3-v4-roadmap-design.md`.
+- v3 adds a Node + TypeScript + SQLite backend (npm workspace `server/`) with accounts, publish-snapshot uploads, a public gallery, share links, and remix import. Editing stays 100% local-first (IndexedDB + localStorage fallback); the server only receives explicit publish snapshots. v3 ends at **deploy-ready**, not public launch.
+- Package manager: **npm**.
 - Node.js `20.19+` or `22.12+` (Vite/Vitest requirement).
 
 ## Commands
@@ -80,6 +80,16 @@ Rules:
 
 ## Milestone Status
 
+### v3 Share Core (in progress — spec: `docs/superpowers/specs/2026-06-12-v3-v4-roadmap-design.md`)
+
+- **V3-M0 Workspace & Server Skeleton**: ⏳ planned — npm workspaces, server entry, SQLite + migrations, server test infra, shared `src/domain/` wiring.
+- **V3-M1 Accounts** · **V3-M2 Publish Pipeline** · **V3-M3 Public Gallery** · **V3-M4 Share Links** · **V3-M5 Remix Import** · **V3-M6 Deploy Packaging & QA**: ⏳ planned.
+- v4 "Community" (moderation, reactions, ranking, contests, remix lineage) is direction-approved in the same spec; detailed design happens after v3.
+
+### SoC Custom Studio (post-v2, on `main`)
+
+- ✅ done — studio kit UI/inspector, schema v2 studio data model + migration, deterministic global reflow engine, generated fake-spec engine with component-level estimates, three-zone editor redesign. Specs: `docs/superpowers/specs/2026-06-07-soc-custom-studio-design.md`, `2026-06-09-editor-reference-fidelity-design.md`; decisions in `implementation.md`. Test suite at this point: 58 files / 267 tests.
+
 ### v2 Visual Major
 
 - **V2-M0 Visual Audit & Direction**: ✅ done — reference audit, style direction, and 10 hero set targets in `docs/reference/`.
@@ -104,7 +114,9 @@ Rules:
 ## Merge Status
 
 - v1 MVP: ✅ merged into `main` via fast-forward (commit `bac1d8e`).
-- v2 visual major: ✅ implementation and final QA complete on `v2-m2-editor-redesign`; merge is still pending explicit user instruction.
+- v2 visual major: ✅ merged into `main` (linear commits, capped by `9e35f2f` "0.1_v2_prototype_complete"); the `v2-m2-editor-redesign` branch no longer exists.
+- SoC Custom Studio: ✅ on `main` (same linear history).
+- v3 Share Core: 🚧 in progress on `v3-share-core`; merge pending explicit user instruction.
 
 > Visual-quality gate: do not advance past M3 if glow/neon looks amateurish; the first hero chip is manually reviewed against the M0 reference board.
 
@@ -118,11 +130,13 @@ Rules:
 - `docs/superpowers/specs/` — design specs for in-progress features.
 - `implementation.md` — condensed running log of per-milestone decisions and outcomes **[Korean]**.
 
-## Explicitly Out Of Scope / v3 Deferred
+## Explicitly Out Of Scope / Deferred to v5+
 
-Custom freeform die paths · PixiJS/Three.js shaders · animation simulation · backend sharing links ·
-gallery/rankings/contests · AI generation · worldbuilding pages · responsive mobile · true 3D ·
-MP4 export · login/accounts · GDSII/DRC/LVS/manufacturing compatibility.
+Mobile viewer/editor · true 3D (Three.js) · AI prompt generation · payments/monetization ·
+custom freeform die paths · PixiJS shaders · animation simulation · worldbuilding pages ·
+MP4 export · two-way sync / multi-device editing · GDSII/DRC/LVS/manufacturing compatibility.
 
-For v3, the user may reconsider backend + SQLite, account/member CRUD, board/gallery/ranking/contest,
-mobile viewer/editor, true 3D, AI prompt generation, and public sharing links.
+v3 covers backend + SQLite, accounts, publish/gallery/share links, remix import (deploy-ready, no
+public launch). v4 covers moderation, reactions, ranking, contests, remix lineage; a standalone
+text board was explicitly rejected (absorbed into per-chip comments + contest announcements).
+Public launch is a separate gate decided at v4 start.
