@@ -5,6 +5,7 @@ import type { AppDeps } from '../app'
 import {
   createAccount,
   createSession,
+  deleteSession,
   getSessionUser,
   SESSION_TTL_MS,
   verifyCredentials,
@@ -42,8 +43,6 @@ export function accountRoutes({ db, sessionSecret, now = Date.now }: AppDeps) {
     const user = getSessionUser(db, token, now)
     return user === null ? null : { token, user }
   }
-  void clearSessionCookie // used from Task 7 onward
-
   routes.post('/auth/signup', async (c) => {
     const input = validateSignupInput(await c.req.json().catch(() => null))
     if (!input.ok) return fail(c, 400, 'INVALID_INPUT', input.message)
@@ -64,6 +63,13 @@ export function accountRoutes({ db, sessionSecret, now = Date.now }: AppDeps) {
     }
     await setSessionCookie(c, createSession(db, user.id, now))
     return c.json({ user })
+  })
+
+  routes.post('/auth/logout', async (c) => {
+    const session = await readSession(c)
+    if (session !== null) deleteSession(db, session.token)
+    clearSessionCookie(c)
+    return c.body(null, 204)
   })
 
   routes.get('/me', async (c) => {
