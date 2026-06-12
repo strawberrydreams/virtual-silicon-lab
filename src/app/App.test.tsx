@@ -73,6 +73,17 @@ describe('App', () => {
     expect(await screen.findByRole('button', { name: 'New Project' })).toBeInTheDocument()
   })
 
+  it('renders the account route with the header account link', async () => {
+    render(
+      <MemoryRouter initialEntries={['/account']}>
+        <App />
+      </MemoryRouter>,
+    )
+
+    expect(await screen.findByRole('heading', { name: 'Account' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Account' })).toBeInTheDocument()
+  })
+
   it('applies the hero set page theme when a hero project is opened', async () => {
     render(
       <MemoryRouter initialEntries={['/dashboard']}>
