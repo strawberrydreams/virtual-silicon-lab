@@ -86,8 +86,10 @@ export function renderViewerHtml(input: ViewerInput): string {
     <p>${safeDescription}</p>
     <div class="features">${features}</div>
   </section>
-  <p class="cta"><a href="${escapeHtml(baseUrl)}/">Open the Lab</a></p>
-  <!-- Remix this chip: V3-M5 -->
+  <p class="cta">
+    <a href="${escapeHtml(baseUrl)}/gallery/${escapeHtml(slug)}">Remix this chip</a>
+    <a href="${escapeHtml(baseUrl)}/">Open the Lab</a>
+  </p>
 </main>
 </body>
 </html>`

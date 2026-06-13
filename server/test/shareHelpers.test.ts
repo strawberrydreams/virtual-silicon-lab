@@ -76,6 +76,8 @@ describe('renderViewerHtml', () => {
     expect(html).toContain('<meta property="og:image:width" content="3200">')
     expect(html).toContain('src="https://chips.example.com/s/ada-chip-deadbeef/poster.png"')
     expect(html).toContain('AURORA')
+    expect(html).toContain('Remix this chip')
+    expect(html).toContain('href="https://chips.example.com/gallery/ada-chip-deadbeef"')
   })
 
   it('escapes user-controlled title and spec content', () => {
