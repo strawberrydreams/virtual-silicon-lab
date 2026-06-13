@@ -84,6 +84,17 @@ describe('App', () => {
     expect(screen.getByRole('link', { name: 'Account' })).toBeInTheDocument()
   })
 
+  it('renders the public gallery route with the header gallery link', async () => {
+    render(
+      <MemoryRouter initialEntries={['/gallery']}>
+        <App />
+      </MemoryRouter>,
+    )
+
+    expect(await screen.findByRole('heading', { name: 'Public Gallery' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Gallery' })).toBeInTheDocument()
+  })
+
   it('applies the hero set page theme when a hero project is opened', async () => {
     render(
       <MemoryRouter initialEntries={['/dashboard']}>

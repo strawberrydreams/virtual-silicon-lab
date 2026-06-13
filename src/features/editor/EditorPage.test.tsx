@@ -15,6 +15,10 @@ vi.mock('../export/ExportPanel', () => ({
   ExportPanel: () => <button type="button">Download Poster PNG</button>,
 }))
 
+vi.mock('../publish/PublishPanel', () => ({
+  PublishPanel: () => <button type="button">Publish Snapshot</button>,
+}))
+
 describe('EditorPage', () => {
   it('renders the v2 three-zone editor shell with existing commands reachable', () => {
     render(
