@@ -115,6 +115,17 @@ export function PublishPanel({ project, api = livePublishApi, captureImages }: P
     })
   }
 
+  async function copyShareLink() {
+    const shareUrl = published?.shareUrl
+    if (!shareUrl) return
+    try {
+      await navigator.clipboard.writeText(shareUrl)
+      setMessage('Share link copied.')
+    } catch {
+      setMessage('Copy failed. Select and copy the link manually.')
+    }
+  }
+
   if (auth.status === 'unknown') {
     return (
       <section aria-label="Publish controls" className="editor-inspector-card editor-inspector-card--stack">
@@ -161,6 +172,14 @@ export function PublishPanel({ project, api = livePublishApi, captureImages }: P
         )}
         {message ? <p>{message}</p> : null}
       </div>
+      {published?.isPublic && published.shareUrl ? (
+        <div className="grid gap-1 text-sm text-[var(--v2-muted)]">
+          <p className="break-all text-cyan-100">{published.shareUrl}</p>
+          <button type="button" className={buttonClass} onClick={copyShareLink} disabled={loading}>
+            Copy Link
+          </button>
+        </div>
+      ) : null}
       <div className="grid gap-2">
         <button type="button" className={buttonClass} onClick={publishSnapshot} disabled={loading}>
           {published ? 'Republish Snapshot' : 'Publish Snapshot'}

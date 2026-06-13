@@ -118,6 +118,35 @@ describe('PublishPanel', () => {
     await waitFor(() => expect(screen.getByRole('button', { name: 'Publish Snapshot' })).toBeInTheDocument())
   })
 
+  it('shows the share link with a copy button for a public chip', async () => {
+    const publicChip: PublishedChip = {
+      ...chip,
+      isPublic: true,
+      shareUrl: 'http://localhost/s/ada-chip-deadbeef',
+    }
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    vi.stubGlobal('navigator', { ...navigator, clipboard: { writeText } })
+    const api = fakePublishApi({ getForProject: vi.fn().mockResolvedValue(publicChip) })
+    renderPanel(fakeAuthApi(), api)
+
+    const copyButton = await screen.findByRole('button', { name: /copy link/i })
+    expect(screen.getByText('http://localhost/s/ada-chip-deadbeef')).toBeInTheDocument()
+
+    await userEvent.click(copyButton)
+    expect(writeText).toHaveBeenCalledWith('http://localhost/s/ada-chip-deadbeef')
+    expect(await screen.findByText(/link copied/i)).toBeInTheDocument()
+
+    vi.unstubAllGlobals()
+  })
+
+  it('hides the share link for a private chip', async () => {
+    const api = fakePublishApi({ getForProject: vi.fn().mockResolvedValue(chip) })
+    renderPanel(fakeAuthApi(), api)
+
+    await screen.findByText(/published v1/i)
+    expect(screen.queryByRole('button', { name: /copy link/i })).not.toBeInTheDocument()
+  })
+
   it('keeps local editing safe when publish API becomes unreachable', async () => {
     const api = fakePublishApi({ publish: vi.fn().mockRejectedValue(new ServerUnreachableError()) })
     renderPanel(fakeAuthApi(), api)
