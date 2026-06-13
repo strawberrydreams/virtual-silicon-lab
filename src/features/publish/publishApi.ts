@@ -9,6 +9,7 @@ export type PublishedChip = {
   dieImageUrl: string
   posterImageUrl: string
   isPublic: boolean
+  shareUrl: string | null
   version: number
   createdAt: number
   updatedAt: number

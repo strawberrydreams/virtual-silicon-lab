@@ -11,6 +11,7 @@ const chip = {
   dieImageUrl: 'data:image/png;base64,AAAA',
   posterImageUrl: 'data:image/png;base64,BBBB',
   isPublic: false,
+  shareUrl: null,
   version: 1,
   createdAt: 1_000,
   updatedAt: 1_000,
@@ -29,6 +30,14 @@ afterEach(() => {
 })
 
 describe('livePublishApi', () => {
+  it('surfaces the server shareUrl for a public chip', async () => {
+    const publicChip = { ...chip, isPublic: true, shareUrl: 'http://localhost/s/ada-chip-deadbeef' }
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(200, { chip: publicChip })))
+
+    const result = await livePublishApi.getForProject('project-1')
+    expect(result?.shareUrl).toBe('http://localhost/s/ada-chip-deadbeef')
+  })
+
   it('loads an existing publish record and returns null on 404', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(jsonResponse(200, { chip })).mockResolvedValueOnce(jsonResponse(404, { error: { code: 'NOT_FOUND', message: 'Nope.' } })))
 

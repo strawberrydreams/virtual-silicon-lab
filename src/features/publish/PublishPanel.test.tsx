@@ -24,6 +24,7 @@ const chip: PublishedChip = {
   dieImageUrl: images.dieImageDataUrl,
   posterImageUrl: images.posterImageDataUrl,
   isPublic: false,
+  shareUrl: null,
   version: 1,
   createdAt: 2_000,
   updatedAt: 2_000,
