@@ -11,9 +11,10 @@ import {
 type Props = {
   api?: GalleryApi
   onProjectLoaded?: (project: Project) => void
+  onRemix?: (project: Project) => void
 }
 
-export function GalleryDetailPage({ api = liveGalleryApi, onProjectLoaded }: Props) {
+export function GalleryDetailPage({ api = liveGalleryApi, onProjectLoaded, onRemix }: Props) {
   const { slug = '' } = useParams()
   const [chip, setChip] = useState<GalleryChipDetail | 'loading' | 'missing' | 'offline' | 'error'>('loading')
 
@@ -92,6 +93,9 @@ export function GalleryDetailPage({ api = liveGalleryApi, onProjectLoaded }: Pro
           <Link className="v2-inline-action" to="/gallery">
             Back to Gallery
           </Link>
+          <button type="button" className="v2-inline-action" onClick={() => onRemix?.(chip.project)}>
+            Remix into my projects
+          </button>
         </div>
         <img alt={`${chip.title} poster`} className="gallery-detail__poster" src={chip.posterImageUrl} />
       </section>

@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { describe, expect, it, vi } from 'vitest'
 import { createProject } from '../../domain/projectFactory'
@@ -41,11 +42,15 @@ function fakeApi(overrides: Partial<GalleryApi> = {}): GalleryApi {
   }
 }
 
-function renderDetail(api: GalleryApi, slug = 'ada-chip-deadbeef') {
+function renderDetail(
+  api: GalleryApi,
+  slug = 'ada-chip-deadbeef',
+  onRemix?: (project: GalleryChipDetail['project']) => void,
+) {
   return render(
     <MemoryRouter initialEntries={[`/gallery/${slug}`]}>
       <Routes>
-        <Route path="/gallery/:slug" element={<GalleryDetailPage api={api} />} />
+        <Route path="/gallery/:slug" element={<GalleryDetailPage api={api} onRemix={onRemix} />} />
       </Routes>
     </MemoryRouter>,
   )
@@ -75,5 +80,21 @@ describe('GalleryDetailPage', () => {
 
     expect(await screen.findByText(/share server is offline/i)).toBeInTheDocument()
     expect(screen.getByText(/local editing is unaffected/i)).toBeInTheDocument()
+  })
+
+  it('remixes the loaded chip snapshot into local projects', async () => {
+    const onRemix = vi.fn()
+    renderDetail(fakeApi(), 'ada-chip-deadbeef', onRemix)
+
+    await userEvent.click(await screen.findByRole('button', { name: /remix into my projects/i }))
+
+    expect(onRemix).toHaveBeenCalledWith(detail.project)
+  })
+
+  it('does not show the remix button while loading or offline', async () => {
+    renderDetail(fakeApi({ get: vi.fn().mockRejectedValue(new ServerUnreachableError()) }))
+
+    await screen.findByText(/share server is offline/i)
+    expect(screen.queryByRole('button', { name: /remix into my projects/i })).not.toBeInTheDocument()
   })
 })
