@@ -13,6 +13,7 @@ vi.mock('../features/editor/EditorPage', () => ({
 describe('App', () => {
   afterEach(() => {
     localStorage.clear()
+    vi.unstubAllGlobals()
   })
 
   it('renders the product title', () => {
@@ -93,6 +94,51 @@ describe('App', () => {
 
     expect(await screen.findByRole('heading', { name: 'Public Gallery' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Gallery' })).toBeInTheDocument()
+  })
+
+  it('remixes a gallery chip into a new local project and opens the editor', async () => {
+    const project = {
+      ...(await import('../domain/projectFactory')).createProject('Ada Chip', 'gallery-source', 1_000),
+    }
+    const detail = {
+      id: 'pub1',
+      slug: 'ada-chip-deadbeef',
+      title: 'Ada Chip',
+      ownerDisplayName: 'Ada',
+      dieImageUrl: 'data:image/png;base64,AAAA',
+      posterImageUrl: 'data:image/png;base64,BBBB',
+      version: 1,
+      updatedAt: 2_000,
+      publishedAt: 2_000,
+      project,
+    }
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input)
+        if (url.includes('/api/gallery/')) {
+          return new Response(JSON.stringify({ chip: detail }), {
+            status: 200,
+            headers: { 'content-type': 'application/json' },
+          })
+        }
+        return new Response(JSON.stringify({ error: { code: 'UNAUTHORIZED', message: 'no' } }), {
+          status: 401,
+          headers: { 'content-type': 'application/json' },
+        })
+      }),
+    )
+
+    render(
+      <MemoryRouter initialEntries={['/gallery/ada-chip-deadbeef']}>
+        <App />
+      </MemoryRouter>,
+    )
+
+    await userEvent.click(await screen.findByRole('button', { name: /remix into my projects/i }))
+
+    const editor = await screen.findByRole('main', { name: 'Chip editor workspace' })
+    expect(editor).toHaveTextContent('Ada Chip Remix')
   })
 
   it('applies the hero set page theme when a hero project is opened', async () => {

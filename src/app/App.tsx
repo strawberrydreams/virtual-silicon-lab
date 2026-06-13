@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Link, Navigate, Route, Routes, useParams } from 'react-router-dom'
+import { Link, Navigate, Route, Routes, useNavigate, useParams } from 'react-router-dom'
 import type { Project } from '../domain/project'
 import { AccountPage } from '../features/account/AccountPage'
 import { EditorPage } from '../features/editor/EditorPage'
@@ -101,6 +101,8 @@ function EditorRoute() {
 }
 
 function GalleryDetailRoute() {
+  const store = useProjectStore()
+  const navigate = useNavigate()
   const [, setPageTheme] = usePageTheme()
   const onProjectLoaded = useCallback(
     (project: Project) => {
@@ -109,7 +111,14 @@ function GalleryDetailRoute() {
     },
     [setPageTheme],
   )
-  return <GalleryDetailPage onProjectLoaded={onProjectLoaded} />
+  const onRemix = useCallback(
+    async (project: Project) => {
+      const remix = await store.remixImport(project)
+      navigate(`/editor/${remix.id}`)
+    },
+    [store, navigate],
+  )
+  return <GalleryDetailPage onProjectLoaded={onProjectLoaded} onRemix={onRemix} />
 }
 
 export function App() {
