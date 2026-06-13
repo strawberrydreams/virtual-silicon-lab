@@ -94,6 +94,24 @@ describe('publish routes', () => {
     expect(await res.json()).toMatchObject({ chip: { sourceProjectId: 'project-1', isPublic: true, version: 1 } })
   })
 
+  it('returns a public-only absolute shareUrl', async () => {
+    const { app, cookie } = await signedInCookie()
+
+    const publicRes = await app.request('/api/published-chips', {
+      ...jsonRequest('POST', { ...publishPayload(), isPublic: true }),
+      headers: { 'content-type': 'application/json', cookie },
+    })
+    const publicChip = ((await publicRes.json()) as { chip: { slug: string; shareUrl: string | null } }).chip
+    expect(publicChip.shareUrl).toBe(`http://localhost/s/${publicChip.slug}`)
+
+    const privateRes = await app.request('/api/published-chips/source/project-1', {
+      ...jsonRequest('PATCH', { isPublic: false }),
+      headers: { 'content-type': 'application/json', cookie },
+    })
+    const privateChip = ((await privateRes.json()) as { chip: { shareUrl: string | null } }).chip
+    expect(privateChip.shareUrl).toBeNull()
+  })
+
   it('unpublishes the current account source project', async () => {
     const { app, db, cookie } = await signedInCookie()
     await app.request('/api/published-chips', {

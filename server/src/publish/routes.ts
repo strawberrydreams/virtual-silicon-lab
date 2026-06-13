@@ -14,12 +14,13 @@ import {
   type PublicGalleryChip,
 } from './service'
 import { validatePublishInput } from './validation'
+import { buildShareUrl, resolvePublicBaseUrl } from '../share/baseUrl'
 
 const SESSION_COOKIE = 'vsl_session'
 
 type ErrorStatus = 400 | 401 | 404
 
-function serializePublishedChip(chip: PublishedChip) {
+function serializePublishedChip(chip: PublishedChip, baseUrl: string) {
   return {
     id: chip.id,
     ownerUserId: chip.ownerUserId,
@@ -29,6 +30,7 @@ function serializePublishedChip(chip: PublishedChip) {
     dieImageUrl: chip.dieImageDataUrl,
     posterImageUrl: chip.posterImageDataUrl,
     isPublic: chip.isPublic,
+    shareUrl: chip.isPublic ? buildShareUrl(baseUrl, chip.slug) : null,
     version: chip.version,
     createdAt: chip.createdAt,
     updatedAt: chip.updatedAt,
@@ -57,7 +59,7 @@ function serializeGalleryDetail(chip: PublicGalleryChip) {
   }
 }
 
-export function publishRoutes({ db, sessionSecret, now = Date.now }: AppDeps) {
+export function publishRoutes({ db, sessionSecret, now = Date.now, publicBaseUrl }: AppDeps) {
   const routes = new Hono()
 
   function fail(c: Context, status: ErrorStatus, code: string, message: string) {
@@ -78,7 +80,8 @@ export function publishRoutes({ db, sessionSecret, now = Date.now }: AppDeps) {
 
     const existing = getPublishedChipForOwnerProject(db, user.id, input.value.project.id)
     const chip = upsertPublishedChip(db, user.id, input.value, now)
-    return c.json({ chip: serializePublishedChip(chip) }, existing === null ? 201 : 200)
+    const baseUrl = resolvePublicBaseUrl(c.req.url, publicBaseUrl)
+    return c.json({ chip: serializePublishedChip(chip, baseUrl) }, existing === null ? 201 : 200)
   })
 
   routes.get('/published-chips/source/:sourceProjectId', async (c) => {
@@ -86,7 +89,7 @@ export function publishRoutes({ db, sessionSecret, now = Date.now }: AppDeps) {
     if (user === null) return fail(c, 401, 'UNAUTHORIZED', 'Sign in required.')
     const chip = getPublishedChipForOwnerProject(db, user.id, c.req.param('sourceProjectId'))
     if (chip === null) return fail(c, 404, 'NOT_FOUND', 'Published chip not found.')
-    return c.json({ chip: serializePublishedChip(chip) })
+    return c.json({ chip: serializePublishedChip(chip, resolvePublicBaseUrl(c.req.url, publicBaseUrl)) })
   })
 
   routes.patch('/published-chips/source/:sourceProjectId', async (c) => {
@@ -98,7 +101,7 @@ export function publishRoutes({ db, sessionSecret, now = Date.now }: AppDeps) {
     }
     const chip = setPublishedChipVisibility(db, user.id, c.req.param('sourceProjectId'), body.isPublic, now)
     if (chip === null) return fail(c, 404, 'NOT_FOUND', 'Published chip not found.')
-    return c.json({ chip: serializePublishedChip(chip) })
+    return c.json({ chip: serializePublishedChip(chip, resolvePublicBaseUrl(c.req.url, publicBaseUrl)) })
   })
 
   routes.delete('/published-chips/source/:sourceProjectId', async (c) => {

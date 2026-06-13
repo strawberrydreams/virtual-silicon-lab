@@ -20,7 +20,14 @@ if (sessionSecret === '') {
 
 const port = Number(process.env.PORT ?? 8787)
 serve(
-  { fetch: createApp({ db, sessionSecret: sessionSecret || 'dev-insecure-session-secret' }).fetch, port },
+  {
+    fetch: createApp({
+      db,
+      sessionSecret: sessionSecret || 'dev-insecure-session-secret',
+      publicBaseUrl: process.env.VSL_PUBLIC_BASE_URL,
+    }).fetch,
+    port,
+  },
   (info) => {
     console.log(`vsl server listening on http://127.0.0.1:${info.port}`)
   },
