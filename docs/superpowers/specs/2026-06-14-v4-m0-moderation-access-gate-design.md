@@ -53,7 +53,9 @@ v3 서버(Hono + SQLite + accounts + published_chips) 위에 **공개 오픈 전
 - 모든 관리자 API는 서버에서 admin 세션을 재검증하고 비-admin은 **403**으로 거절한다.
 - 이메일 비교는 대소문자/트림 정규화(기존 가입 이메일 정규화 규칙과 동일)를 따른다.
 
-## 데이터 모델 — `003_moderation` 마이그레이션
+## 데이터 모델 — `004_moderation` 마이그레이션
+
+> 구현 시 마이그레이션 id는 `004_moderation`이다 (`003_published_chip_image_paths`가 V3-M6에서 이미 존재).
 
 기존 트랜잭션-세이프 마이그레이션 러너 패턴을 사용한다. 두 변경:
 
