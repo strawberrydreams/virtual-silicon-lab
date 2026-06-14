@@ -14,6 +14,7 @@ export type PublishedChip = {
   posterImageDataUrl: string
   dieImagePath: string | null
   posterImagePath: string | null
+  moderationStatus: 'visible' | 'hidden'
   isPublic: boolean
   version: number
   createdAt: number
@@ -36,6 +37,7 @@ type PublishedChipRow = {
   poster_image_data_url: string
   die_image_path: string | null
   poster_image_path: string | null
+  moderation_status: 'visible' | 'hidden'
   is_public: 0 | 1
   version: number
   created_at: number
@@ -57,6 +59,7 @@ function toPublishedChip(row: PublishedChipRow): PublishedChip {
     posterImageDataUrl: row.poster_image_data_url,
     dieImagePath: row.die_image_path,
     posterImagePath: row.poster_image_path,
+    moderationStatus: row.moderation_status,
     isPublic: row.is_public === 1,
     version: row.version,
     createdAt: row.created_at,
@@ -231,7 +234,7 @@ export function listPublicPublishedChips(db: Database.Database, limit = 48): Pub
       `SELECT p.*, u.display_name AS owner_display_name
        FROM published_chips p
        JOIN users u ON u.id = p.owner_user_id
-       WHERE p.is_public = 1
+       WHERE p.is_public = 1 AND p.moderation_status = 'visible'
        ORDER BY p.updated_at DESC
        LIMIT ?`,
     )
@@ -248,7 +251,7 @@ export function getPublicPublishedChipBySlug(
       `SELECT p.*, u.display_name AS owner_display_name
        FROM published_chips p
        JOIN users u ON u.id = p.owner_user_id
-       WHERE p.slug = ? AND p.is_public = 1`,
+       WHERE p.slug = ? AND p.is_public = 1 AND p.moderation_status = 'visible'`,
     )
     .get(slug) as PublicGalleryChipRow | undefined
   return row === undefined ? null : toPublicGalleryChip(row)
