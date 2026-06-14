@@ -41,7 +41,7 @@ v3 서버(Hono + SQLite + accounts + published_chips) 위에 **공개 오픈 전
 
 - 기본값 **`false`**(비공개 베타가 안전한 기본). `true`로 켜는 것이 곧 "공개 오픈" 운영 행위.
 - `false`일 때 `POST /api/auth/signup`은 기존 `{ error: { code, message } }` 계약으로 거절한다
-  (`code: "signups_closed"`). **로그인·퍼블리시·갤러리·공유는 영향 없음.**
+  (`code: "SIGNUPS_CLOSED"`). **로그인·퍼블리시·갤러리·공유는 영향 없음.**
 - 헬스/설정 엔드포인트가 `signupsOpen`을 노출 → 클라이언트가 가입 폼을 숨기고 "비공개 베타"
   안내를 표시한다. 서버가 신뢰 경계이므로 **클라이언트 숨김과 무관하게 서버에서도 차단**한다.
 
@@ -128,7 +128,7 @@ reports(
 
 - 기존 컨벤션(TDD, Vitest, Konva는 브라우저 검증) 유지.
 - 서버 통합 테스트(임시 SQLite):
-  - 가입 게이트: `VSL_SIGNUPS_OPEN=false` → 가입 403(`signups_closed`), `=true` → 성공.
+  - 가입 게이트: `VSL_SIGNUPS_OPEN=false` → 가입 403(`SIGNUPS_CLOSED`), `=true` → 성공.
   - admin 인가: 비-admin이 admin 엔드포인트 호출 시 403; admin은 성공.
   - 숨김이 공개 갤러리·공유 뷰어에서 제외됨(unhide 시 복귀).
   - 신고 생성 → 큐 조회 → resolve/dismiss 전환.
