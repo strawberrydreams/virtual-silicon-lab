@@ -22,7 +22,7 @@ const REPORT_STATUSES: ReportStatus[] = ['open', 'resolved', 'dismissed']
 const MAX_REASON_LENGTH = 500
 
 export function moderationRoutes({ db, sessionSecret, now = Date.now, adminEmails = [], imageStore }: AppDeps) {
-  const routes = new Hono()
+  const routes = new Hono<{ Variables: { adminUser: AccountUser } }>()
 
   function fail(c: Context, status: ErrorStatus, code: string, message: string) {
     return c.json({ error: { code, message } }, status)
@@ -40,6 +40,14 @@ export function moderationRoutes({ db, sessionSecret, now = Date.now, adminEmail
     if (!isAdminEmail(user.email, adminEmails)) return 'forbidden'
     return user
   }
+
+  routes.use('/admin/*', async (c, next) => {
+    const admin = await readAdmin(c)
+    if (admin === 'unauthorized') return fail(c, 401, 'UNAUTHORIZED', 'Sign in required.')
+    if (admin === 'forbidden') return fail(c, 403, 'FORBIDDEN', 'Admin access required.')
+    c.set('adminUser', admin)
+    await next()
+  })
 
   routes.post('/reports', async (c) => {
     const user = await readUser(c)
@@ -61,9 +69,6 @@ export function moderationRoutes({ db, sessionSecret, now = Date.now, adminEmail
   })
 
   routes.get('/admin/reports', async (c) => {
-    const admin = await readAdmin(c)
-    if (admin === 'unauthorized') return fail(c, 401, 'UNAUTHORIZED', 'Sign in required.')
-    if (admin === 'forbidden') return fail(c, 403, 'FORBIDDEN', 'Admin access required.')
     const statusParam = c.req.query('status') ?? 'open'
     if (!REPORT_STATUSES.includes(statusParam as ReportStatus)) {
       return fail(c, 400, 'INVALID_INPUT', 'status must be open, resolved, or dismissed.')
@@ -72,41 +77,29 @@ export function moderationRoutes({ db, sessionSecret, now = Date.now, adminEmail
   })
 
   routes.patch('/admin/reports/:id', async (c) => {
-    const admin = await readAdmin(c)
-    if (admin === 'unauthorized') return fail(c, 401, 'UNAUTHORIZED', 'Sign in required.')
-    if (admin === 'forbidden') return fail(c, 403, 'FORBIDDEN', 'Admin access required.')
     const body = (await c.req.json().catch(() => null)) as Record<string, unknown> | null
     if (body === null || (body.status !== 'resolved' && body.status !== 'dismissed')) {
       return fail(c, 400, 'INVALID_INPUT', 'status must be resolved or dismissed.')
     }
-    const report = resolveReport(db, c.req.param('id'), body.status, admin.id, now)
+    const report = resolveReport(db, c.req.param('id'), body.status, c.get('adminUser').id, now)
     if (report === null) return fail(c, 404, 'NOT_FOUND', 'Report not found.')
     return c.json({ report })
   })
 
   routes.get('/admin/published-chips', async (c) => {
-    const admin = await readAdmin(c)
-    if (admin === 'unauthorized') return fail(c, 401, 'UNAUTHORIZED', 'Sign in required.')
-    if (admin === 'forbidden') return fail(c, 403, 'FORBIDDEN', 'Admin access required.')
     return c.json({ chips: listChipsForModeration(db) })
   })
 
   routes.post('/admin/published-chips/:id/hide', async (c) => {
-    const admin = await readAdmin(c)
-    if (admin === 'unauthorized') return fail(c, 401, 'UNAUTHORIZED', 'Sign in required.')
-    if (admin === 'forbidden') return fail(c, 403, 'FORBIDDEN', 'Admin access required.')
     const body = (await c.req.json().catch(() => null)) as Record<string, unknown> | null
     const reason = typeof body?.reason === 'string' ? body.reason.slice(0, MAX_REASON_LENGTH) : null
-    if (!hideChip(db, c.req.param('id'), admin.id, reason, now)) {
+    if (!hideChip(db, c.req.param('id'), c.get('adminUser').id, reason, now)) {
       return fail(c, 404, 'NOT_FOUND', 'Published chip not found.')
     }
     return c.json({ ok: true })
   })
 
   routes.post('/admin/published-chips/:id/unhide', async (c) => {
-    const admin = await readAdmin(c)
-    if (admin === 'unauthorized') return fail(c, 401, 'UNAUTHORIZED', 'Sign in required.')
-    if (admin === 'forbidden') return fail(c, 403, 'FORBIDDEN', 'Admin access required.')
     if (!unhideChip(db, c.req.param('id'), now)) {
       return fail(c, 404, 'NOT_FOUND', 'Published chip not found.')
     }
@@ -114,9 +107,6 @@ export function moderationRoutes({ db, sessionSecret, now = Date.now, adminEmail
   })
 
   routes.delete('/admin/published-chips/:id', async (c) => {
-    const admin = await readAdmin(c)
-    if (admin === 'unauthorized') return fail(c, 401, 'UNAUTHORIZED', 'Sign in required.')
-    if (admin === 'forbidden') return fail(c, 403, 'FORBIDDEN', 'Admin access required.')
     if (!adminDeleteChip(db, c.req.param('id'), imageStore)) {
       return fail(c, 404, 'NOT_FOUND', 'Published chip not found.')
     }
