@@ -16,6 +16,8 @@ export type AppDeps = {
   uploadMaxBytes?: number
   rateLimit?: RateLimitOptions
   imageStore?: PublishedImageStore
+  signupsOpen?: boolean
+  adminEmails?: string[]
 }
 
 export function createApp(deps: AppDeps) {
@@ -45,7 +47,11 @@ export function createApp(deps: AppDeps) {
   }
 
   app.get('/api/health', (c) =>
-    c.json({ ok: true, projectSchemaVersion: CURRENT_SCHEMA_VERSION }),
+    c.json({
+      ok: true,
+      projectSchemaVersion: CURRENT_SCHEMA_VERSION,
+      signupsOpen: deps.signupsOpen ?? true,
+    }),
   )
   app.get('/uploads/*', (c) => {
     const bytes = deps.imageStore?.readPublishedImage(new URL(c.req.url).pathname) ?? null

@@ -23,9 +23,15 @@ import {
 
 const SESSION_COOKIE = 'vsl_session'
 
-type ErrorStatus = 400 | 401 | 409
+type ErrorStatus = 400 | 401 | 403 | 409
 
-export function accountRoutes({ db, sessionSecret, now = Date.now, secureCookies = false }: AppDeps) {
+export function accountRoutes({
+  db,
+  sessionSecret,
+  now = Date.now,
+  secureCookies = false,
+  signupsOpen = true,
+}: AppDeps) {
   const routes = new Hono()
 
   function fail(c: Context, status: ErrorStatus, code: string, message: string) {
@@ -53,6 +59,9 @@ export function accountRoutes({ db, sessionSecret, now = Date.now, secureCookies
     return user === null ? null : { token, user }
   }
   routes.post('/auth/signup', async (c) => {
+    if (!signupsOpen) {
+      return fail(c, 403, 'signups_closed', 'New sign-ups are currently closed.')
+    }
     const input = validateSignupInput(await c.req.json().catch(() => null))
     if (!input.ok) return fail(c, 400, 'INVALID_INPUT', input.message)
     const user = await createAccount(db, input.value, now)
