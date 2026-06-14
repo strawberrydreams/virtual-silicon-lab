@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Project } from '../domain/project'
+import { createProject } from '../domain/projectFactory'
 import type { ProjectRepository } from '../storage/projectRepository'
 import { createProjectStore } from './projectStore'
 
@@ -40,6 +41,21 @@ describe('project store', () => {
     expect(second.id).toBe('remix-1')
     expect(second.blocks[0].id).not.toBe(first.blocks[0].id)
     expect(store.getState().projects.map((project) => project.id)).toEqual(['remix-1', 'remix-0'])
+    expect(await repository.get(first.id)).toEqual(first)
+  })
+
+  it('imports a published snapshot as an independent local project listed first', async () => {
+    const repository = createMemoryRepository()
+    let n = 0
+    const store = createProjectStore(repository, () => 9_000, () => `import-${n++}`)
+    const snapshot = createProject('Ada Chip', 'source-id', 1_000)
+
+    const first = await store.getState().remixImport(snapshot)
+    const second = await store.getState().remixImport(snapshot)
+
+    expect(first).toMatchObject({ id: 'import-0', name: 'Ada Chip Remix', createdAt: 9_000 })
+    expect(second.id).toBe('import-1')
+    expect(store.getState().projects.map((project) => project.id)).toEqual(['import-1', 'import-0'])
     expect(await repository.get(first.id)).toEqual(first)
   })
 

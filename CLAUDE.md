@@ -10,18 +10,21 @@ Completion and "looks great at a glance" beat feature breadth.
 
 ## Working Context
 
-- The v1 MVP (M0–M6) is complete and lives on `main`.
-- The current v2 visual major work lives on branch `v2-m2-editor-redesign`; do not merge it until the user explicitly asks.
-- v2 scope is visual/design only: page design, editor design, chip renderer quality, poster output, 10 hero sets, and random generator.
-- Package manager: **npm**. No backend; static hosting; storage is IndexedDB with localStorage fallback.
+- The v1 MVP (M0–M6), the v2 visual major (V2-M0–M6), and the SoC Custom Studio work are all complete and live on `main`.
+- Current work: **v3 "Share Core"** on branch `v3-share-core`; do not merge into `main` until the user explicitly asks. Goals/spec: `docs/superpowers/specs/2026-06-12-v3-v4-roadmap-design.md`.
+- v3 adds a Node + TypeScript + SQLite backend (npm workspace `server/`) with accounts, publish-snapshot uploads, a public gallery, share links, and remix import. Editing stays 100% local-first (IndexedDB + localStorage fallback); the server only receives explicit publish snapshots. v3 ends at **deploy-ready**, not public launch.
+- Package manager: **npm**.
 - Node.js `20.19+` or `22.12+` (Vite/Vitest requirement).
 
 ## Commands
 
 ```bash
-npm test          # vitest run — all unit tests
+npm test          # client suite first, then server suite (server skipped if client fails)
+npm run test:client   # client vitest only
 npm run build     # tsc -b && vite build
-npm run dev -- --host 127.0.0.1   # dev server for browser verification
+npm run dev -- --host 127.0.0.1   # client dev server for browser verification
+npm run dev:server               # API server on http://127.0.0.1:8787
+npm run typecheck --workspace server   # server typecheck (tsc --noEmit)
 ```
 
 Run `npm test` and `npm run build` after every task. Exercise the milestone acceptance gate in a
@@ -31,6 +34,7 @@ browser after frontend changes, then record decisions in `implementation.md`.
 
 Vite · React + TypeScript · Tailwind CSS v4 · Zustand (`zustand/vanilla` + `useStore`) ·
 Konva + React Konva · `idb` (IndexedDB) · Vitest + React Testing Library + `fake-indexeddb`.
+Server (`server/` workspace): Hono + `@hono/node-server` · better-sqlite3 (no ORM) · tsx dev runtime.
 
 ## Architecture & Boundaries
 
@@ -52,10 +56,14 @@ src/
   visual/     v2 page themes, material recipes, hero sets, random generator
   lib/        framework-agnostic utilities (zero deps; e.g. debouncer)
   test/       test setup (fake-indexeddb + jest-dom)
+server/       npm workspace `@vsl/server` (v3 Share Core backend)
+  src/        Hono app, SQLite open/migration runner, entry point
+  test/       node-environment Vitest suite
 ```
 
 Rules:
 - `src/domain/` is pure: no React/Konva/Zustand/IndexedDB/browser imports.
+- The server reuses `src/domain/` via the `@domain/*` alias (tsconfig paths + vitest alias) and must not import from any other client directory.
 - Canvas components receive serializable project data and emit domain-level changes.
 - Export stages receive the same serializable data and **must not scrape editor DOM**; they composite on a dedicated Konva stage.
 - Every persisted schema change bumps `schemaVersion`, adds a migration test, and is noted in `implementation.md`.
@@ -79,6 +87,21 @@ Rules:
 - v1 editor: single selection; multi-select deferred.
 
 ## Milestone Status
+
+### v3 Share Core (in progress — spec: `docs/superpowers/specs/2026-06-12-v3-v4-roadmap-design.md`)
+
+- **V3-M0 Workspace & Server Skeleton**: ✅ done — npm workspaces conversion, Hono + better-sqlite3 server skeleton, transaction-safe migration runner (duplicate-id guard, empty production list until M1), `/api/health` reporting the shared domain `CURRENT_SCHEMA_VERSION`, shared-domain smoke tests pinning `migrateProject` as the publish validation entry; server suite 4 files / 11 tests.
+- **V3-M1 Accounts**: ✅ done — `001_accounts` migration (users + sessions, FK cascade), argon2id (`@node-rs/argon2`, OWASP m=19456/t=2/p=1), signed `vsl_session` cookie carrying a raw token whose sha256 lives in SQLite (30-day TTL, lazy expiry), full account CRUD API (`/api/auth/signup·login·logout`, `GET/PATCH/DELETE /api/me`) with `{ error: { code, message } }` contract, password change revokes other sessions; client adds `/api` dev proxy, 4-state `authStore` (`offline` = normal, incl. 502/503/504 gateway mapping), `/account` page + header link themed via `--v2-*` vars. Suites: client 62 files / 296 tests, server 12 files / 54 tests. Plan: `docs/superpowers/plans/2026-06-12-v3-m1-accounts.md`.
+- **V3-M2 Publish Pipeline**: ✅ done — `002_published_chips` migration, shared-domain snapshot validation, authenticated publish API (`POST /api/published-chips`, `GET/PATCH/DELETE /api/published-chips/source/:sourceProjectId`), republish version bumps, public/private toggle, unpublish, client `publishApi`, and editor `PublishPanel` using existing die/poster export stages. M2 stores PNG data URLs in SQLite TEXT to lock the API/UX first; M6 owns moving PNG storage to deploy-ready files plus upload limits.
+- **V3-M3 Public Gallery**: ✅ done — unauthenticated public-only gallery API (`GET /api/gallery`, `GET /api/gallery/:slug`) hiding private/unpublished chips, poster-first `/gallery` grid, `/gallery/:slug` detail with poster + fake spec, header Gallery link, and detail page-theme application for hero-set snapshots.
+- **V3-M4 Share Links**: ✅ done — server-rendered `/s/:slug` viewer (public chips only, reusing M3's `getPublicPublishedChipBySlug`) with escaped OG/Twitter meta + a `/s/:slug/poster.png` byte endpoint decoding stored poster data URLs for crawler previews, absolute URLs via `VSL_PUBLIC_BASE_URL` or request origin, public-only `shareUrl` on the publish API, and a PublishPanel copy-link control. New `server/src/share/` module keeps HTML rendering out of the JSON API boundary. Plan: `docs/superpowers/plans/2026-06-13-v3-m4-share-links.md`.
+- **V3-M5 Remix Import**: ✅ done — pure `importRemixedProject` (migrate-on-import via `migrateProject` + independent `structuredClone`, fresh id/`{name} Remix`/timestamps, no schema change), `projectStore.remixImport`, a "Remix into my projects" button on the gallery detail page wired by App to `remixImport` + editor navigation, and the share viewer's "Remix this chip" CTA now linking to `/gallery/:slug`. No new server endpoint (gallery detail already returns the snapshot); lineage/provenance deferred to v4. Plan: `docs/superpowers/plans/2026-06-13-v3-m5-remix-import.md`.
+- **V3-M6 Deploy Packaging & QA**: ✅ done — production runtime config requires `VSL_SESSION_SECRET` (32+ chars) + http(s) `VSL_PUBLIC_BASE_URL`, production enables Secure cookies and default mutating API rate limits, publish PNG data URLs are bounded by decoded-byte upload limits, and new publishes store PNG bytes in `VSL_UPLOAD_DIR` file storage with DB path columns plus legacy data URL dual-read. Added `/uploads/*` serving, deploy scripts/docs, and final browser QA for signup → publish → gallery → share → remix import → local edit. Plan: `docs/superpowers/plans/2026-06-13-v3-m6-deploy-packaging-qa.md`.
+- v4 "Community" (moderation, reactions, ranking, contests, remix lineage) is direction-approved in the same spec; detailed design happens after v3.
+
+### SoC Custom Studio (post-v2, on `main`)
+
+- ✅ done — studio kit UI/inspector, schema v2 studio data model + migration, deterministic global reflow engine, generated fake-spec engine with component-level estimates, three-zone editor redesign. Specs: `docs/superpowers/specs/2026-06-07-soc-custom-studio-design.md`, `2026-06-09-editor-reference-fidelity-design.md`; decisions in `implementation.md`. Test suite at this point: 58 files / 267 tests.
 
 ### v2 Visual Major
 
@@ -104,7 +127,9 @@ Rules:
 ## Merge Status
 
 - v1 MVP: ✅ merged into `main` via fast-forward (commit `bac1d8e`).
-- v2 visual major: ✅ implementation and final QA complete on `v2-m2-editor-redesign`; merge is still pending explicit user instruction.
+- v2 visual major: ✅ merged into `main` (linear commits, capped by `9e35f2f` "0.1_v2_prototype_complete"); the `v2-m2-editor-redesign` branch no longer exists.
+- SoC Custom Studio: ✅ on `main` (same linear history).
+- v3 Share Core: 🚧 in progress on `v3-share-core`; merge pending explicit user instruction.
 
 > Visual-quality gate: do not advance past M3 if glow/neon looks amateurish; the first hero chip is manually reviewed against the M0 reference board.
 
@@ -118,11 +143,13 @@ Rules:
 - `docs/superpowers/specs/` — design specs for in-progress features.
 - `implementation.md` — condensed running log of per-milestone decisions and outcomes **[Korean]**.
 
-## Explicitly Out Of Scope / v3 Deferred
+## Explicitly Out Of Scope / Deferred to v5+
 
-Custom freeform die paths · PixiJS/Three.js shaders · animation simulation · backend sharing links ·
-gallery/rankings/contests · AI generation · worldbuilding pages · responsive mobile · true 3D ·
-MP4 export · login/accounts · GDSII/DRC/LVS/manufacturing compatibility.
+Mobile viewer/editor · true 3D (Three.js) · AI prompt generation · payments/monetization ·
+custom freeform die paths · PixiJS shaders · animation simulation · worldbuilding pages ·
+MP4 export · two-way sync / multi-device editing · GDSII/DRC/LVS/manufacturing compatibility.
 
-For v3, the user may reconsider backend + SQLite, account/member CRUD, board/gallery/ranking/contest,
-mobile viewer/editor, true 3D, AI prompt generation, and public sharing links.
+v3 covers backend + SQLite, accounts, publish/gallery/share links, remix import (deploy-ready, no
+public launch). v4 covers moderation, reactions, ranking, contests, remix lineage; a standalone
+text board was explicitly rejected (absorbed into per-chip comments + contest announcements).
+Public launch is a separate gate decided at v4 start.

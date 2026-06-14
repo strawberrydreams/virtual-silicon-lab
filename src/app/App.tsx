@@ -1,10 +1,14 @@
-import { useEffect, useRef, useState } from 'react'
-import { Link, Navigate, Route, Routes, useParams } from 'react-router-dom'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { Link, Navigate, Route, Routes, useNavigate, useParams } from 'react-router-dom'
 import type { Project } from '../domain/project'
+import { AccountPage } from '../features/account/AccountPage'
 import { EditorPage } from '../features/editor/EditorPage'
+import { GalleryDetailPage } from '../features/gallery/GalleryDetailPage'
+import { GalleryPage } from '../features/gallery/GalleryPage'
 import { LandingPage } from '../features/landing/LandingPage'
 import { ProjectDashboard } from '../features/projects/ProjectDashboard'
 import { PRESET_CATALOG } from '../presets/presetCatalog'
+import { AuthStoreProvider, useAuthStore } from '../stores/authStoreContext'
 import { ProjectStoreProvider, useProjectStore } from '../stores/projectStoreContext'
 import { resolveHeroSetForProject } from '../visual/heroSetCatalog'
 import { PAGE_THEME_NAMES, pageThemes, resolvePageTheme, type PageThemeName } from '../visual/pageThemes'
@@ -96,6 +100,27 @@ function EditorRoute() {
   )
 }
 
+function GalleryDetailRoute() {
+  const store = useProjectStore()
+  const navigate = useNavigate()
+  const [, setPageTheme] = usePageTheme()
+  const onProjectLoaded = useCallback(
+    (project: Project) => {
+      const heroSet = resolveHeroSetForProject(project)
+      if (heroSet) setPageTheme(heroSet.pageTheme)
+    },
+    [setPageTheme],
+  )
+  const onRemix = useCallback(
+    async (project: Project) => {
+      const remix = await store.remixImport(project)
+      navigate(`/editor/${remix.id}`)
+    },
+    [store, navigate],
+  )
+  return <GalleryDetailPage onProjectLoaded={onProjectLoaded} onRemix={onRemix} />
+}
+
 export function App() {
   const [themeName, setTheme] = usePageTheme()
   const pageTheme = resolvePageTheme(themeName)
@@ -108,16 +133,21 @@ export function App() {
       style={pageTheme.cssVariables}
     >
       <ProjectStoreProvider>
-        <SiteHeader themeName={themeName} onThemeChange={setTheme} />
-        <div className="app-shell__route">
-          <Routes>
-            <Route path="/" element={<LandingRoute />} />
-            <Route path="/dashboard" element={<DashboardRoute />} />
-            <Route path="/editor/:projectId" element={<EditorRoute />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </div>
-        <SiteFooter />
+        <AuthStoreProvider>
+          <SiteHeader themeName={themeName} onThemeChange={setTheme} />
+          <div className="app-shell__route">
+            <Routes>
+              <Route path="/" element={<LandingRoute />} />
+              <Route path="/dashboard" element={<DashboardRoute />} />
+              <Route path="/editor/:projectId" element={<EditorRoute />} />
+              <Route path="/account" element={<AccountPage />} />
+              <Route path="/gallery" element={<GalleryPage />} />
+              <Route path="/gallery/:slug" element={<GalleryDetailRoute />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </div>
+          <SiteFooter />
+        </AuthStoreProvider>
       </ProjectStoreProvider>
     </div>
   )
@@ -139,11 +169,20 @@ function SiteHeader({
         <nav aria-label="Primary navigation" className="site-header__nav">
           <Link to="/">Lab</Link>
           <Link to="/dashboard">Projects</Link>
+          <Link to="/gallery">Gallery</Link>
+          <AccountNavLink />
         </nav>
         <ThemeSwitcher current={themeName} onChange={onThemeChange} />
       </div>
     </header>
   )
+}
+
+function AccountNavLink() {
+  const auth = useAuthStore()
+  const label =
+    auth.status === 'authenticated' && auth.user !== null ? auth.user.displayName : 'Account'
+  return <Link to="/account">{label}</Link>
 }
 
 function SiteFooter() {

@@ -1,22 +1,26 @@
 {
-  "name": "foundation-slice",
+  "name": "virtual-silicon-lab",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "private": true,
+  "type": "module",
+  "workspaces": ["server"],
   "directories": {
     "doc": "docs"
   },
   "scripts": {
-    "test": "vitest run",
+    "test": "vitest run && npm run test --workspace server",
+    "test:server": "npm run test --workspace server",
+    "test:client": "vitest run",
     "dev": "vite",
+    "dev:server": "npm run dev --workspace server",
+    "start:server": "npm run start --workspace server",
+    "typecheck:server": "npm run typecheck --workspace server",
     "build": "tsc -b && vite build",
+    "verify:deploy": "npm run build && npm run typecheck:server && npm test",
     "test:watch": "vitest",
     "preview": "vite preview"
   },
-  "keywords": [],
-  "author": "",
   "license": "ISC",
-  "type": "module",
   "dependencies": {
     "idb": "^8.0.3",
     "konva": "^10.3.0",

@@ -13,6 +13,10 @@ vi.mock('../export/ExportPanel', () => ({
   },
 }))
 
+vi.mock('../publish/PublishPanel', () => ({
+  PublishPanel: () => <div data-testid="publish-panel" />,
+}))
+
 describe('EditorInspectorRail', () => {
   it('never threads ephemeral editor layer toggles into the export panel', () => {
     render(
