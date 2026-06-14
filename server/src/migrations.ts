@@ -57,4 +57,27 @@ export const migrations: Migration[] = [
       `)
     },
   },
+  {
+    id: '004_moderation',
+    up: (db) => {
+      db.exec(`
+        ALTER TABLE published_chips ADD COLUMN moderation_status TEXT NOT NULL DEFAULT 'visible';
+        ALTER TABLE published_chips ADD COLUMN hidden_at INTEGER;
+        ALTER TABLE published_chips ADD COLUMN hidden_by TEXT;
+        ALTER TABLE published_chips ADD COLUMN hidden_reason TEXT;
+        CREATE TABLE reports (
+          id TEXT PRIMARY KEY,
+          published_chip_id TEXT NOT NULL REFERENCES published_chips(id) ON DELETE CASCADE,
+          reporter_user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+          reason TEXT,
+          status TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'resolved', 'dismissed')),
+          created_at INTEGER NOT NULL,
+          resolved_at INTEGER,
+          resolved_by TEXT REFERENCES users(id) ON DELETE SET NULL
+        );
+        CREATE INDEX idx_reports_status ON reports(status, created_at DESC);
+        CREATE INDEX idx_reports_chip ON reports(published_chip_id);
+      `)
+    },
+  },
 ]
