@@ -7,7 +7,7 @@ describe('signup access gate', () => {
     const res = await app.request('/api/auth/signup', jsonRequest('POST', VALID_SIGNUP))
     expect(res.status).toBe(403)
     const body = (await res.json()) as { error: { code: string } }
-    expect(body.error.code).toBe('signups_closed')
+    expect(body.error.code).toBe('SIGNUPS_CLOSED')
   })
 
   it('allows signup when signups are open', async () => {

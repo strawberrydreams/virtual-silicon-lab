@@ -60,7 +60,7 @@ export function accountRoutes({
   }
   routes.post('/auth/signup', async (c) => {
     if (!signupsOpen) {
-      return fail(c, 403, 'signups_closed', 'New sign-ups are currently closed.')
+      return fail(c, 403, 'SIGNUPS_CLOSED', 'New sign-ups are currently closed.')
     }
     const input = validateSignupInput(await c.req.json().catch(() => null))
     if (!input.ok) return fail(c, 400, 'INVALID_INPUT', input.message)
