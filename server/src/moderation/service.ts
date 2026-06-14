@@ -100,11 +100,12 @@ export function hideChip(
   reason: string | null,
   now: () => number,
 ): boolean {
+  const timestamp = now()
   const result = db
     .prepare(
-      "UPDATE published_chips SET moderation_status = 'hidden', hidden_at = ?, hidden_by = ?, hidden_reason = ? WHERE id = ?",
+      "UPDATE published_chips SET moderation_status = 'hidden', hidden_at = ?, hidden_by = ?, hidden_reason = ?, updated_at = ? WHERE id = ?",
     )
-    .run(now(), adminUserId, reason, chipId)
+    .run(timestamp, adminUserId, reason, timestamp, chipId)
   return result.changes > 0
 }
 

@@ -60,12 +60,16 @@ describe('moderation service', () => {
     runMigrations(db, migrations)
     seed(db)
     expect(hideChip(db, 'chip1', 'admin', 'nsfw', () => 7)).toBe(true)
-    const hidden = db.prepare('SELECT moderation_status, hidden_by FROM published_chips WHERE id = ?').get('chip1') as {
+    const hidden = db
+      .prepare('SELECT moderation_status, hidden_by, updated_at FROM published_chips WHERE id = ?')
+      .get('chip1') as {
       moderation_status: string
       hidden_by: string
+      updated_at: number
     }
     expect(hidden.moderation_status).toBe('hidden')
     expect(hidden.hidden_by).toBe('admin')
+    expect(hidden.updated_at).toBe(7)
     expect(unhideChip(db, 'chip1', () => 8)).toBe(true)
     const back = db.prepare('SELECT moderation_status FROM published_chips WHERE id = ?').get('chip1') as {
       moderation_status: string
