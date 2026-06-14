@@ -47,10 +47,20 @@ export function AccountPage() {
 }
 
 function AnonymousPanels() {
+  const auth = useAuthStore()
   return (
     <div className="mt-8 grid gap-6 md:grid-cols-2">
       <SignInForm />
-      <SignupForm />
+      {auth.signupsOpen ? (
+        <SignupForm />
+      ) : (
+        <section className={panelClass}>
+          <h2 className="text-sm uppercase tracking-[0.18em]">Create Account</h2>
+          <p className="mt-3 text-sm text-[var(--v2-muted)]">
+            Sign-ups are currently closed (private beta).
+          </p>
+        </section>
+      )}
     </div>
   )
 }

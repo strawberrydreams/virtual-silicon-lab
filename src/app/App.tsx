@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, Navigate, Route, Routes, useNavigate, useParams } from 'react-router-dom'
 import type { Project } from '../domain/project'
 import { AccountPage } from '../features/account/AccountPage'
+import { AdminPage } from '../features/admin/AdminPage'
 import { EditorPage } from '../features/editor/EditorPage'
 import { GalleryDetailPage } from '../features/gallery/GalleryDetailPage'
 import { GalleryPage } from '../features/gallery/GalleryPage'
@@ -141,6 +142,7 @@ export function App() {
               <Route path="/dashboard" element={<DashboardRoute />} />
               <Route path="/editor/:projectId" element={<EditorRoute />} />
               <Route path="/account" element={<AccountPage />} />
+              <Route path="/admin" element={<AdminPage />} />
               <Route path="/gallery" element={<GalleryPage />} />
               <Route path="/gallery/:slug" element={<GalleryDetailRoute />} />
               <Route path="*" element={<Navigate to="/" replace />} />
@@ -171,6 +173,7 @@ function SiteHeader({
           <Link to="/dashboard">Projects</Link>
           <Link to="/gallery">Gallery</Link>
           <AccountNavLink />
+          <AdminNavLink />
         </nav>
         <ThemeSwitcher current={themeName} onChange={onThemeChange} />
       </div>
@@ -183,6 +186,12 @@ function AccountNavLink() {
   const label =
     auth.status === 'authenticated' && auth.user !== null ? auth.user.displayName : 'Account'
   return <Link to="/account">{label}</Link>
+}
+
+function AdminNavLink() {
+  const auth = useAuthStore()
+  if (!auth.isAdmin) return null
+  return <Link to="/admin">Admin</Link>
 }
 
 function SiteFooter() {
