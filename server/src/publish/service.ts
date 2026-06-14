@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import type Database from 'better-sqlite3'
+import type { PublishedImageStore } from '../images/fileImageStore'
 import type { PublishInput } from './validation'
 
 export type PublishedChip = {
@@ -11,6 +12,8 @@ export type PublishedChip = {
   projectJson: string
   dieImageDataUrl: string
   posterImageDataUrl: string
+  dieImagePath: string | null
+  posterImagePath: string | null
   isPublic: boolean
   version: number
   createdAt: number
@@ -31,6 +34,8 @@ type PublishedChipRow = {
   project_json: string
   die_image_data_url: string
   poster_image_data_url: string
+  die_image_path: string | null
+  poster_image_path: string | null
   is_public: 0 | 1
   version: number
   created_at: number
@@ -50,6 +55,8 @@ function toPublishedChip(row: PublishedChipRow): PublishedChip {
     projectJson: row.project_json,
     dieImageDataUrl: row.die_image_data_url,
     posterImageDataUrl: row.poster_image_data_url,
+    dieImagePath: row.die_image_path,
+    posterImagePath: row.poster_image_path,
     isPublic: row.is_public === 1,
     version: row.version,
     createdAt: row.created_at,
@@ -95,19 +102,50 @@ export function upsertPublishedChip(
   ownerUserId: string,
   input: PublishInput,
   now: () => number,
+  imageStore?: PublishedImageStore,
 ): PublishedChip {
   return db.transaction(() => {
     const existing = getByOwnerProject(db, ownerUserId, input.project.id)
+    const id = existing?.id ?? randomUUID()
+    const version = existing === undefined ? 1 : existing.version + 1
     const timestamp = now()
     const projectJson = JSON.stringify(input.project)
     const publishedAt = input.isPublic ? timestamp : existing?.published_at ?? 0
+    // Republishing overwrites both images at a new version; clear the prior
+    // version's files first so superseded PNGs are not orphaned on disk.
+    if (imageStore !== undefined && existing !== undefined) {
+      imageStore.deletePublishedImages(id)
+    }
+    const images =
+      imageStore === undefined
+        ? {
+            dieImageDataUrl: input.dieImageDataUrl,
+            posterImageDataUrl: input.posterImageDataUrl,
+            dieImagePath: existing?.die_image_path ?? null,
+            posterImagePath: existing?.poster_image_path ?? null,
+          }
+        : {
+            dieImageDataUrl: '',
+            posterImageDataUrl: '',
+            dieImagePath: imageStore.savePublishedImage({
+              chipId: id,
+              version,
+              kind: 'die',
+              dataUrl: input.dieImageDataUrl,
+            }),
+            posterImagePath: imageStore.savePublishedImage({
+              chipId: id,
+              version,
+              kind: 'poster',
+              dataUrl: input.posterImageDataUrl,
+            }),
+          }
 
     if (existing === undefined) {
-      const id = randomUUID()
       db.prepare(
         `INSERT INTO published_chips
-         (id, owner_user_id, source_project_id, slug, title, project_json, die_image_data_url, poster_image_data_url, is_public, created_at, updated_at, published_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         (id, owner_user_id, source_project_id, slug, title, project_json, die_image_data_url, poster_image_data_url, die_image_path, poster_image_path, is_public, created_at, updated_at, published_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       ).run(
         id,
         ownerUserId,
@@ -115,8 +153,10 @@ export function upsertPublishedChip(
         slugify(input.title),
         input.title,
         projectJson,
-        input.dieImageDataUrl,
-        input.posterImageDataUrl,
+        images.dieImageDataUrl,
+        images.posterImageDataUrl,
+        images.dieImagePath,
+        images.posterImagePath,
         input.isPublic ? 1 : 0,
         timestamp,
         timestamp,
@@ -129,6 +169,8 @@ export function upsertPublishedChip(
              project_json = ?,
              die_image_data_url = ?,
              poster_image_data_url = ?,
+             die_image_path = ?,
+             poster_image_path = ?,
              is_public = ?,
              version = version + 1,
              updated_at = ?,
@@ -137,8 +179,10 @@ export function upsertPublishedChip(
       ).run(
         input.title,
         projectJson,
-        input.dieImageDataUrl,
-        input.posterImageDataUrl,
+        images.dieImageDataUrl,
+        images.posterImageDataUrl,
+        images.dieImagePath,
+        images.posterImagePath,
         input.isPublic ? 1 : 0,
         timestamp,
         publishedAt,
@@ -170,10 +214,14 @@ export function deletePublishedChip(
   db: Database.Database,
   ownerUserId: string,
   sourceProjectId: string,
+  imageStore?: PublishedImageStore,
 ): boolean {
+  const existing = getByOwnerProject(db, ownerUserId, sourceProjectId)
+  if (existing === undefined) return false
   const result = db
     .prepare('DELETE FROM published_chips WHERE owner_user_id = ? AND source_project_id = ?')
     .run(ownerUserId, sourceProjectId)
+  if (result.changes > 0) imageStore?.deletePublishedImages(existing.id)
   return result.changes > 0
 }
 

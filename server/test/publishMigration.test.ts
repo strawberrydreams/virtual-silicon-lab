@@ -69,3 +69,23 @@ describe('002_published_chips migration', () => {
     expect(db.prepare('SELECT id FROM published_chips').all()).toEqual([])
   })
 })
+
+describe('003_published_chip_image_paths migration', () => {
+  it('adds nullable file-backed image path columns while preserving legacy data URL rows', () => {
+    const db = migratedDb()
+    const columns = db.prepare('PRAGMA table_info(published_chips)').all() as Array<{ name: string }>
+
+    expect(columns.map((column) => column.name)).toContain('die_image_path')
+    expect(columns.map((column) => column.name)).toContain('poster_image_path')
+
+    db.prepare(
+      `INSERT INTO published_chips
+       (id, owner_user_id, source_project_id, slug, title, project_json, die_image_data_url, poster_image_data_url, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    ).run('pub1', 'u1', 'project-1', 'ada-chip', 'Ada Chip', '{}', 'data:image/png;base64,AAA=', 'data:image/png;base64,BBB=', 10, 10)
+
+    expect(
+      db.prepare('SELECT die_image_path, poster_image_path FROM published_chips WHERE id = ?').get('pub1'),
+    ).toEqual({ die_image_path: null, poster_image_path: null })
+  })
+})

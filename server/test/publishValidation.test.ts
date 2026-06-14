@@ -73,4 +73,24 @@ describe('validatePublishInput', () => {
       message: 'posterImageDataUrl must be a PNG data URL.',
     })
   })
+
+  it('rejects PNG data URLs over the configured decoded byte limit', () => {
+    expect(validatePublishInput({ ...validPayload(), dieImageDataUrl: 'data:image/png;base64,AAAAAA==' }, { maxPngBytes: 2 })).toEqual({
+      ok: false,
+      message: 'dieImageDataUrl must be 2 bytes or smaller.',
+    })
+    expect(
+      validatePublishInput(
+        {
+          ...validPayload(),
+          dieImageDataUrl: 'data:image/png;base64,AA==',
+          posterImageDataUrl: 'data:image/png;base64,AAAAAA==',
+        },
+        { maxPngBytes: 2 },
+      ),
+    ).toEqual({
+      ok: false,
+      message: 'posterImageDataUrl must be 2 bytes or smaller.',
+    })
+  })
 })

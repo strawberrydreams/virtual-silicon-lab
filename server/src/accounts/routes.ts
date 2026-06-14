@@ -25,7 +25,7 @@ const SESSION_COOKIE = 'vsl_session'
 
 type ErrorStatus = 400 | 401 | 409
 
-export function accountRoutes({ db, sessionSecret, now = Date.now }: AppDeps) {
+export function accountRoutes({ db, sessionSecret, now = Date.now, secureCookies = false }: AppDeps) {
   const routes = new Hono()
 
   function fail(c: Context, status: ErrorStatus, code: string, message: string) {
@@ -36,6 +36,7 @@ export function accountRoutes({ db, sessionSecret, now = Date.now }: AppDeps) {
     await setSignedCookie(c, SESSION_COOKIE, token, sessionSecret, {
       path: '/',
       httpOnly: true,
+      secure: secureCookies,
       sameSite: 'Lax',
       maxAge: SESSION_TTL_MS / 1000,
     })

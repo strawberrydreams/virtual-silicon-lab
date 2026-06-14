@@ -48,4 +48,13 @@ export const migrations: Migration[] = [
       `)
     },
   },
+  {
+    id: '003_published_chip_image_paths',
+    up: (db) => {
+      db.exec(`
+        ALTER TABLE published_chips ADD COLUMN die_image_path TEXT;
+        ALTER TABLE published_chips ADD COLUMN poster_image_path TEXT;
+      `)
+    },
+  },
 ]

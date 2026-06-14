@@ -1,6 +1,10 @@
-import { describe, expect, it } from 'vitest'
+import { existsSync, mkdtempSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { afterEach, describe, expect, it } from 'vitest'
 import { createProject } from '@domain/projectFactory'
 import { openDatabase, runMigrations } from '../src/db'
+import { createFileImageStore } from '../src/images/fileImageStore'
 import { migrations } from '../src/migrations'
 import {
   deletePublishedChip,
@@ -21,6 +25,19 @@ function dbWithUsers() {
   insert.run('u1', 'ada@example.com', 'Ada', 'hash', 1, 1)
   insert.run('u2', 'grace@example.com', 'Grace', 'hash', 1, 1)
   return db
+}
+
+let tempDirs: string[] = []
+
+afterEach(() => {
+  for (const dir of tempDirs) rmSync(dir, { recursive: true, force: true })
+  tempDirs = []
+})
+
+function tempRoot() {
+  const dir = mkdtempSync(join(tmpdir(), 'vsl-service-images-'))
+  tempDirs.push(dir)
+  return dir
 }
 
 describe('publish service', () => {
@@ -76,6 +93,41 @@ describe('publish service', () => {
     expect(second.isPublic).toBe(true)
     expect(second.dieImageDataUrl).toBe(pngB)
     expect(db.prepare('SELECT COUNT(*) AS n FROM published_chips').get()).toEqual({ n: 1 })
+  })
+
+  it('removes the previous version image files when republishing with a file image store', () => {
+    const db = dbWithUsers()
+    const rootDir = tempRoot()
+    const imageStore = createFileImageStore({ rootDir })
+    const project = createProject('Ada Chip', 'project-1', 1_000)
+
+    const first = upsertPublishedChip(
+      db,
+      'u1',
+      { project, title: 'Ada Chip', dieImageDataUrl: pngA, posterImageDataUrl: pngB, isPublic: true },
+      () => 2_000,
+      imageStore,
+    )
+    const firstDiePath = first.dieImagePath as string
+    const firstPosterPath = first.posterImagePath as string
+    expect(imageStore.readPublishedImage(firstDiePath)).not.toBeNull()
+
+    const second = upsertPublishedChip(
+      db,
+      'u1',
+      { project, title: 'Ada Chip', dieImageDataUrl: pngB, posterImageDataUrl: pngA, isPublic: true },
+      () => 3_000,
+      imageStore,
+    )
+
+    expect(second.version).toBe(2)
+    expect(second.dieImagePath).not.toBe(firstDiePath)
+    // The new version's files are present and resolvable.
+    expect(imageStore.readPublishedImage(second.dieImagePath as string)).not.toBeNull()
+    // The superseded version's files are cleaned up, not orphaned on disk.
+    expect(imageStore.readPublishedImage(firstDiePath)).toBeNull()
+    expect(imageStore.readPublishedImage(firstPosterPath)).toBeNull()
+    expect(existsSync(join(rootDir, firstDiePath.replace(/^\/uploads\//, '')))).toBe(false)
   })
 
   it('toggles visibility without replacing the stored snapshot or images', () => {

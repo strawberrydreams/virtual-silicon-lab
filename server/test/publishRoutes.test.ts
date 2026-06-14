@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { createProject } from '@domain/projectFactory'
+import { mkdtempSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { createTestApp, jsonRequest, sessionCookie, VALID_SIGNUP } from './helpers'
+import { createFileImageStore } from '../src/images/fileImageStore'
 
 const png = 'data:image/png;base64,iVBORw0KGgo='
 
@@ -126,5 +130,53 @@ describe('publish routes', () => {
 
     expect(res.status).toBe(204)
     expect(db.prepare('SELECT COUNT(*) AS n FROM published_chips').get()).toEqual({ n: 0 })
+  })
+
+  it('stores new publish PNGs as files and serves them through stable URLs', async () => {
+    const rootDir = mkdtempSync(join(tmpdir(), 'vsl-route-images-'))
+    try {
+      const imageStore = createFileImageStore({ rootDir })
+      const { app, db } = createTestApp(() => 2_000, { imageStore })
+      const signup = await app.request('/api/auth/signup', jsonRequest('POST', VALID_SIGNUP))
+      const cookie = sessionCookie(signup)
+
+      const publish = await app.request('/api/published-chips', {
+        ...jsonRequest('POST', { ...publishPayload(), isPublic: true }),
+        headers: { 'content-type': 'application/json', cookie },
+      })
+
+      expect(publish.status).toBe(201)
+      const body = (await publish.json()) as {
+        chip: { dieImageUrl: string; posterImageUrl: string; slug: string }
+      }
+      expect(body.chip.dieImageUrl).toMatch(/^http:\/\/localhost\/uploads\/published\/.+\/v1-die\.png$/)
+      expect(body.chip.posterImageUrl).toMatch(/^http:\/\/localhost\/uploads\/published\/.+\/v1-poster\.png$/)
+
+      const row = db.prepare(
+        'SELECT die_image_data_url, poster_image_data_url, die_image_path, poster_image_path FROM published_chips',
+      ).get() as {
+        die_image_data_url: string
+        poster_image_data_url: string
+        die_image_path: string
+        poster_image_path: string
+      }
+      expect(row.die_image_data_url).toBe('')
+      expect(row.poster_image_data_url).toBe('')
+      expect(row.die_image_path).toMatch(/^\/uploads\/published\/.+\/v1-die\.png$/)
+      expect(row.poster_image_path).toMatch(/^\/uploads\/published\/.+\/v1-poster\.png$/)
+
+      const posterPath = new URL(body.chip.posterImageUrl).pathname
+      const staticPoster = await app.request(posterPath)
+      expect(staticPoster.status).toBe(200)
+      expect(staticPoster.headers.get('content-type')).toBe('image/png')
+      expect((await staticPoster.arrayBuffer()).byteLength).toBeGreaterThan(0)
+
+      const sharePoster = await app.request(`/s/${body.chip.slug}/poster.png`)
+      expect(sharePoster.status).toBe(200)
+      expect(sharePoster.headers.get('content-type')).toBe('image/png')
+      expect((await sharePoster.arrayBuffer()).byteLength).toBeGreaterThan(0)
+    } finally {
+      rmSync(rootDir, { recursive: true, force: true })
+    }
   })
 })

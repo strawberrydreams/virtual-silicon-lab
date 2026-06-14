@@ -26,6 +26,14 @@ describe('POST /api/auth/signup', () => {
     expect(token).not.toContain(row.token_hash)
   })
 
+  it('sets Secure on the session cookie when secureCookies is enabled', async () => {
+    const { app } = createTestApp(() => 1_000, { secureCookies: true })
+    const res = await app.request('/api/auth/signup', jsonRequest('POST', VALID_SIGNUP))
+
+    expect(res.status).toBe(201)
+    expect(res.headers.get('set-cookie')).toContain('Secure')
+  })
+
   it('rejects a duplicate email with 409, case-insensitively', async () => {
     const { app } = createTestApp()
     await app.request('/api/auth/signup', jsonRequest('POST', VALID_SIGNUP))

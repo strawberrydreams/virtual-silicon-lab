@@ -2,19 +2,22 @@ import { fileURLToPath } from 'node:url'
 import { join } from 'node:path'
 import { serve } from '@hono/node-server'
 import { createApp } from './app'
+import { loadRuntimeConfig } from './config'
 import { openDatabase, runMigrations } from './db'
+import { createFileImageStore } from './images/fileImageStore'
 import { migrations } from './migrations'
 
 const defaultDataDir = join(fileURLToPath(new URL('..', import.meta.url)), 'data')
 const dataDir = process.env.VSL_DATA_DIR ?? defaultDataDir
+const imageStore = createFileImageStore({ rootDir: process.env.VSL_UPLOAD_DIR ?? join(dataDir, 'uploads') })
 const db = openDatabase(join(dataDir, 'vsl.sqlite'))
 const applied = runMigrations(db, migrations)
 if (applied.length > 0) {
   console.log(`applied migrations: ${applied.join(', ')}`)
 }
 
-const sessionSecret = process.env.VSL_SESSION_SECRET ?? ''
-if (sessionSecret === '') {
+const runtimeConfig = loadRuntimeConfig()
+if (runtimeConfig.usedInsecureDevelopmentSecret) {
   console.warn('VSL_SESSION_SECRET is not set; using an insecure development-only secret.')
 }
 
@@ -23,8 +26,12 @@ serve(
   {
     fetch: createApp({
       db,
-      sessionSecret: sessionSecret || 'dev-insecure-session-secret',
-      publicBaseUrl: process.env.VSL_PUBLIC_BASE_URL,
+      sessionSecret: runtimeConfig.sessionSecret,
+      publicBaseUrl: runtimeConfig.publicBaseUrl,
+      secureCookies: runtimeConfig.secureCookies,
+      uploadMaxBytes: runtimeConfig.uploadMaxBytes,
+      rateLimit: runtimeConfig.rateLimit,
+      imageStore,
     }).fetch,
     port,
   },

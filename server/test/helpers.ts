@@ -1,13 +1,14 @@
 import { createApp } from '../src/app'
+import type { AppDeps } from '../src/app'
 import { openDatabase, runMigrations } from '../src/db'
 import { migrations } from '../src/migrations'
 
 export const TEST_SECRET = 'test-session-secret'
 
-export function createTestApp(now: () => number = Date.now) {
+export function createTestApp(now: () => number = Date.now, options: Partial<Omit<AppDeps, 'db' | 'now'>> = {}) {
   const db = openDatabase(':memory:')
   runMigrations(db, migrations)
-  return { app: createApp({ db, sessionSecret: TEST_SECRET, now }), db }
+  return { app: createApp({ db, sessionSecret: TEST_SECRET, now, ...options }), db }
 }
 
 /** Extracts a `vsl_session=...` cookie pair from a response's set-cookie header. */

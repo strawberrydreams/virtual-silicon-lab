@@ -27,8 +27,8 @@ function serializePublishedChip(chip: PublishedChip, baseUrl: string) {
     sourceProjectId: chip.sourceProjectId,
     slug: chip.slug,
     title: chip.title,
-    dieImageUrl: chip.dieImageDataUrl,
-    posterImageUrl: chip.posterImageDataUrl,
+    dieImageUrl: resolveImageUrl(baseUrl, chip.dieImagePath, chip.dieImageDataUrl),
+    posterImageUrl: resolveImageUrl(baseUrl, chip.posterImagePath, chip.posterImageDataUrl),
     isPublic: chip.isPublic,
     shareUrl: chip.isPublic ? buildShareUrl(baseUrl, chip.slug) : null,
     version: chip.version,
@@ -38,28 +38,39 @@ function serializePublishedChip(chip: PublishedChip, baseUrl: string) {
   }
 }
 
-function serializeGallerySummary(chip: PublicGalleryChip) {
+function resolveImageUrl(baseUrl: string, imagePath: string | null, legacyDataUrl: string) {
+  return imagePath === null ? legacyDataUrl : `${baseUrl}${imagePath}`
+}
+
+function serializeGallerySummary(chip: PublicGalleryChip, baseUrl: string) {
   return {
     id: chip.id,
     slug: chip.slug,
     title: chip.title,
     ownerDisplayName: chip.ownerDisplayName,
-    dieImageUrl: chip.dieImageDataUrl,
-    posterImageUrl: chip.posterImageDataUrl,
+    dieImageUrl: resolveImageUrl(baseUrl, chip.dieImagePath, chip.dieImageDataUrl),
+    posterImageUrl: resolveImageUrl(baseUrl, chip.posterImagePath, chip.posterImageDataUrl),
     version: chip.version,
     updatedAt: chip.updatedAt,
     publishedAt: chip.publishedAt,
   }
 }
 
-function serializeGalleryDetail(chip: PublicGalleryChip) {
+function serializeGalleryDetail(chip: PublicGalleryChip, baseUrl: string) {
   return {
-    ...serializeGallerySummary(chip),
+    ...serializeGallerySummary(chip, baseUrl),
     project: JSON.parse(chip.projectJson) as unknown,
   }
 }
 
-export function publishRoutes({ db, sessionSecret, now = Date.now, publicBaseUrl }: AppDeps) {
+export function publishRoutes({
+  db,
+  sessionSecret,
+  now = Date.now,
+  publicBaseUrl,
+  uploadMaxBytes,
+  imageStore,
+}: AppDeps) {
   const routes = new Hono()
 
   function fail(c: Context, status: ErrorStatus, code: string, message: string) {
@@ -75,11 +86,11 @@ export function publishRoutes({ db, sessionSecret, now = Date.now, publicBaseUrl
   routes.post('/published-chips', async (c) => {
     const user = await readUser(c)
     if (user === null) return fail(c, 401, 'UNAUTHORIZED', 'Sign in required.')
-    const input = validatePublishInput(await c.req.json().catch(() => null))
+    const input = validatePublishInput(await c.req.json().catch(() => null), { maxPngBytes: uploadMaxBytes })
     if (!input.ok) return fail(c, 400, 'INVALID_INPUT', input.message)
 
     const existing = getPublishedChipForOwnerProject(db, user.id, input.value.project.id)
-    const chip = upsertPublishedChip(db, user.id, input.value, now)
+    const chip = upsertPublishedChip(db, user.id, input.value, now, imageStore)
     const baseUrl = resolvePublicBaseUrl(c.req.url, publicBaseUrl)
     return c.json({ chip: serializePublishedChip(chip, baseUrl) }, existing === null ? 201 : 200)
   })
@@ -107,20 +118,21 @@ export function publishRoutes({ db, sessionSecret, now = Date.now, publicBaseUrl
   routes.delete('/published-chips/source/:sourceProjectId', async (c) => {
     const user = await readUser(c)
     if (user === null) return fail(c, 401, 'UNAUTHORIZED', 'Sign in required.')
-    if (!deletePublishedChip(db, user.id, c.req.param('sourceProjectId'))) {
+    if (!deletePublishedChip(db, user.id, c.req.param('sourceProjectId'), imageStore)) {
       return fail(c, 404, 'NOT_FOUND', 'Published chip not found.')
     }
     return c.body(null, 204)
   })
 
   routes.get('/gallery', (c) => {
-    return c.json({ chips: listPublicPublishedChips(db).map(serializeGallerySummary) })
+    const baseUrl = resolvePublicBaseUrl(c.req.url, publicBaseUrl)
+    return c.json({ chips: listPublicPublishedChips(db).map((chip) => serializeGallerySummary(chip, baseUrl)) })
   })
 
   routes.get('/gallery/:slug', (c) => {
     const chip = getPublicPublishedChipBySlug(db, c.req.param('slug'))
     if (chip === null) return fail(c, 404, 'NOT_FOUND', 'Published chip not found.')
-    return c.json({ chip: serializeGalleryDetail(chip) })
+    return c.json({ chip: serializeGalleryDetail(chip, resolvePublicBaseUrl(c.req.url, publicBaseUrl)) })
   })
 
   return routes
