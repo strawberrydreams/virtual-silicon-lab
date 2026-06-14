@@ -4,6 +4,8 @@ export type RuntimeConfig = {
   secureCookies: boolean
   publicBaseUrl?: string
   uploadMaxBytes: number
+  signupsOpen: boolean
+  adminEmails: string[]
   rateLimit?: {
     windowMs: number
     max: number
@@ -40,9 +42,29 @@ function readPositiveInteger(env: RuntimeEnv, key: string, fallback: number): nu
   return value
 }
 
+function parseBoolean(env: RuntimeEnv, key: string, fallback: boolean): boolean {
+  const raw = env[key]
+  if (raw === undefined || raw.trim() === '') return fallback
+  const value = raw.trim().toLowerCase()
+  if (value === 'true' || value === '1') return true
+  if (value === 'false' || value === '0') return false
+  throw new Error(`${key} must be true or false.`)
+}
+
+function parseAdminEmails(env: RuntimeEnv): string[] {
+  const raw = env.VSL_ADMIN_EMAILS
+  if (raw === undefined) return []
+  return raw
+    .split(',')
+    .map((email) => email.trim().toLowerCase())
+    .filter((email) => email !== '')
+}
+
 export function loadRuntimeConfig(env: RuntimeEnv = process.env): RuntimeConfig {
   const isProduction = env.NODE_ENV === 'production'
   const uploadMaxBytes = readPositiveInteger(env, 'VSL_UPLOAD_MAX_BYTES', DEFAULT_UPLOAD_MAX_BYTES)
+  const signupsOpen = parseBoolean(env, 'VSL_SIGNUPS_OPEN', false)
+  const adminEmails = parseAdminEmails(env)
 
   const sessionSecret = env.VSL_SESSION_SECRET
   if (isProduction) {
@@ -62,6 +84,8 @@ export function loadRuntimeConfig(env: RuntimeEnv = process.env): RuntimeConfig 
       secureCookies: true,
       publicBaseUrl: parseBaseUrl(env.VSL_PUBLIC_BASE_URL, 'VSL_PUBLIC_BASE_URL'),
       uploadMaxBytes,
+      signupsOpen,
+      adminEmails,
       rateLimit: {
         windowMs: readPositiveInteger(env, 'VSL_RATE_LIMIT_WINDOW_MS', DEFAULT_RATE_LIMIT_WINDOW_MS),
         max: readPositiveInteger(env, 'VSL_RATE_LIMIT_MAX', DEFAULT_RATE_LIMIT_MAX),
@@ -78,5 +102,7 @@ export function loadRuntimeConfig(env: RuntimeEnv = process.env): RuntimeConfig 
         ? undefined
         : parseBaseUrl(env.VSL_PUBLIC_BASE_URL, 'VSL_PUBLIC_BASE_URL'),
     uploadMaxBytes,
+    signupsOpen,
+    adminEmails,
   }
 }

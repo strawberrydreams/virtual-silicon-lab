@@ -54,4 +54,23 @@ describe('loadRuntimeConfig', () => {
     expect(config.rateLimit).toEqual({ windowMs: 60_000, max: 120 })
     expect(config.uploadMaxBytes).toBe(8 * 1024 * 1024)
   })
+
+  it('defaults signupsOpen to false and adminEmails to empty', () => {
+    const config = loadRuntimeConfig({})
+    expect(config.signupsOpen).toBe(false)
+    expect(config.adminEmails).toEqual([])
+  })
+
+  it('parses VSL_SIGNUPS_OPEN and a comma-separated, normalized VSL_ADMIN_EMAILS', () => {
+    const config = loadRuntimeConfig({
+      VSL_SIGNUPS_OPEN: 'true',
+      VSL_ADMIN_EMAILS: ' Ada@Example.com , grace@example.com ,',
+    })
+    expect(config.signupsOpen).toBe(true)
+    expect(config.adminEmails).toEqual(['ada@example.com', 'grace@example.com'])
+  })
+
+  it('rejects a non-boolean VSL_SIGNUPS_OPEN', () => {
+    expect(() => loadRuntimeConfig({ VSL_SIGNUPS_OPEN: 'maybe' })).toThrow(/VSL_SIGNUPS_OPEN/)
+  })
 })
