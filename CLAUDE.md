@@ -10,9 +10,9 @@ Completion and "looks great at a glance" beat feature breadth.
 
 ## Working Context
 
-- The v1 MVP (M0–M6), the v2 visual major (V2-M0–M6), and the SoC Custom Studio work are all complete and live on `main`.
-- Current work: **v3 "Share Core"** on branch `v3-share-core`; do not merge into `main` until the user explicitly asks. Goals/spec: `docs/superpowers/specs/2026-06-12-v3-v4-roadmap-design.md`.
-- v3 adds a Node + TypeScript + SQLite backend (npm workspace `server/`) with accounts, publish-snapshot uploads, a public gallery, share links, and remix import. Editing stays 100% local-first (IndexedDB + localStorage fallback); the server only receives explicit publish snapshots. v3 ends at **deploy-ready**, not public launch.
+- The v1 MVP (M0–M6), the v2 visual major (V2-M0–M6), the SoC Custom Studio work, and **v3 "Share Core" (V3-M0–M6)** are all complete and live on `main`.
+- Next up: **v4 "Community"** (moderation, reactions, ranking, contests, remix lineage) — direction-approved but not yet designed. Roadmap/spec: `docs/superpowers/specs/2026-06-12-v3-v4-roadmap-design.md`. Public launch is a separate gate decided at v4 start.
+- v3 added a Node + TypeScript + SQLite backend (npm workspace `server/`) with accounts, publish-snapshot uploads, a public gallery, share links, and remix import. Editing stays 100% local-first (IndexedDB + localStorage fallback); the server only receives explicit publish snapshots. v3 ended at **deploy-ready**, not public launch.
 - Package manager: **npm**.
 - Node.js `20.19+` or `22.12+` (Vite/Vitest requirement).
 
@@ -88,7 +88,7 @@ Rules:
 
 ## Milestone Status
 
-### v3 Share Core (in progress — spec: `docs/superpowers/specs/2026-06-12-v3-v4-roadmap-design.md`)
+### v3 Share Core (✅ complete, merged to `main` — spec: `docs/superpowers/specs/2026-06-12-v3-v4-roadmap-design.md`)
 
 - **V3-M0 Workspace & Server Skeleton**: ✅ done — npm workspaces conversion, Hono + better-sqlite3 server skeleton, transaction-safe migration runner (duplicate-id guard, empty production list until M1), `/api/health` reporting the shared domain `CURRENT_SCHEMA_VERSION`, shared-domain smoke tests pinning `migrateProject` as the publish validation entry; server suite 4 files / 11 tests.
 - **V3-M1 Accounts**: ✅ done — `001_accounts` migration (users + sessions, FK cascade), argon2id (`@node-rs/argon2`, OWASP m=19456/t=2/p=1), signed `vsl_session` cookie carrying a raw token whose sha256 lives in SQLite (30-day TTL, lazy expiry), full account CRUD API (`/api/auth/signup·login·logout`, `GET/PATCH/DELETE /api/me`) with `{ error: { code, message } }` contract, password change revokes other sessions; client adds `/api` dev proxy, 4-state `authStore` (`offline` = normal, incl. 502/503/504 gateway mapping), `/account` page + header link themed via `--v2-*` vars. Suites: client 62 files / 296 tests, server 12 files / 54 tests. Plan: `docs/superpowers/plans/2026-06-12-v3-m1-accounts.md`.
@@ -129,7 +129,7 @@ Rules:
 - v1 MVP: ✅ merged into `main` via fast-forward (commit `bac1d8e`).
 - v2 visual major: ✅ merged into `main` (linear commits, capped by `9e35f2f` "0.1_v2_prototype_complete"); the `v2-m2-editor-redesign` branch no longer exists.
 - SoC Custom Studio: ✅ on `main` (same linear history).
-- v3 Share Core: 🚧 in progress on `v3-share-core`; merge pending explicit user instruction.
+- v3 Share Core: ✅ merged into `main` via GitHub PR #1 (merge commit `f978e51`, 2026-06-14); the `v3-share-core` branch has been deleted (remote + local).
 
 > Visual-quality gate: do not advance past M3 if glow/neon looks amateurish; the first hero chip is manually reviewed against the M0 reference board.
 
