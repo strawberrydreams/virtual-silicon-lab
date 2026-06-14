@@ -23,6 +23,15 @@ export function AdminPage({ api = liveModerationApi }: { api?: ModerationApi }) 
     }
   }, [api])
 
+  // Run a mutation, refresh the lists, and surface any failure in the alert
+  // region — a silently no-op'd hide/delete would mislead the admin.
+  const act = useCallback(
+    (action: Promise<void>) => {
+      action.then(refresh).catch((e) => setError(e instanceof Error ? e.message : 'Action failed.'))
+    },
+    [refresh],
+  )
+
   useEffect(() => {
     if (auth.isAdmin) void refresh()
   }, [auth.isAdmin, refresh])
@@ -47,9 +56,9 @@ export function AdminPage({ api = liveModerationApi }: { api?: ModerationApi }) 
           {reports.map((r) => (
             <li key={r.id}>
               <strong>{r.chipTitle}</strong> — {r.reason ?? '(no reason)'}{' '}
-              <button onClick={() => api.hideChip(r.publishedChipId).then(refresh)}>Hide chip</button>{' '}
-              <button onClick={() => api.resolveReport(r.id, 'resolved').then(refresh)}>Resolve</button>{' '}
-              <button onClick={() => api.resolveReport(r.id, 'dismissed').then(refresh)}>Dismiss</button>
+              <button onClick={() => act(api.hideChip(r.publishedChipId))}>Hide chip</button>{' '}
+              <button onClick={() => act(api.resolveReport(r.id, 'resolved'))}>Resolve</button>{' '}
+              <button onClick={() => act(api.resolveReport(r.id, 'dismissed'))}>Dismiss</button>
             </li>
           ))}
         </ul>
@@ -62,11 +71,11 @@ export function AdminPage({ api = liveModerationApi }: { api?: ModerationApi }) 
             <li key={chip.id}>
               <strong>{chip.title}</strong> by {chip.ownerDisplayName} — {chip.moderationStatus}{' '}
               {chip.moderationStatus === 'visible' ? (
-                <button onClick={() => api.hideChip(chip.id).then(refresh)}>Hide</button>
+                <button onClick={() => act(api.hideChip(chip.id))}>Hide</button>
               ) : (
-                <button onClick={() => api.unhideChip(chip.id).then(refresh)}>Unhide</button>
+                <button onClick={() => act(api.unhideChip(chip.id))}>Unhide</button>
               )}{' '}
-              <button onClick={() => api.deleteChip(chip.id).then(refresh)}>Delete</button>
+              <button onClick={() => act(api.deleteChip(chip.id))}>Delete</button>
             </li>
           ))}
         </ul>
