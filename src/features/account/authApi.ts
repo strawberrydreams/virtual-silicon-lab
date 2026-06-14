@@ -18,7 +18,8 @@ export class ServerUnreachableError extends Error {
 }
 
 export type AuthApi = {
-  me: () => Promise<AuthUser | null>
+  me: () => Promise<{ user: AuthUser; isAdmin: boolean } | null>
+  serverConfig: () => Promise<{ signupsOpen: boolean }>
   signup: (input: { email: string; displayName: string; password: string }) => Promise<AuthUser>
   login: (input: { email: string; password: string }) => Promise<AuthUser>
   logout: () => Promise<void>
@@ -73,7 +74,15 @@ export const liveAuthApi: AuthApi = {
   async me() {
     const res = await request('/api/me')
     if (res.status === 401) return null
-    return expectUser(res)
+    if (!res.ok) throw await toApiError(res)
+    const body = (await res.json()) as { user: AuthUser; isAdmin?: boolean }
+    return { user: body.user, isAdmin: body.isAdmin === true }
+  },
+  async serverConfig() {
+    const res = await request('/api/health')
+    if (!res.ok) throw await toApiError(res)
+    const body = (await res.json()) as { signupsOpen?: boolean }
+    return { signupsOpen: body.signupsOpen !== false }
   },
   async signup(input) {
     return expectUser(await request('/api/auth/signup', jsonInit('POST', input)))

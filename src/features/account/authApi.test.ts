@@ -15,9 +15,14 @@ afterEach(() => {
 })
 
 describe('liveAuthApi', () => {
-  it('me() returns the user when authenticated', async () => {
+  it('me() returns the user and isAdmin when authenticated', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(200, { user, isAdmin: true })))
+    expect(await liveAuthApi.me()).toEqual({ user, isAdmin: true })
+  })
+
+  it('me() defaults isAdmin to false when the server omits it', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(200, { user })))
-    expect(await liveAuthApi.me()).toEqual(user)
+    expect(await liveAuthApi.me()).toEqual({ user, isAdmin: false })
   })
 
   it('me() returns null on 401 instead of throwing', async () => {
@@ -26,6 +31,16 @@ describe('liveAuthApi', () => {
       vi.fn().mockResolvedValue(jsonResponse(401, { error: { code: 'UNAUTHORIZED', message: 'Sign in required.' } })),
     )
     expect(await liveAuthApi.me()).toBeNull()
+  })
+
+  it('serverConfig() returns signupsOpen from /api/health', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(200, { signupsOpen: false })))
+    expect(await liveAuthApi.serverConfig()).toEqual({ signupsOpen: false })
+  })
+
+  it('serverConfig() defaults signupsOpen to true when the server omits it', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(200, {})))
+    expect(await liveAuthApi.serverConfig()).toEqual({ signupsOpen: true })
   })
 
   it('maps server error bodies to AuthApiError with code and message', async () => {

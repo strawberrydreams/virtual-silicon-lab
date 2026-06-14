@@ -12,6 +12,7 @@ const user: AuthUser = { id: 'u1', email: 'ada@example.com', displayName: 'Ada',
 function fakeApi(overrides: Partial<AuthApi> = {}): AuthApi {
   return {
     me: vi.fn().mockResolvedValue(null),
+    serverConfig: vi.fn().mockResolvedValue({ signupsOpen: true }),
     signup: vi.fn().mockResolvedValue(user),
     login: vi.fn().mockResolvedValue(user),
     logout: vi.fn().mockResolvedValue(undefined),
@@ -32,9 +33,21 @@ describe('authStore', () => {
   })
 
   it('becomes authenticated when /me returns a user', async () => {
-    const store = createAuthStore(fakeApi({ me: vi.fn().mockResolvedValue(user) }))
+    const store = createAuthStore(fakeApi({ me: vi.fn().mockResolvedValue({ user, isAdmin: false }) }))
     await store.getState().init()
     expect(store.getState()).toMatchObject({ status: 'authenticated', user })
+  })
+
+  it('captures isAdmin and signupsOpen from init', async () => {
+    const store = createAuthStore(
+      fakeApi({
+        me: vi.fn().mockResolvedValue({ user, isAdmin: true }),
+        serverConfig: vi.fn().mockResolvedValue({ signupsOpen: false }),
+      }),
+    )
+    await store.getState().init()
+    expect(store.getState().isAdmin).toBe(true)
+    expect(store.getState().signupsOpen).toBe(false)
   })
 
   it('treats an unreachable server as the offline state, not an error', async () => {
@@ -68,14 +81,14 @@ describe('authStore', () => {
   })
 
   it('updateDisplayName refreshes the user in place', async () => {
-    const store = createAuthStore(fakeApi({ me: vi.fn().mockResolvedValue(user) }))
+    const store = createAuthStore(fakeApi({ me: vi.fn().mockResolvedValue({ user, isAdmin: false }) }))
     await store.getState().init()
     await store.getState().updateDisplayName('Lady Lovelace')
     expect(store.getState().user?.displayName).toBe('Lady Lovelace')
   })
 
   it('deleteAccount returns the store to anonymous', async () => {
-    const store = createAuthStore(fakeApi({ me: vi.fn().mockResolvedValue(user) }))
+    const store = createAuthStore(fakeApi({ me: vi.fn().mockResolvedValue({ user, isAdmin: false }) }))
     await store.getState().init()
     await store.getState().deleteAccount('hunter22hunter22')
     expect(store.getState()).toMatchObject({ status: 'anonymous', user: null })
