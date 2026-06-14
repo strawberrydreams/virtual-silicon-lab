@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import type { Context } from 'hono'
 import { deleteCookie, getSignedCookie, setSignedCookie } from 'hono/cookie'
 import type { AppDeps } from '../app'
+import { isAdminEmail } from '../moderation/adminAuth'
 import {
   changePassword,
   createAccount,
@@ -31,6 +32,7 @@ export function accountRoutes({
   now = Date.now,
   secureCookies = false,
   signupsOpen = true,
+  adminEmails = [],
 }: AppDeps) {
   const routes = new Hono()
 
@@ -93,7 +95,7 @@ export function accountRoutes({
   routes.get('/me', async (c) => {
     const session = await readSession(c)
     if (session === null) return fail(c, 401, 'UNAUTHORIZED', 'Sign in required.')
-    return c.json({ user: session.user })
+    return c.json({ user: session.user, isAdmin: isAdminEmail(session.user.email, adminEmails) })
   })
 
   routes.patch('/me', async (c) => {
