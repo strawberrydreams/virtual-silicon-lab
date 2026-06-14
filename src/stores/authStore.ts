@@ -37,6 +37,8 @@ export function createAuthStore(api: AuthApi = liveAuthApi) {
             : { status: 'authenticated', user: me.user, isAdmin: me.isAdmin, signupsOpen: config.signupsOpen },
         )
       } catch (error) {
+        // signupsOpen keeps its previous value (default true) — fail open so a
+        // transient /api/health error never locks new users out of signing up.
         set({
           status: error instanceof ServerUnreachableError ? 'offline' : 'anonymous',
           user: null,
