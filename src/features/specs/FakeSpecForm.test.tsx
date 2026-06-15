@@ -33,6 +33,20 @@ describe('FakeSpecForm', () => {
     )
   })
 
+  it('re-syncs the features textarea when the spec changes from outside', async () => {
+    function Harness() {
+      const [spec, setSpec] = useState(createProject('p', 'p1', 0).spec)
+      return <FakeSpecForm spec={spec} onChange={setSpec} />
+    }
+    render(<Harness />)
+
+    await userEvent.click(screen.getByRole('button', { name: 'AEGIS M-7' }))
+
+    expect(screen.getByLabelText('Features')).toHaveValue(
+      'Rad-Hardened\nFaraday Seal\nFailover Core',
+    )
+  })
+
   it('clamps core count edits so the spec sheet never emits negative cores', async () => {
     const onChange = vi.fn()
     function Harness() {

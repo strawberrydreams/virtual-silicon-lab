@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import type { FakeSpec } from '../../domain/project'
 import { SPEC_EXAMPLES } from './specExamples'
 
@@ -29,11 +29,16 @@ export function FakeSpecForm({ spec, onChange }: Props) {
   // typing; `onChange` always receives the normalized array. Re-sync when the
   // features change from outside (an example button or undo/redo).
   const [featuresText, setFeaturesText] = useState(() => spec.features.join('\n'))
-  useEffect(() => {
+  // Re-sync the raw textarea text when spec.features changes from outside (an
+  // example button or undo/redo) without clobbering in-progress typing. Tracking
+  // the last-synced array lets us reset during render rather than in an effect.
+  const [syncedFeatures, setSyncedFeatures] = useState(spec.features)
+  if (syncedFeatures !== spec.features) {
+    setSyncedFeatures(spec.features)
     if (featureLines(featuresText).join('\n') !== spec.features.join('\n')) {
       setFeaturesText(spec.features.join('\n'))
     }
-  }, [spec.features]) // eslint-disable-line react-hooks/exhaustive-deps
+  }
 
   function emit(patch: Partial<FakeSpec>) {
     onChange({ ...spec, ...patch })
