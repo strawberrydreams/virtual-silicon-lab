@@ -10,6 +10,7 @@ import {
   listPublicPublishedChips,
   setPublishedChipVisibility,
   upsertPublishedChip,
+  type GallerySort,
   type PublishedChip,
   type PublicGalleryChip,
 } from './service'
@@ -20,6 +21,10 @@ import { buildShareUrl, resolvePublicBaseUrl } from '../share/baseUrl'
 const SESSION_COOKIE = 'vsl_session'
 
 type ErrorStatus = 400 | 401 | 404
+
+function parseGallerySort(raw: string | undefined): GallerySort {
+  return raw === 'top' || raw === 'newest' || raw === 'trending' ? raw : 'trending'
+}
 
 function serializePublishedChip(chip: PublishedChip, baseUrl: string) {
   return {
@@ -130,7 +135,10 @@ export function publishRoutes({
 
   routes.get('/gallery', (c) => {
     const baseUrl = resolvePublicBaseUrl(c.req.url, publicBaseUrl)
-    return c.json({ chips: listPublicPublishedChips(db).map((chip) => serializeGallerySummary(chip, baseUrl)) })
+    const sort = parseGallerySort(c.req.query('sort'))
+    return c.json({
+      chips: listPublicPublishedChips(db, { sort, now }).map((chip) => serializeGallerySummary(chip, baseUrl)),
+    })
   })
 
   routes.get('/gallery/:slug', async (c) => {

@@ -34,6 +34,20 @@ describe('liveGalleryApi', () => {
     expect(await liveGalleryApi.list()).toEqual([summary])
   })
 
+  it('forwards the sort query param to the gallery endpoint', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse(200, { chips: [] }))
+      .mockResolvedValueOnce(jsonResponse(200, { chips: [] }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await liveGalleryApi.list('top')
+    expect(fetchMock).toHaveBeenCalledWith('/api/gallery?sort=top')
+
+    await liveGalleryApi.list()
+    expect(fetchMock).toHaveBeenCalledWith('/api/gallery')
+  })
+
   it('loads detail by slug and maps 404 to null', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(jsonResponse(200, { chip: detail })).mockResolvedValueOnce(jsonResponse(404, { error: { code: 'NOT_FOUND', message: 'Missing.' } })))
 

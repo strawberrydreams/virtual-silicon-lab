@@ -2152,6 +2152,20 @@ button {
   font-size: 0.95rem;
 }
 
+.gallery-page__sort {
+  display: flex;
+  flex-wrap: wrap;
+  width: min(1180px, calc(100vw - 2rem));
+  margin: 0 auto 1.25rem;
+  gap: 0.55rem;
+}
+
+.gallery-page__sort .v2-inline-action[aria-pressed='true'] {
+  border-color: var(--v2-accent);
+  background: rgba(90, 216, 255, 0.16);
+  color: var(--v2-text);
+}
+
 .gallery-grid {
   display: grid;
   width: min(1180px, calc(100vw - 2rem));

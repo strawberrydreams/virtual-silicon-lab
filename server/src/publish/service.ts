@@ -22,6 +22,8 @@ export type PublishedChip = {
   publishedAt: number
 }
 
+export type GallerySort = 'trending' | 'top' | 'newest'
+
 export type PublicGalleryChip = PublishedChip & {
   ownerDisplayName: string
   likeCount: number
@@ -239,19 +241,38 @@ export function deletePublishedChip(
   return result.changes > 0
 }
 
-export function listPublicPublishedChips(db: Database.Database, limit = 48): PublicGalleryChip[] {
+const WEEK_MS = 7 * 24 * 60 * 60 * 1000
+
+const GALLERY_ORDER_BY: Record<GallerySort, string> = {
+  trending: 'weekly_score DESC, p.updated_at DESC',
+  top: 'total_score DESC, p.updated_at DESC',
+  newest: 'p.updated_at DESC',
+}
+
+export function listPublicPublishedChips(
+  db: Database.Database,
+  opts: { sort?: GallerySort; now?: () => number; limit?: number } = {},
+): PublicGalleryChip[] {
+  const sort = opts.sort ?? 'trending'
+  const now = opts.now ?? Date.now
+  const limit = opts.limit ?? 48
+  const cutoff = now() - WEEK_MS
   const rows = db
     .prepare(
       `SELECT p.*, u.display_name AS owner_display_name,
               (SELECT COUNT(*) FROM likes l WHERE l.published_chip_id = p.id) AS like_count,
-              (SELECT COUNT(*) FROM comments cm WHERE cm.published_chip_id = p.id) AS comment_count
+              (SELECT COUNT(*) FROM comments cm WHERE cm.published_chip_id = p.id) AS comment_count,
+              (SELECT COUNT(*) FROM likes l WHERE l.published_chip_id = p.id)
+                + (SELECT COUNT(*) FROM comments cm WHERE cm.published_chip_id = p.id) AS total_score,
+              (SELECT COUNT(*) FROM likes l WHERE l.published_chip_id = p.id AND l.created_at >= @cutoff)
+                + (SELECT COUNT(*) FROM comments cm WHERE cm.published_chip_id = p.id AND cm.created_at >= @cutoff) AS weekly_score
        FROM published_chips p
        JOIN users u ON u.id = p.owner_user_id
        WHERE p.is_public = 1 AND p.moderation_status = 'visible'
-       ORDER BY p.updated_at DESC
-       LIMIT ?`,
+       ORDER BY ${GALLERY_ORDER_BY[sort]}
+       LIMIT @limit`,
     )
-    .all(limit) as PublicGalleryChipRow[]
+    .all({ cutoff, limit }) as PublicGalleryChipRow[]
   return rows.map(toPublicGalleryChip)
 }
 

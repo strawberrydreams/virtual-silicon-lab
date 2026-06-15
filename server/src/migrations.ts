@@ -102,4 +102,39 @@ export const migrations: Migration[] = [
       `)
     },
   },
+  {
+    id: '006_contests',
+    up: (db) => {
+      db.exec(`
+        CREATE TABLE contests (
+          id TEXT PRIMARY KEY,
+          title TEXT NOT NULL,
+          theme TEXT NOT NULL,
+          status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'submission', 'voting', 'results')),
+          created_by TEXT REFERENCES users(id) ON DELETE SET NULL,
+          created_at INTEGER NOT NULL,
+          updated_at INTEGER NOT NULL
+        );
+        CREATE INDEX idx_contests_status ON contests(status, created_at DESC);
+        CREATE TABLE contest_entries (
+          id TEXT PRIMARY KEY,
+          contest_id TEXT NOT NULL REFERENCES contests(id) ON DELETE CASCADE,
+          published_chip_id TEXT NOT NULL REFERENCES published_chips(id) ON DELETE CASCADE,
+          owner_user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          created_at INTEGER NOT NULL,
+          UNIQUE (contest_id, owner_user_id),
+          UNIQUE (contest_id, published_chip_id)
+        );
+        CREATE INDEX idx_contest_entries_contest ON contest_entries(contest_id);
+        CREATE TABLE contest_votes (
+          contest_id TEXT NOT NULL REFERENCES contests(id) ON DELETE CASCADE,
+          voter_user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          entry_id TEXT NOT NULL REFERENCES contest_entries(id) ON DELETE CASCADE,
+          created_at INTEGER NOT NULL,
+          PRIMARY KEY (contest_id, voter_user_id)
+        );
+        CREATE INDEX idx_contest_votes_entry ON contest_votes(entry_id);
+      `)
+    },
+  },
 ]

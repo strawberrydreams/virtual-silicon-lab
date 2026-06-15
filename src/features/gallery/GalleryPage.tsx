@@ -5,20 +5,28 @@ import {
   ServerUnreachableError,
   type GalleryApi,
   type GalleryChipSummary,
+  type GallerySort,
 } from './galleryApi'
 
 type Props = {
   api?: GalleryApi
 }
 
+const SORT_OPTIONS: { value: GallerySort; label: string }[] = [
+  { value: 'trending', label: 'Trending' },
+  { value: 'top', label: 'Top' },
+  { value: 'newest', label: 'Newest' },
+]
+
 export function GalleryPage({ api = liveGalleryApi }: Props) {
+  const [sort, setSort] = useState<GallerySort>('trending')
   const [chips, setChips] = useState<GalleryChipSummary[] | 'loading' | 'offline' | 'error'>('loading')
 
   useEffect(() => {
     let active = true
     setChips('loading')
     api
-      .list()
+      .list(sort)
       .then((nextChips) => {
         if (active) setChips(nextChips)
       })
@@ -29,7 +37,7 @@ export function GalleryPage({ api = liveGalleryApi }: Props) {
     return () => {
       active = false
     }
-  }, [api])
+  }, [api, sort])
 
   return (
     <main className="v2-page gallery-page">
@@ -41,6 +49,20 @@ export function GalleryPage({ api = liveGalleryApi }: Props) {
           not live project sync.
         </p>
       </section>
+
+      <div className="gallery-page__sort" role="group" aria-label="Sort gallery">
+        {SORT_OPTIONS.map((option) => (
+          <button
+            key={option.value}
+            type="button"
+            className="v2-inline-action"
+            aria-pressed={sort === option.value}
+            onClick={() => setSort(option.value)}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
 
       {chips === 'loading' ? <p className="gallery-page__state">Loading public chips...</p> : null}
       {chips === 'offline' ? (

@@ -123,3 +123,39 @@ describe('gallery reaction fields', () => {
     expect(authedDetail.chip.likedByMe).toBe(true)
   })
 })
+
+describe('gallery sort param', () => {
+  const NOW = 10_000_000_000_000
+  const now = () => NOW
+
+  function seedTwo(db: ReturnType<typeof createTestApp>['db']) {
+    db.prepare('INSERT INTO users (id, email, display_name, password_hash, created_at, updated_at) VALUES (?,?,?,?,?,?)')
+      .run('owner', 'o@o.c', 'Owner', 'h', 0, 0)
+    db.prepare('INSERT INTO users (id, email, display_name, password_hash, created_at, updated_at) VALUES (?,?,?,?,?,?)')
+      .run('liker', 'l@o.c', 'Liker', 'h', 0, 0)
+    db.prepare(
+      `INSERT INTO published_chips (id, owner_user_id, source_project_id, slug, title, project_json, die_image_data_url, poster_image_data_url, is_public, moderation_status, created_at, updated_at, published_at)
+       VALUES ('p1','owner','proj1','slug-1','P1','{}','','',1,'visible',0,1,0)`,
+    ).run()
+    db.prepare(
+      `INSERT INTO published_chips (id, owner_user_id, source_project_id, slug, title, project_json, die_image_data_url, poster_image_data_url, is_public, moderation_status, created_at, updated_at, published_at)
+       VALUES ('p2','owner','proj2','slug-2','P2','{}','','',1,'visible',0,2,0)`,
+    ).run()
+    db.prepare('INSERT INTO likes (published_chip_id, user_id, created_at) VALUES (?,?,?)').run('p1', 'liker', NOW - 1000)
+  }
+
+  async function slugs(app: ReturnType<typeof createTestApp>['app'], query: string) {
+    const body = (await (await app.request(`/api/gallery${query}`)).json()) as { chips: { slug: string }[] }
+    return body.chips.map((chip) => chip.slug)
+  }
+
+  it('orders by top, newest, and defaults/unknown to trending', async () => {
+    const { app, db } = createTestApp(now, { signupsOpen: true, adminEmails: [] })
+    seedTwo(db)
+    expect(await slugs(app, '?sort=top')).toEqual(['slug-1', 'slug-2'])
+    expect(await slugs(app, '?sort=newest')).toEqual(['slug-2', 'slug-1'])
+    expect(await slugs(app, '?sort=trending')).toEqual(['slug-1', 'slug-2'])
+    expect(await slugs(app, '')).toEqual(['slug-1', 'slug-2'])
+    expect(await slugs(app, '?sort=zzz')).toEqual(['slug-1', 'slug-2'])
+  })
+})

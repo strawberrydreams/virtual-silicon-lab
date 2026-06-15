@@ -936,3 +936,57 @@ v3 서버 위에 공개 오픈 전 안전장치를 얹었다. 브레인스토밍
   성공·신고가 `/admin` open 큐에 노출; 그리드 카드 ♥1; 서버 정지→갤러리 오프라인 상태·로컬 편집기 정상(로컬-퍼스트 회귀)
   모두 통과. 콘솔 에러는 미로그인 `/api/me` 401·서버 정지 시 502·favicon 404의 기존 베이스라인뿐.
 - **명시적 비범위(M2+).** 댓글 신고/스레딩/수정, 댓글 hide, admin 댓글 큐, 랭킹/콘테스트/remix lineage.
+
+## V4-M2 랭킹/트렌딩 (2026-06-15)
+
+스펙: `docs/superpowers/specs/2026-06-15-v4-m2-ranking-design.md` ·
+플랜: `docs/superpowers/plans/2026-06-15-v4-m2-ranking.md`. M1의 likes/comments timestamp를 재사용해 공개 갤러리에
+`Trending`/`Top`/`Newest` 정렬을 붙였다. M2는 순수 read-side 변경이라 **마이그레이션 없음**.
+
+- **정렬 산식.** `GallerySort = 'trending' | 'top' | 'newest'`를 서버 publish service에 추가했다. `top`은 all-time
+  `likes + comments`, `trending`은 `now() - 7일` rolling window의 `likes + comments`, `newest`는 `updated_at DESC`.
+  점수 가중치는 좋아요와 댓글을 동일하게 1로 두었다. 동점은 `updated_at DESC` recency tie-break로 cold-start 갤러리에서도
+  안정적으로 보이게 했다. cutoff 경계는 `created_at >= cutoff` inclusive.
+- **SQL/read 계약.** `listPublicPublishedChips(db, { sort, now, limit })`가 상관 서브쿼리로 `total_score`/`weekly_score`를
+  계산한다. 정렬별 `ORDER BY`는 typed literal map에서만 선택해 query param injection 여지를 만들지 않았다. 기존 공개 필터
+  `is_public = 1 AND moderation_status = 'visible'`와 `likeCount`/`commentCount` 응답 계약은 유지한다. score 값은 응답에
+  노출하지 않는다.
+- **라우트/클라이언트.** `GET /api/gallery?sort=`를 추가하고, `top`/`newest`/`trending` 외 값은 lenient하게
+  `trending`으로 기본 처리한다. 클라이언트 `galleryApi.list(sort?)`는 query param을 전달하고, `GalleryPage` 기본 상태는
+  `trending`이다. 갤러리 상단에는 `Trending`/`Top`/`Newest` segmented control을 추가했고 `aria-pressed`로 active sort를
+  노출한다. sort 변경 시 API를 다시 호출한다.
+- **검증.** RED→GREEN: server ranking service(Top/Trending/Newest/default/cutoff), gallery route query param, client
+  galleryApi param forwarding, GalleryPage sort control tests를 추가했다. 전체 `npm test` 통과: 클라이언트 70파일/344테스트,
+  서버 33파일/150테스트. `npm run build` 통과(기존 대형 chunk 경고만).
+- **브라우저 QA.** 임시 SQLite에 A/B/C 공개 칩을 시드해 기본 Trending=A first(최근 likes), Top=B first(오래된 likes 다수),
+  Newest=C first(updated_at 최신)을 확인했다. Sort 버튼의 `aria-pressed`가 Top/Newest 클릭 시 이동했고, 카드 like count도
+  유지됐다. 서버를 끈 뒤 `/gallery`는 offline 상태를 보여줬고, `/`에서 Start Blank로 로컬 에디터가 정상 진입해 local-first
+  회귀도 통과. 브라우저 console warn/error 0(서버 정지 중 Vite proxy ECONNREFUSED 로그는 의도된 offline QA 신호).
+- **명시적 비범위(M3+).** time-decay, score cache/materialized view, personalization, pagination, score UI, contests,
+  remix lineage.
+
+## V4-M3 콘테스트 시작: DB 스키마 (2026-06-15)
+
+스펙: `docs/superpowers/specs/2026-06-15-v4-m3-contests-design.md` ·
+플랜: `docs/superpowers/plans/2026-06-15-v4-m3-contests.md`. M3 구현은 계획서 Task 1부터 시작했다. 현재 범위는
+서버 DB 기반과 contest CRUD/read 서비스이며, 라우트/클라이언트 화면은 아직 들어가지 않았다.
+
+- **데이터 모델(`006_contests`).** `contests`, `contest_entries`, `contest_votes`를 추가했다. 콘테스트 status는
+  `draft`/`submission`/`voting`/`results` CHECK로 제한하고 기본값은 `draft`. `created_by`는 관리자 유저 삭제 시 기록을
+  보존하기 위해 `ON DELETE SET NULL`로 두었다.
+- **참가/투표 제약.** `contest_entries`는 `(contest_id, owner_user_id)`와 `(contest_id, published_chip_id)` UNIQUE로
+  한 유저가 한 콘테스트에 하나의 공개 칩만 제출하고, 같은 공개 칩이 중복 제출되지 않게 했다. `contest_votes`는
+  `(contest_id, voter_user_id)` primary key로 유저당 콘테스트 1표를 강제한다.
+- **삭제 동작.** 콘테스트 삭제 시 entries/votes가 cascade되고, entry 삭제(철회) 시 해당 vote가 cascade되도록 테스트로
+  고정했다. 이는 phase 전환이나 withdraw 서비스 구현 전에 DB 무결성을 먼저 보장하려는 선택이다.
+- **검증.** RED: `npm test --workspace server -- contestsMigration`가 테이블 없음으로 실패. GREEN:
+  `npm test --workspace server -- contestsMigration migrations` 통과(2 files / 8 tests). 계획서의 commit 단계는 기존
+  V4-M2 미커밋 변경이 남아 있어 실행하지 않았다.
+- **Contest CRUD/read 서비스(Task 2).** `server/src/contests/service.ts`를 추가해 `createContest`/`updateContest`/
+  `deleteContest`/`getContestStatus`/`listPublicContests`/`getContestDetail`/`getMyVote`를 구현했다. 공개 목록은 draft를
+  숨기고 `created_at DESC`로 정렬한다. 계획서 예시의 정렬 주석이 모순되어 있었으므로, 계획서 하단 note의 정정대로
+  `['B', 'A']`를 기대값으로 테스트했다. 서비스 테스트 setup은 `created_by` FK 때문에 `admin` 유저를 seed한다.
+  Detail은 draft를 `null`로 숨기고, entries는 `vote_count DESC, created_at ASC` 순서로 rank를 계산한다.
+- **검증.** RED: `npm test --workspace server -- contestsService`가 `../src/contests/service` 없음으로 실패. GREEN:
+  `npm test --workspace server -- contestsService` 통과(1 file / 5 tests). Task 2의 commit 단계도 위와 같은 이유로
+  실행하지 않았다.

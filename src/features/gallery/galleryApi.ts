@@ -1,5 +1,7 @@
 import type { Project } from '../../domain/project'
 
+export type GallerySort = 'trending' | 'top' | 'newest'
+
 export type GalleryChipSummary = {
   id: string
   slug: string
@@ -37,7 +39,7 @@ export class ServerUnreachableError extends Error {
 }
 
 export type GalleryApi = {
-  list: () => Promise<GalleryChipSummary[]>
+  list: (sort?: GallerySort) => Promise<GalleryChipSummary[]>
   get: (slug: string) => Promise<GalleryChipDetail | null>
 }
 
@@ -67,8 +69,8 @@ async function toApiError(res: Response): Promise<GalleryApiError> {
 }
 
 export const liveGalleryApi: GalleryApi = {
-  async list() {
-    const res = await request('/api/gallery')
+  async list(sort) {
+    const res = await request(sort === undefined ? '/api/gallery' : `/api/gallery?sort=${sort}`)
     if (!res.ok) throw await toApiError(res)
     const body = (await res.json()) as { chips: GalleryChipSummary[] }
     return body.chips
