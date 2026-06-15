@@ -24,6 +24,8 @@ export type PublishedChip = {
 
 export type PublicGalleryChip = PublishedChip & {
   ownerDisplayName: string
+  likeCount: number
+  commentCount: number
 }
 
 type PublishedChipRow = {
@@ -45,7 +47,11 @@ type PublishedChipRow = {
   published_at: number
 }
 
-type PublicGalleryChipRow = PublishedChipRow & { owner_display_name: string }
+type PublicGalleryChipRow = PublishedChipRow & {
+  owner_display_name: string
+  like_count: number
+  comment_count: number
+}
 
 function toPublishedChip(row: PublishedChipRow): PublishedChip {
   return {
@@ -69,7 +75,12 @@ function toPublishedChip(row: PublishedChipRow): PublishedChip {
 }
 
 function toPublicGalleryChip(row: PublicGalleryChipRow): PublicGalleryChip {
-  return { ...toPublishedChip(row), ownerDisplayName: row.owner_display_name }
+  return {
+    ...toPublishedChip(row),
+    ownerDisplayName: row.owner_display_name,
+    likeCount: row.like_count,
+    commentCount: row.comment_count,
+  }
 }
 
 function getByOwnerProject(
@@ -231,7 +242,9 @@ export function deletePublishedChip(
 export function listPublicPublishedChips(db: Database.Database, limit = 48): PublicGalleryChip[] {
   const rows = db
     .prepare(
-      `SELECT p.*, u.display_name AS owner_display_name
+      `SELECT p.*, u.display_name AS owner_display_name,
+              (SELECT COUNT(*) FROM likes l WHERE l.published_chip_id = p.id) AS like_count,
+              (SELECT COUNT(*) FROM comments cm WHERE cm.published_chip_id = p.id) AS comment_count
        FROM published_chips p
        JOIN users u ON u.id = p.owner_user_id
        WHERE p.is_public = 1 AND p.moderation_status = 'visible'
@@ -248,7 +261,9 @@ export function getPublicPublishedChipBySlug(
 ): PublicGalleryChip | null {
   const row = db
     .prepare(
-      `SELECT p.*, u.display_name AS owner_display_name
+      `SELECT p.*, u.display_name AS owner_display_name,
+              (SELECT COUNT(*) FROM likes l WHERE l.published_chip_id = p.id) AS like_count,
+              (SELECT COUNT(*) FROM comments cm WHERE cm.published_chip_id = p.id) AS comment_count
        FROM published_chips p
        JOIN users u ON u.id = p.owner_user_id
        WHERE p.slug = ? AND p.is_public = 1 AND p.moderation_status = 'visible'`,
