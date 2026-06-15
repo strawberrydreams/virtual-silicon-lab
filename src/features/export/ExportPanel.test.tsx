@@ -36,6 +36,15 @@ describe('ExportPanel', () => {
     expect(screen.getByTestId('poster-stage')).toHaveAttribute('data-format', 'product-closeup')
   })
 
+  it('resets the poster format to the new project default when the project changes', async () => {
+    const { rerender } = render(<ExportPanel project={createHeroChip('aurora', 1)} />)
+    await userEvent.click(screen.getByRole('button', { name: 'Product Closeup' }))
+    expect(screen.getByTestId('poster-stage')).toHaveAttribute('data-format', 'product-closeup')
+
+    rerender(<ExportPanel project={createHeroSetProject('panther-scale', 'panther', 100)} />)
+    expect(screen.getByTestId('poster-stage')).toHaveAttribute('data-format', 'architecture-slide')
+  })
+
   it('starts hero set projects on their catalog poster format', () => {
     render(<ExportPanel project={createHeroSetProject('panther-scale', 'panther', 100)} />)
 
