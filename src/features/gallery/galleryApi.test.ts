@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createProject } from '../../domain/projectFactory'
-import { GalleryApiError, liveGalleryApi, ServerUnreachableError } from './galleryApi'
+import { liveGalleryApi, ServerUnreachableError } from './galleryApi'
 
 const summary = {
   id: 'pub1',

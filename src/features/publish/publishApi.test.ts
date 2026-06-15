@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createProject } from '../../domain/projectFactory'
-import { PublishApiError, ServerUnreachableError, livePublishApi } from './publishApi'
+import { ServerUnreachableError, livePublishApi } from './publishApi'
 
 const chip = {
   id: 'pub1',

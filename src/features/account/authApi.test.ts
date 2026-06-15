@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { AuthApiError, liveAuthApi, ServerUnreachableError } from './authApi'
+import { liveAuthApi, ServerUnreachableError } from './authApi'
 
 const user = { id: 'u1', email: 'ada@example.com', displayName: 'Ada', createdAt: 1000 }
 
