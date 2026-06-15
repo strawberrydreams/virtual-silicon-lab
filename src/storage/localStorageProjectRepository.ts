@@ -7,7 +7,17 @@ export function createLocalStorageProjectRepository(
 ): ProjectRepository {
   function readAll(): Project[] {
     const raw = localStorage.getItem(storageKey)
-    return raw === null ? [] : migrateProjects(JSON.parse(raw) as unknown[])
+    if (raw === null) return []
+    let parsed: unknown
+    try {
+      parsed = JSON.parse(raw)
+    } catch (error) {
+      // A corrupt top-level blob must degrade, not throw: the localStorage
+      // fallback is the last-resort store and list()/get() must keep working.
+      console.warn('[storage] discarding unreadable localStorage projects blob', error)
+      return []
+    }
+    return Array.isArray(parsed) ? migrateProjects(parsed) : []
   }
 
   function writeAll(projects: Project[]) {

@@ -38,6 +38,20 @@ describe('project repositories', () => {
     expect(await repository.get('project-2')).toEqual(project)
   })
 
+  it('returns an empty list when the localStorage blob is not valid JSON', async () => {
+    const repository = createLocalStorageProjectRepository('test-corrupt-json')
+    localStorage.setItem('test-corrupt-json', '{ this is not json')
+
+    expect(await repository.list()).toEqual([])
+  })
+
+  it('returns an empty list when the localStorage blob is valid JSON but not an array', async () => {
+    const repository = createLocalStorageProjectRepository('test-nonarray')
+    localStorage.setItem('test-nonarray', 'null')
+
+    expect(await repository.list()).toEqual([])
+  })
+
   it('sticks to the fallback after a primary failure and never reads stale primary data', async () => {
     const fresh = createProject('Fresh Chip', 'project-3', 300)
     const stale = createProject('Stale Chip', 'project-3', 100)
