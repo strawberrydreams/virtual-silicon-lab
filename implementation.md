@@ -902,3 +902,37 @@ v3 서버 위에 공개 오픈 전 안전장치를 얹었다. 브레인스토밍
   401×2 + favicon 404의 기존 베이스라인뿐.
 - **명시적 비범위(M1+).** 유저용 신고 버튼·좋아요·댓글, 랭킹/콘테스트/lineage, 유저 ban, 초대 코드, 갤러리 전체 잠금,
   별도 audit 로그 테이블, `users.role` 컬럼.
+
+## V4-M1 리액션 (좋아요 + 댓글 + 신고 버튼) (2026-06-15)
+
+스펙: `docs/superpowers/specs/2026-06-14-v4-m1-reactions-design.md` ·
+플랜: `docs/superpowers/plans/2026-06-14-v4-m1-reactions.md`. M0의 모더레이션 인프라 위에 첫 커뮤니티 상호작용을 얹었다.
+좋아요·플랫 댓글·신고 버튼(M0의 `POST /api/reports` 재사용) 세 가지가 공개 갤러리 칩에 붙는다. 모두 서버 측 퍼블리시
+데이터에만 작용하고 로컬-퍼스트(IndexedDB 편집)는 손대지 않았다.
+
+- **데이터 모델(`005_reactions`).** `likes`(복합 PK `(published_chip_id, user_id)`로 유저당 칩 1회 좋아요 강제,
+  `idx_likes_user`)와 `comments`(`id` PK, `idx_comments_chip(published_chip_id, created_at)`) 두 테이블을 추가했다.
+  둘 다 칩·유저 삭제 시 CASCADE. 신고는 M0의 `reports` 테이블을 그대로 쓴다(신규 테이블 없음).
+- **리액션 서비스(`server/src/reactions/service.ts`).** publish/service 스타일(row 타입·`toX` 매퍼·주입된 `now`)로
+  좋아요(`isChipReactable`/`likeChip`/`unlikeChip`/`countLikes`/`hasUserLiked`/`getLikeState`)와
+  댓글(`createComment`/`listComments`/`getCommentMeta`/`deleteComment`)을 구현했다. 좋아요는 `INSERT OR IGNORE`로 멱등.
+  `isChipReactable`은 `is_public = 1 AND moderation_status = 'visible'`만 통과시켜 hidden/private/없는 칩의 리액션을 차단.
+- **리액션 라우트(`server/src/reactions/routes.ts`, `/api` 마운트).** 좋아요 `POST/DELETE /api/published-chips/:id/like`
+  (인증 필수, 401), 댓글 `GET`(공개)·`POST`(인증, 빈/1000자 초과 400)·`DELETE`(작성자 본인 또는 M0 `isAdminEmail` admin만,
+  타인 비-admin은 403). 리액션 불가 칩은 404. M0의 `getSessionUser`·`isAdminEmail`을 재사용한다.
+- **갤러리 노출.** `listPublicPublishedChips`/`getPublicPublishedChipBySlug` SELECT에 상관 서브쿼리로
+  `like_count`/`comment_count`를 더하고 `PublicGalleryChip`에 `likeCount`/`commentCount`를 추가했다. 갤러리 라우트는
+  요약에 `likeCount`, 상세에 `commentCount`+`likedByMe`를 직렬화한다. 상세 핸들러를 `async`로 바꿔 선택적 세션을 읽어
+  `likedByMe`를 계산(미로그인은 false).
+- **클라이언트.** `reactionsApi`(좋아요/댓글 CRUD + `reportChip`=M0 신고 재사용, 주입 가능)와 `galleryApi` 타입 확장
+  (`GalleryChipSummary.likeCount`, `GalleryChipDetail.commentCount`/`likedByMe`)을 추가했다. 갤러리 상세 페이지에
+  좋아요(♥ 토글)·신고(누르면 "Reported" 비활성)·플랫 댓글 스레드(작성자/admin Delete, 미로그인은 안내 문구)를 붙이고,
+  그리드 카드에 좋아요 수(♥ n)를 표시했다. `useAuthStore`로 로그인/`isAdmin`을 읽는다 — 기존 갤러리 상세 테스트는
+  provider 없이 렌더했으므로 `renderDetail`을 `AuthStoreProvider`+주입 fake `reactions`로 감쌌다(어서션은 불변, 플랜에
+  없던 갭 보강).
+- **테스트/QA.** 서버 32 files / 144 tests, 클라이언트 70 files / 342 tests, `npm run build` green(기존 Vite chunk 경고만).
+  브라우저 QA(임시 SQLite + 시드 공개 칩): 미로그인→좋아요 수+"Sign in to react"·컨트롤 비활성·댓글 목록 가시; 일반 유저→
+  좋아요 토글(♡0→♥1), 댓글 작성→목록 반영·본인 Delete 버튼, 신고→"Reported"; admin(`admin@test.com`)→타인 댓글 Delete
+  성공·신고가 `/admin` open 큐에 노출; 그리드 카드 ♥1; 서버 정지→갤러리 오프라인 상태·로컬 편집기 정상(로컬-퍼스트 회귀)
+  모두 통과. 콘솔 에러는 미로그인 `/api/me` 401·서버 정지 시 502·favicon 404의 기존 베이스라인뿐.
+- **명시적 비범위(M2+).** 댓글 신고/스레딩/수정, 댓글 hide, admin 댓글 큐, 랭킹/콘테스트/remix lineage.
