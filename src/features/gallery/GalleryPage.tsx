@@ -59,6 +59,9 @@ export function GalleryPage({ api = liveGalleryApi }: Props) {
                 <p className="v2-meta">{chip.ownerDisplayName}</p>
                 <h2>{chip.title}</h2>
                 <p>Version {chip.version}</p>
+                <span className="gallery-card__likes" aria-label={`${chip.likeCount} likes`}>
+                  ♥ {chip.likeCount}
+                </span>
                 <Link className="v2-inline-action" to={`/gallery/${chip.slug}`}>
                   Open {chip.title}
                 </Link>
