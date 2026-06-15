@@ -5,6 +5,7 @@ import { accountRoutes } from './accounts/routes'
 import type { PublishedImageStore } from './images/fileImageStore'
 import { moderationRoutes } from './moderation/routes'
 import { publishRoutes } from './publish/routes'
+import { reactionsRoutes } from './reactions/routes'
 import { createRateLimiter, type RateLimitOptions } from './rateLimit'
 import { shareRoutes } from './share/routes'
 
@@ -65,6 +66,7 @@ export function createApp(deps: AppDeps) {
   app.route('/api', accountRoutes(deps))
   app.route('/api', publishRoutes(deps))
   app.route('/api', moderationRoutes(deps))
+  app.route('/api', reactionsRoutes(deps))
   app.route('/', shareRoutes(deps))
 
   return app
