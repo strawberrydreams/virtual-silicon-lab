@@ -187,6 +187,48 @@ describe('migrateProject', () => {
     expect(migrated.remixedFrom).toEqual({ chipId: 'c1', slug: 's1', title: 'Parent' })
   })
 
+  it('migrates a schema version 3 project to current version, preserving studio settings', () => {
+    const project = migrateProject({
+      ...validProject('v3-project'),
+      schemaVersion: 3,
+      studio: {
+        layoutMode: 'global-reflow',
+        detailMode: 'semi-auto',
+        tileSettings: {
+          detailDensity: 0.7,
+          routeIntensity: 0.6,
+          contactStyle: 'minimal',
+        },
+        sprays: [],
+        stickers: [],
+      },
+    })
+
+    expect(project.schemaVersion).toBe(CURRENT_SCHEMA_VERSION)
+    expect(project.studio.tileSettings.contactStyle).toBe('minimal')
+  })
+
+  it('is idempotent: re-migrating an already-migrated project is a stable no-op', () => {
+    const once = migrateProject({
+      ...validProject('idempotent'),
+      schemaVersion: 2,
+      studio: {
+        layoutMode: 'global-reflow',
+        detailMode: 'semi-auto',
+        tileSettings: {
+          detailDensity: 0.5,
+          routeIntensity: 0.5,
+          contactStyle: 'balanced',
+        },
+        sprays: [],
+        stickers: [],
+      },
+    })
+    const twice = migrateProject(once)
+
+    expect(twice).toEqual(once)
+  })
+
   it('rejects data without a supported schema version', () => {
     expect(() => migrateProject({ id: 'broken' })).toThrow('Unsupported project schema')
   })
