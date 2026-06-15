@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createProject } from '@domain/projectFactory'
-import { createTestApp } from './helpers'
+import { createTestApp, jsonRequest, sessionCookie, VALID_SIGNUP } from './helpers'
 import { upsertPublishedChip } from '../src/publish/service'
 
 const pngA = 'data:image/png;base64,AAAA'
@@ -95,5 +95,31 @@ describe('public gallery routes', () => {
 
     expect((await app.request(`/api/gallery/${privateChip.slug}`)).status).toBe(404)
     expect((await app.request('/api/gallery/not-a-real-slug')).status).toBe(404)
+  })
+})
+
+describe('gallery reaction fields', () => {
+  it('summary carries likeCount; detail carries likeCount, commentCount, and likedByMe', async () => {
+    const { app, db } = createTestApp(Date.now, { signupsOpen: true, adminEmails: [] })
+    db.prepare('INSERT INTO users (id, email, display_name, password_hash, created_at, updated_at) VALUES (?,?,?,?,?,?)')
+      .run('owner', 'o@o.c', 'Owner', 'h', 0, 0)
+    db.prepare(
+      `INSERT INTO published_chips (id, owner_user_id, source_project_id, slug, title, project_json, die_image_data_url, poster_image_data_url, is_public, moderation_status, created_at, updated_at, published_at)
+       VALUES ('c1','owner','p1','s1','T','{}','','',1,'visible',1,1,1)`,
+    ).run()
+
+    const cookie = sessionCookie(await app.request('/api/auth/signup', jsonRequest('POST', VALID_SIGNUP)))
+    await app.request('/api/published-chips/c1/like', { method: 'POST', headers: { cookie } })
+
+    const summary = (await (await app.request('/api/gallery')).json()) as { chips: { likeCount: number }[] }
+    expect(summary.chips[0].likeCount).toBe(1)
+
+    const anonDetail = (await (await app.request('/api/gallery/s1')).json()) as { chip: { likeCount: number; commentCount: number; likedByMe: boolean } }
+    expect(anonDetail.chip.likeCount).toBe(1)
+    expect(anonDetail.chip.commentCount).toBe(0)
+    expect(anonDetail.chip.likedByMe).toBe(false)
+
+    const authedDetail = (await (await app.request('/api/gallery/s1', { headers: { cookie } })).json()) as { chip: { likedByMe: boolean } }
+    expect(authedDetail.chip.likedByMe).toBe(true)
   })
 })

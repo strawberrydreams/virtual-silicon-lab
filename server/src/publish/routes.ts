@@ -14,6 +14,7 @@ import {
   type PublicGalleryChip,
 } from './service'
 import { validatePublishInput } from './validation'
+import { getLikeState } from '../reactions/service'
 import { buildShareUrl, resolvePublicBaseUrl } from '../share/baseUrl'
 
 const SESSION_COOKIE = 'vsl_session'
@@ -53,12 +54,15 @@ function serializeGallerySummary(chip: PublicGalleryChip, baseUrl: string) {
     version: chip.version,
     updatedAt: chip.updatedAt,
     publishedAt: chip.publishedAt,
+    likeCount: chip.likeCount,
   }
 }
 
-function serializeGalleryDetail(chip: PublicGalleryChip, baseUrl: string) {
+function serializeGalleryDetail(chip: PublicGalleryChip, baseUrl: string, likedByMe: boolean) {
   return {
     ...serializeGallerySummary(chip, baseUrl),
+    commentCount: chip.commentCount,
+    likedByMe,
     project: JSON.parse(chip.projectJson) as unknown,
   }
 }
@@ -129,10 +133,12 @@ export function publishRoutes({
     return c.json({ chips: listPublicPublishedChips(db).map((chip) => serializeGallerySummary(chip, baseUrl)) })
   })
 
-  routes.get('/gallery/:slug', (c) => {
+  routes.get('/gallery/:slug', async (c) => {
     const chip = getPublicPublishedChipBySlug(db, c.req.param('slug'))
     if (chip === null) return fail(c, 404, 'NOT_FOUND', 'Published chip not found.')
-    return c.json({ chip: serializeGalleryDetail(chip, resolvePublicBaseUrl(c.req.url, publicBaseUrl)) })
+    const user = await readUser(c)
+    const likedByMe = user === null ? false : getLikeState(db, chip.id, user.id).likedByMe
+    return c.json({ chip: serializeGalleryDetail(chip, resolvePublicBaseUrl(c.req.url, publicBaseUrl), likedByMe) })
   })
 
   return routes
