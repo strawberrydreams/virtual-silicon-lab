@@ -8,10 +8,7 @@ function seededProject(): Project {
   const base = createProject('Dream Chip', 'project-1', 100)
   return {
     ...base,
-    blocks: [
-      buildBlock(base, 'CPU', 'cpu'),
-      { ...buildBlock(base, 'GPU', 'gpu'), zIndex: 1 },
-    ],
+    blocks: [buildBlock(base, 'CPU', 'cpu'), { ...buildBlock(base, 'GPU', 'gpu'), zIndex: 1 }],
   }
 }
 
@@ -67,8 +64,24 @@ describe('editor store commands', () => {
         ...base,
         die: { shape: 'rect', width: 480, height: 320, background: 'studio-test' },
         blocks: [
-          { ...buildBlock(base, 'CPU', 'cpu'), x: 32, y: 32, w: 112, h: 72, rotation: 0, zIndex: 0 },
-          { ...buildBlock(base, 'GPU', 'gpu'), x: 160, y: 32, w: 112, h: 72, rotation: 0, zIndex: 1 },
+          {
+            ...buildBlock(base, 'CPU', 'cpu'),
+            x: 32,
+            y: 32,
+            w: 112,
+            h: 72,
+            rotation: 0,
+            zIndex: 0,
+          },
+          {
+            ...buildBlock(base, 'GPU', 'gpu'),
+            x: 160,
+            y: 32,
+            w: 112,
+            h: 72,
+            rotation: 0,
+            zIndex: 1,
+          },
         ],
       },
       { createId: fixedIds('new-dream') },
@@ -102,7 +115,15 @@ describe('editor store commands', () => {
       blocks: [
         { ...buildBlock(base, 'CPU', 'cpu'), x: 32, y: 32, w: 112, h: 72, rotation: 0, zIndex: 0 },
         { ...buildBlock(base, 'GPU', 'gpu'), x: 160, y: 32, w: 112, h: 72, rotation: 0, zIndex: 1 },
-        { ...buildBlock(base, 'QuantumMemory', 'mem'), x: 32, y: 160, w: 240, h: 64, rotation: 0, zIndex: 2 },
+        {
+          ...buildBlock(base, 'QuantumMemory', 'mem'),
+          x: 32,
+          y: 160,
+          w: 240,
+          h: 64,
+          rotation: 0,
+          zIndex: 2,
+        },
       ],
     })
 
@@ -234,7 +255,9 @@ describe('editorStore visual commands', () => {
   })
 
   it('adds a studio sticker and can undo it', () => {
-    const store = createEditorStore(createProject('p', 'p1', 0), { createId: fixedIds('sticker-1') })
+    const store = createEditorStore(createProject('p', 'p1', 0), {
+      createId: fixedIds('sticker-1'),
+    })
 
     store.getState().addSticker()
 
@@ -345,7 +368,9 @@ describe('editorStore visual commands', () => {
   })
 
   it('coalesces repeated edits to one studio item into a single undo step', () => {
-    const store = createEditorStore(createProject('p', 'p1', 0), { createId: fixedIds('sticker-1') })
+    const store = createEditorStore(createProject('p', 'p1', 0), {
+      createId: fixedIds('sticker-1'),
+    })
 
     store.getState().addSticker()
     const pastAfterAdd = store.getState().past.length
@@ -362,7 +387,9 @@ describe('editorStore visual commands', () => {
   })
 
   it('starts a fresh undo step for edits made after an undo', () => {
-    const store = createEditorStore(createProject('p', 'p1', 0), { createId: fixedIds('sticker-1') })
+    const store = createEditorStore(createProject('p', 'p1', 0), {
+      createId: fixedIds('sticker-1'),
+    })
 
     store.getState().addSticker()
     store.getState().updateSticker('sticker-1', { text: 'W' })

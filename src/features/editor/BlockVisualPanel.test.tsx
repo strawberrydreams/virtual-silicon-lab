@@ -23,7 +23,9 @@ describe('BlockVisualPanel', () => {
     render(<BlockVisualPanel block={block} onChange={onChange} />)
 
     await userEvent.type(screen.getByLabelText('Tile image URL'), 'data:image/png;base64,abc')
-    expect(onChange).toHaveBeenLastCalledWith('tile-1', { imageDataUrl: 'data:image/png;base64,abc' })
+    expect(onChange).toHaveBeenLastCalledWith('tile-1', {
+      imageDataUrl: 'data:image/png;base64,abc',
+    })
 
     await userEvent.click(screen.getByRole('button', { name: 'Clear tile image' }))
     expect(onChange).toHaveBeenLastCalledWith('tile-1', { imageDataUrl: undefined })

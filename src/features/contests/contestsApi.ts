@@ -74,7 +74,9 @@ export const liveContestsApi: ContestsApi = {
     return ((await res.json()) as { contest: ContestDetail }).contest
   },
   async enter(contestId, publishedChipId) {
-    await ok(await fetch(`/api/contests/${contestId}/entries`, jsonInit('POST', { publishedChipId })))
+    await ok(
+      await fetch(`/api/contests/${contestId}/entries`, jsonInit('POST', { publishedChipId })),
+    )
   },
   async withdraw(contestId, entryId) {
     await ok(await fetch(`/api/contests/${contestId}/entries/${entryId}`, { method: 'DELETE' }))

@@ -17,7 +17,9 @@ describe('ProjectStoreProvider', () => {
     }
 
     const { result } = renderHook(() => useProjectStore(), {
-      wrapper: ({ children }) => <ProjectStoreProvider repository={repository}>{children}</ProjectStoreProvider>,
+      wrapper: ({ children }) => (
+        <ProjectStoreProvider repository={repository}>{children}</ProjectStoreProvider>
+      ),
     })
 
     await waitFor(() => expect(result.current.projects).toEqual([stored]))

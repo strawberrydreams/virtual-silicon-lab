@@ -10,7 +10,9 @@ describe('ColorSettingsPanel', () => {
   it('edits each render element with solid and two-color gradient paints', async () => {
     const onChange = vi.fn()
     function Harness() {
-      const [colorSettings, setColorSettings] = useState<StudioColorSettings>(createDefaultStudioState().colorSettings)
+      const [colorSettings, setColorSettings] = useState<StudioColorSettings>(
+        createDefaultStudioState().colorSettings,
+      )
       return (
         <ColorSettingsPanel
           colorSettings={colorSettings}
@@ -31,6 +33,10 @@ describe('ColorSettingsPanel', () => {
     await userEvent.clear(screen.getByLabelText('Gradient to'))
     await userEvent.type(screen.getByLabelText('Gradient to'), '#445566')
 
-    expect(onChange).toHaveBeenCalledWith('tile', { mode: 'gradient', from: '#112233', to: '#445566' })
+    expect(onChange).toHaveBeenCalledWith('tile', {
+      mode: 'gradient',
+      from: '#112233',
+      to: '#445566',
+    })
   })
 })

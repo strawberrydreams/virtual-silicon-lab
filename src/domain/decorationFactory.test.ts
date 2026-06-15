@@ -5,9 +5,7 @@ import { buildDecoration, nextDecorationZIndex } from './decorationFactory'
 describe('nextDecorationZIndex', () => {
   it('returns 0 for no decorations and max+1 otherwise', () => {
     expect(nextDecorationZIndex([])).toBe(0)
-    expect(
-      nextDecorationZIndex([{ id: 'a', kind: 'warningMark', x: 0, y: 0, zIndex: 4 }]),
-    ).toBe(5)
+    expect(nextDecorationZIndex([{ id: 'a', kind: 'warningMark', x: 0, y: 0, zIndex: 4 }])).toBe(5)
   })
 })
 

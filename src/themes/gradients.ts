@@ -11,7 +11,11 @@ export type LinearGradientProps = {
   fillLinearGradientColorStops: (number | string)[]
 }
 
-export function linearGradientProps(width: number, height: number, stops: ColorStop[]): LinearGradientProps {
+export function linearGradientProps(
+  width: number,
+  height: number,
+  stops: ColorStop[],
+): LinearGradientProps {
   return {
     fillLinearGradientStartPoint: { x: 0, y: 0 },
     fillLinearGradientEndPoint: { x: 0, y: height },

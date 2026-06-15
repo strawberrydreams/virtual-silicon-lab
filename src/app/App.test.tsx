@@ -40,7 +40,9 @@ describe('App', () => {
 
     expect(shell).toHaveAttribute('data-page-theme', 'space')
     expect(localStorage.getItem('vsl.pageTheme')).toBe('space')
-    expect(screen.getByRole('banner')).toContainElement(screen.getByRole('button', { name: 'Space theme' }))
+    expect(screen.getByRole('banner')).toContainElement(
+      screen.getByRole('button', { name: 'Space theme' }),
+    )
   })
 
   it('shows a not-found view for a missing project id instead of loading forever', async () => {
@@ -98,7 +100,11 @@ describe('App', () => {
 
   it('remixes a gallery chip into a new local project and opens the editor', async () => {
     const project = {
-      ...(await import('../domain/projectFactory')).createProject('Ada Chip', 'gallery-source', 1_000),
+      ...(await import('../domain/projectFactory')).createProject(
+        'Ada Chip',
+        'gallery-source',
+        1_000,
+      ),
     }
     const detail = {
       id: 'pub1',

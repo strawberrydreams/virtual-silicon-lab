@@ -9,8 +9,26 @@ import {
 } from '../domain/project'
 import { createDefaultStudioState } from '../domain/studioDefaults'
 
-const REAL_BLOCKS: BlockType[] = ['CPU', 'GPU', 'DSP', 'SRAM', 'Cache', 'DAC', 'ADC', 'PLL', 'IO', 'USB']
-const FANTASY_BLOCKS: BlockType[] = ['EmotionEngine', 'DreamSynth', 'QuantumMemory', 'ConsciousnessProcessor', 'RealityDistortionUnit', 'TimeCore']
+const REAL_BLOCKS: BlockType[] = [
+  'CPU',
+  'GPU',
+  'DSP',
+  'SRAM',
+  'Cache',
+  'DAC',
+  'ADC',
+  'PLL',
+  'IO',
+  'USB',
+]
+const FANTASY_BLOCKS: BlockType[] = [
+  'EmotionEngine',
+  'DreamSynth',
+  'QuantumMemory',
+  'ConsciousnessProcessor',
+  'RealityDistortionUnit',
+  'TimeCore',
+]
 const THEMES: StyleTheme[] = ['neon', 'retro', 'military', 'keynote', 'mono']
 const SHAPES: DieShape[] = ['rect', 'square', 'circle', 'hexagon']
 
@@ -66,7 +84,11 @@ function createBlock(
   }
 }
 
-export function generateRandomChipProject(seed: string, id: string = crypto.randomUUID(), now = Date.now()): Project {
+export function generateRandomChipProject(
+  seed: string,
+  id: string = crypto.randomUUID(),
+  now = Date.now(),
+): Project {
   const random = createPrng(seed)
   const shape = pick(SHAPES, random)
   const size = shape === 'rect' ? { width: 940, height: 620 } : { width: 760, height: 760 }
@@ -87,11 +109,23 @@ export function generateRandomChipProject(seed: string, id: string = crypto.rand
     die: { shape, width: size.width, height: size.height, background: `random-${seed}` },
     blocks,
     decorations: [
-      { id: `${id}-decoration-0`, kind: 'label', x: 56, y: 34, text: 'RANDOM FAB // SEED TRACE', zIndex: 0 },
+      {
+        id: `${id}-decoration-0`,
+        kind: 'label',
+        x: 56,
+        y: 34,
+        text: 'RANDOM FAB // SEED TRACE',
+        zIndex: 0,
+      },
       {
         id: `${id}-decoration-1`,
         kind: 'neonLine',
-        points: [blocks[0].x + blocks[0].w / 2, blocks[0].y + blocks[0].h / 2, blocks[1].x + blocks[1].w / 2, blocks[1].y + blocks[1].h / 2],
+        points: [
+          blocks[0].x + blocks[0].w / 2,
+          blocks[0].y + blocks[0].h / 2,
+          blocks[1].x + blocks[1].w / 2,
+          blocks[1].y + blocks[1].h / 2,
+        ],
         color: '#22d3ee',
         zIndex: 1,
       },

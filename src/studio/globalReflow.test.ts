@@ -66,14 +66,23 @@ describe('reflowBlocksGlobally', () => {
 
     const movedNonTarget = result.filter((candidate) => {
       const original = source.find((item) => item.id === candidate.id)
-      return candidate.id !== 'mem' && original && (candidate.x !== original.x || candidate.y !== original.y)
+      return (
+        candidate.id !== 'mem' &&
+        original &&
+        (candidate.x !== original.x || candidate.y !== original.y)
+      )
     })
     expect(movedNonTarget.length).toBeGreaterThan(0)
   })
 
   it('packs a target near the bottom-right into a bottom-right die zone', () => {
     const result = reflowBlocksGlobally({
-      blocks: [block('cpu', 32, 32), block('gpu', 160, 32), block('mem', 32, 160, 120, 64), block('io', 240, 160, 96, 64)],
+      blocks: [
+        block('cpu', 32, 32),
+        block('gpu', 160, 32),
+        block('mem', 32, 160, 120, 64),
+        block('io', 240, 160, 96, 64),
+      ],
       die,
       targetBlockId: 'io',
       target: { x: die.width - 64, y: die.height - 48 },
@@ -88,8 +97,18 @@ describe('reflowBlocksGlobally', () => {
     const source = [block('cpu', 32, 32), block('gpu', 160, 32), block('mem', 32, 160, 240, 64)]
     const snapshot = structuredClone(source)
 
-    const first = reflowBlocksGlobally({ blocks: source, die, targetBlockId: 'gpu', target: { x: 30, y: 30 } })
-    const second = reflowBlocksGlobally({ blocks: source, die, targetBlockId: 'gpu', target: { x: 30, y: 30 } })
+    const first = reflowBlocksGlobally({
+      blocks: source,
+      die,
+      targetBlockId: 'gpu',
+      target: { x: 30, y: 30 },
+    })
+    const second = reflowBlocksGlobally({
+      blocks: source,
+      die,
+      targetBlockId: 'gpu',
+      target: { x: 30, y: 30 },
+    })
 
     expect(first).toEqual(second)
     expect(source).toEqual(snapshot)
@@ -98,7 +117,12 @@ describe('reflowBlocksGlobally', () => {
   it('keeps reflowed blocks inside a circular die outline', () => {
     const circle: Die = { shape: 'circle', width: 400, height: 400, background: 'studio-test' }
     const result = reflowBlocksGlobally({
-      blocks: [block('cpu', 0, 0), block('gpu', 0, 0), block('mem', 0, 0, 200, 64), block('io', 0, 0)],
+      blocks: [
+        block('cpu', 0, 0),
+        block('gpu', 0, 0),
+        block('mem', 0, 0, 200, 64),
+        block('io', 0, 0),
+      ],
       die: circle,
       targetBlockId: 'cpu',
       target: { x: 0, y: 0 },
@@ -135,7 +159,12 @@ describe('reflowBlocksGlobally', () => {
     const small: Die = { shape: 'rect', width: 200, height: 160, background: 'studio-test' }
     const many = Array.from({ length: 12 }, (_, index) => block(`b${index}`, 0, 0, 90, 70))
 
-    const result = reflowBlocksGlobally({ blocks: many, die: small, targetBlockId: 'b0', target: { x: 0, y: 0 } })
+    const result = reflowBlocksGlobally({
+      blocks: many,
+      die: small,
+      targetBlockId: 'b0',
+      target: { x: 0, y: 0 },
+    })
 
     for (const candidate of result) {
       expect(candidate.x).toBeGreaterThanOrEqual(-1e-6)

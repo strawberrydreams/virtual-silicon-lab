@@ -15,7 +15,13 @@ export type ChipLayer =
   | { id: string; kind: 'package'; bounds: Bounds; radius: number; color: string }
   | { id: string; kind: 'dieBase'; bounds: Bounds }
   | { id: string; kind: 'microTile'; bounds: Bounds; opacity: number }
-  | { id: string; kind: 'blockSurface'; blockId: string; bounds: Bounds; emphasis: 'real' | 'fantasy' }
+  | {
+      id: string
+      kind: 'blockSurface'
+      blockId: string
+      bounds: Bounds
+      emphasis: 'real' | 'fantasy'
+    }
   | { id: string; kind: 'trace'; points: number[]; color: string; width: number; opacity: number }
   | { id: string; kind: 'readoutLabel'; text: string; x: number; y: number }
   | { id: string; kind: 'glassGlow'; bounds: Bounds; color: string; blur: number; opacity: number }
@@ -58,7 +64,11 @@ function blockSurface(block: Block): Extract<ChipLayer, { kind: 'blockSurface' }
 // flood the editor and both export stages with tens of thousands of Konva rects.
 const MAX_MICRO_TILES = 4000
 
-function buildMicroTiles(project: Project, opacity: number, detail: TileDetail): Extract<ChipLayer, { kind: 'microTile' }>[] {
+function buildMicroTiles(
+  project: Project,
+  opacity: number,
+  detail: TileDetail,
+): Extract<ChipLayer, { kind: 'microTile' }>[] {
   const tiles: Extract<ChipLayer, { kind: 'microTile' }>[] = []
   const tile = 18
   let step = detail.microStep
@@ -81,7 +91,10 @@ function buildMicroTiles(project: Project, opacity: number, detail: TileDetail):
   return tiles
 }
 
-function buildTraces(project: Project, detail: TileDetail): Extract<ChipLayer, { kind: 'trace' }>[] {
+function buildTraces(
+  project: Project,
+  detail: TileDetail,
+): Extract<ChipLayer, { kind: 'trace' }>[] {
   const recipe = resolveMaterialRecipe(project.theme)
   const ordered = project.blocks.slice().sort((left, right) => left.zIndex - right.zIndex)
   return ordered.slice(1).map((block, index) => {
@@ -113,7 +126,11 @@ function cellInsideOutline(cell: FabricCell, incircle: DieIncircle): boolean {
   return corners.every(([x, y]) => Math.hypot(x - incircle.cx, y - incircle.cy) <= incircle.r)
 }
 
-function padCellsForEdge(project: Project, edge: 'top' | 'right' | 'bottom' | 'left', incircle: DieIncircle): FabricCell[] {
+function padCellsForEdge(
+  project: Project,
+  edge: 'top' | 'right' | 'bottom' | 'left',
+  incircle: DieIncircle,
+): FabricCell[] {
   const cells: FabricCell[] = []
   const spacing = 18
   const pad = 10
@@ -131,7 +148,12 @@ function padCellsForEdge(project: Project, edge: 'top' | 'right' | 'bottom' | 'l
 
 // Chord span for an axis-aligned rail crossing the incircle at `offset` from
 // the perpendicular center axis, inset so both endpoints stay inside the outline.
-function railSpan(offset: number, axisCenter: number, spanCenter: number, r: number): [number, number] | null {
+function railSpan(
+  offset: number,
+  axisCenter: number,
+  spanCenter: number,
+  r: number,
+): [number, number] | null {
   const distance = Math.abs(offset - axisCenter)
   if (distance >= r - 24) return null
   const halfChord = Math.sqrt(r * r - distance * distance)
@@ -143,15 +165,37 @@ function railSpan(offset: number, axisCenter: number, spanCenter: number, r: num
 function buildFabricDetails(project: Project, detail: TileDetail): FabricDetail[] {
   const incircle = dieIncircle(project.die)
   const details: FabricDetail[] = [
-    { id: 'pad-array-top', kind: 'padArray', cells: padCellsForEdge(project, 'top', incircle), opacity: 0.28 },
-    { id: 'pad-array-right', kind: 'padArray', cells: padCellsForEdge(project, 'right', incircle), opacity: 0.24 },
-    { id: 'pad-array-bottom', kind: 'padArray', cells: padCellsForEdge(project, 'bottom', incircle), opacity: 0.24 },
-    { id: 'pad-array-left', kind: 'padArray', cells: padCellsForEdge(project, 'left', incircle), opacity: 0.24 },
+    {
+      id: 'pad-array-top',
+      kind: 'padArray',
+      cells: padCellsForEdge(project, 'top', incircle),
+      opacity: 0.28,
+    },
+    {
+      id: 'pad-array-right',
+      kind: 'padArray',
+      cells: padCellsForEdge(project, 'right', incircle),
+      opacity: 0.24,
+    },
+    {
+      id: 'pad-array-bottom',
+      kind: 'padArray',
+      cells: padCellsForEdge(project, 'bottom', incircle),
+      opacity: 0.24,
+    },
+    {
+      id: 'pad-array-left',
+      kind: 'padArray',
+      cells: padCellsForEdge(project, 'left', incircle),
+      opacity: 0.24,
+    },
   ]
 
   const railStep = Math.max(74, Math.round(112 - detail.traceWidthScale * 20))
   for (let y = 54; y < project.die.height - 40; y += railStep) {
-    const span = incircle ? railSpan(y, incircle.cy, incircle.cx, incircle.r) : [24, project.die.width - 24]
+    const span = incircle
+      ? railSpan(y, incircle.cy, incircle.cx, incircle.r)
+      : [24, project.die.width - 24]
     if (span === null) continue
     details.push({
       id: `power-rail-h-${Math.round(y)}`,
@@ -162,7 +206,9 @@ function buildFabricDetails(project: Project, detail: TileDetail): FabricDetail[
     })
   }
   for (let x = 54; x < project.die.width - 40; x += railStep) {
-    const span = incircle ? railSpan(x, incircle.cx, incircle.cy, incircle.r) : [24, project.die.height - 24]
+    const span = incircle
+      ? railSpan(x, incircle.cx, incircle.cy, incircle.r)
+      : [24, project.die.height - 24]
     if (span === null) continue
     details.push({
       id: `power-rail-v-${Math.round(x)}`,

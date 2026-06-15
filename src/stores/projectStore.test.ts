@@ -17,7 +17,11 @@ function createMemoryRepository(): ProjectRepository {
 describe('project store', () => {
   it('creates, duplicates, and removes local projects', async () => {
     const ids = ['project-1', 'project-2']
-    const store = createProjectStore(createMemoryRepository(), () => 100, () => ids.shift()!)
+    const store = createProjectStore(
+      createMemoryRepository(),
+      () => 100,
+      () => ids.shift()!,
+    )
 
     const created = await store.getState().create('Dream Chip')
     expect(created).toMatchObject({ id: 'project-1', name: 'Dream Chip' })
@@ -32,7 +36,11 @@ describe('project store', () => {
   it('persists an independent preset remix and lists it first', async () => {
     const repository = createMemoryRepository()
     let n = 0
-    const store = createProjectStore(repository, () => 1000, () => `remix-${n++}`)
+    const store = createProjectStore(
+      repository,
+      () => 1000,
+      () => `remix-${n++}`,
+    )
 
     const first = await store.getState().remixPreset('neon-district-n9')
     const second = await store.getState().remixPreset('neon-district-n9')
@@ -47,7 +55,11 @@ describe('project store', () => {
   it('imports a published snapshot as an independent local project listed first', async () => {
     const repository = createMemoryRepository()
     let n = 0
-    const store = createProjectStore(repository, () => 9_000, () => `import-${n++}`)
+    const store = createProjectStore(
+      repository,
+      () => 9_000,
+      () => `import-${n++}`,
+    )
     const snapshot = createProject('Ada Chip', 'source-id', 1_000)
 
     const first = await store.getState().remixImport(snapshot)
@@ -61,7 +73,11 @@ describe('project store', () => {
 
   it('remixImport persists the provided origin as remixedFrom', async () => {
     const repository = createMemoryRepository()
-    const store = createProjectStore(repository, () => 9_000, () => 'import-0')
+    const store = createProjectStore(
+      repository,
+      () => 9_000,
+      () => 'import-0',
+    )
     const snapshot = createProject('Ada Chip', 'source-id', 1_000)
 
     const project = await store.getState().remixImport(snapshot, {
@@ -76,7 +92,11 @@ describe('project store', () => {
 
   it('persists a deterministic random chip project and lists it first', async () => {
     const repository = createMemoryRepository()
-    const store = createProjectStore(repository, () => 2000, () => 'random-seed')
+    const store = createProjectStore(
+      repository,
+      () => 2000,
+      () => 'random-seed',
+    )
 
     const project = await store.getState().createRandom()
 

@@ -43,8 +43,14 @@ describe('GalleryPage', () => {
     expect(await screen.findByRole('heading', { name: 'Public Gallery' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Ada Chip' })).toBeInTheDocument()
     expect(screen.getByText('Ada')).toBeInTheDocument()
-    expect(screen.getByRole('img', { name: 'Ada Chip poster' })).toHaveAttribute('src', chip.posterImageUrl)
-    expect(screen.getByRole('link', { name: 'Open Ada Chip' })).toHaveAttribute('href', '/gallery/ada-chip-deadbeef')
+    expect(screen.getByRole('img', { name: 'Ada Chip poster' })).toHaveAttribute(
+      'src',
+      chip.posterImageUrl,
+    )
+    expect(screen.getByRole('link', { name: 'Open Ada Chip' })).toHaveAttribute(
+      'href',
+      '/gallery/ada-chip-deadbeef',
+    )
   })
 
   it('renders an empty state', async () => {

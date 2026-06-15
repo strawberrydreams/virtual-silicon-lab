@@ -157,7 +157,11 @@ describe('migrateProject', () => {
     })
 
     expect(project.schemaVersion).toBe(CURRENT_SCHEMA_VERSION)
-    expect(project.studio.colorSettings.die).toEqual({ mode: 'gradient', from: '#111111', to: '#333333' })
+    expect(project.studio.colorSettings.die).toEqual({
+      mode: 'gradient',
+      from: '#111111',
+      to: '#333333',
+    })
     expect(project.blocks[0].imageDataUrl).toBe('data:image/png;base64,abc')
   })
 

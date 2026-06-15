@@ -15,7 +15,9 @@ function clonePaint(paint: StudioColorPaint): StudioColorPaint {
   return { ...paint }
 }
 
-export function cloneColorSettings(settings: Partial<StudioColorSettings> | undefined): StudioColorSettings {
+export function cloneColorSettings(
+  settings: Partial<StudioColorSettings> | undefined,
+): StudioColorSettings {
   return {
     background: clonePaint(settings?.background ?? DEFAULT_COLOR_SETTINGS.background),
     package: clonePaint(settings?.package ?? DEFAULT_COLOR_SETTINGS.package),

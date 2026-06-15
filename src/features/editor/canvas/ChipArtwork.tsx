@@ -1,8 +1,27 @@
 import { Fragment, memo, useEffect, useMemo, useState } from 'react'
 import type { ComponentProps, ReactNode } from 'react'
 import type Konva from 'konva'
-import { Circle, Group, Image as KonvaImage, Line, Rect, RegularPolygon, Shape, Star, Text } from 'react-konva'
-import type { Block, Decoration, Die, Project, StudioColorPaint, StudioColorSettings, StudioSpray, StudioSticker } from '../../../domain/project'
+import {
+  Circle,
+  Group,
+  Image as KonvaImage,
+  Line,
+  Rect,
+  RegularPolygon,
+  Shape,
+  Star,
+  Text,
+} from 'react-konva'
+import type {
+  Block,
+  Decoration,
+  Die,
+  Project,
+  StudioColorPaint,
+  StudioColorSettings,
+  StudioSpray,
+  StudioSticker,
+} from '../../../domain/project'
 import { resolveTheme, type ThemeTokens } from '../../../themes/themeTokens'
 import { dieFillProps } from '../../../themes/gradients'
 import { resolveBlockStyle, resolveDecorationStyle } from '../../../themes/resolveStyle'
@@ -60,7 +79,15 @@ function paintRectProps(paint: StudioColorPaint, width: number, height: number) 
   }
 }
 
-function DieShape({ die, tokens, colors }: { die: Die; tokens: ThemeTokens; colors: StudioColorSettings }) {
+function DieShape({
+  die,
+  tokens,
+  colors,
+}: {
+  die: Die
+  tokens: ThemeTokens
+  colors: StudioColorSettings
+}) {
   const gradient =
     colors.die.mode === 'solid'
       ? { fill: colors.die.color }
@@ -80,7 +107,15 @@ function DieShape({ die, tokens, colors }: { die: Die; tokens: ThemeTokens; colo
     return <Circle x={die.width / 2} y={die.height / 2} radius={die.width / 2} {...common} />
   }
   if (die.shape === 'hexagon') {
-    return <RegularPolygon x={die.width / 2} y={die.height / 2} sides={6} radius={die.width / 2} {...common} />
+    return (
+      <RegularPolygon
+        x={die.width / 2}
+        y={die.height / 2}
+        sides={6}
+        radius={die.width / 2}
+        {...common}
+      />
+    )
   }
   return <Rect width={die.width} height={die.height} {...common} />
 }
@@ -142,8 +177,22 @@ function SealRingLayer({ die, color }: { die: Die; color: string }) {
     const r = die.width / 2
     return (
       <Group listening={false}>
-        <Circle x={r} y={die.height / 2} radius={r - inset} strokeWidth={2} opacity={0.72} {...ring} />
-        <Circle x={r} y={die.height / 2} radius={r - inset - gap} strokeWidth={1} opacity={0.4} {...ring} />
+        <Circle
+          x={r}
+          y={die.height / 2}
+          radius={r - inset}
+          strokeWidth={2}
+          opacity={0.72}
+          {...ring}
+        />
+        <Circle
+          x={r}
+          y={die.height / 2}
+          radius={r - inset - gap}
+          strokeWidth={1}
+          opacity={0.4}
+          {...ring}
+        />
       </Group>
     )
   }
@@ -151,8 +200,24 @@ function SealRingLayer({ die, color }: { die: Die; color: string }) {
     const r = die.width / 2
     return (
       <Group listening={false}>
-        <RegularPolygon x={r} y={die.height / 2} sides={6} radius={r - inset} strokeWidth={2} opacity={0.72} {...ring} />
-        <RegularPolygon x={r} y={die.height / 2} sides={6} radius={r - inset - gap} strokeWidth={1} opacity={0.4} {...ring} />
+        <RegularPolygon
+          x={r}
+          y={die.height / 2}
+          sides={6}
+          radius={r - inset}
+          strokeWidth={2}
+          opacity={0.72}
+          {...ring}
+        />
+        <RegularPolygon
+          x={r}
+          y={die.height / 2}
+          sides={6}
+          radius={r - inset - gap}
+          strokeWidth={1}
+          opacity={0.4}
+          {...ring}
+        />
       </Group>
     )
   }
@@ -165,8 +230,24 @@ function SealRingLayer({ die, color }: { die: Die; color: string }) {
   ]
   return (
     <Group listening={false}>
-      <Rect x={inset} y={inset} width={die.width - inset * 2} height={die.height - inset * 2} strokeWidth={2} opacity={0.72} {...ring} />
-      <Rect x={inset + gap} y={inset + gap} width={die.width - (inset + gap) * 2} height={die.height - (inset + gap) * 2} strokeWidth={1} opacity={0.4} {...ring} />
+      <Rect
+        x={inset}
+        y={inset}
+        width={die.width - inset * 2}
+        height={die.height - inset * 2}
+        strokeWidth={2}
+        opacity={0.72}
+        {...ring}
+      />
+      <Rect
+        x={inset + gap}
+        y={inset + gap}
+        width={die.width - (inset + gap) * 2}
+        height={die.height - (inset + gap) * 2}
+        strokeWidth={1}
+        opacity={0.4}
+        {...ring}
+      />
       {corners.map(([cx, cy], index) => (
         <Fragment key={index}>
           <Line points={[cx - fid, cy, cx + fid, cy]} strokeWidth={1.3} opacity={0.8} {...ring} />
@@ -180,10 +261,24 @@ function SealRingLayer({ die, color }: { die: Die; color: string }) {
 function GridLines({ die, tokens }: { die: Die; tokens: ThemeTokens }) {
   const lines = []
   for (let x = GRID; x < die.width; x += GRID) {
-    lines.push(<Line key={`v-${x}`} points={[x, 0, x, die.height]} stroke={tokens.gridColor} strokeWidth={1} />)
+    lines.push(
+      <Line
+        key={`v-${x}`}
+        points={[x, 0, x, die.height]}
+        stroke={tokens.gridColor}
+        strokeWidth={1}
+      />,
+    )
   }
   for (let y = GRID; y < die.height; y += GRID) {
-    lines.push(<Line key={`h-${y}`} points={[0, y, die.width, y]} stroke={tokens.gridColor} strokeWidth={1} />)
+    lines.push(
+      <Line
+        key={`h-${y}`}
+        points={[0, y, die.width, y]}
+        stroke={tokens.gridColor}
+        strokeWidth={1}
+      />,
+    )
   }
   return (
     <Group name="chip-layer-grid" clipFunc={(context) => clipForDie(context, die)}>
@@ -209,7 +304,11 @@ function MaterialMicroLayer({
   // pixels, but block dragging no longer redraws thousands of nodes per frame.
   const opacity = tiles[0].opacity
   return (
-    <Group name="chip-layer-micro" clipFunc={(context) => clipForDie(context, die)} listening={false}>
+    <Group
+      name="chip-layer-micro"
+      clipFunc={(context) => clipForDie(context, die)}
+      listening={false}
+    >
       <Shape
         listening={false}
         perfectDrawEnabled={false}
@@ -246,7 +345,11 @@ function FillerLayer({
   const sramTexture = memoryCells(w, h, 8, 3)
   const rowTexture = standardCellRows(w, h)
   return (
-    <Group name="chip-layer-filler" clipFunc={(context) => clipForDie(context, die)} listening={false}>
+    <Group
+      name="chip-layer-filler"
+      clipFunc={(context) => clipForDie(context, die)}
+      listening={false}
+    >
       {layers.fillerCells.map((cell) => {
         const accent = filler.accentColors[Math.abs(cell.seed) % filler.accentColors.length]
         const texture = cell.kind === 'sram' ? sramTexture : rowTexture
@@ -262,7 +365,11 @@ function FillerLayer({
               opacity={filler.opacity}
             />
             <Group clipFunc={(context) => context.rect(0, 0, cell.w, cell.h)} listening={false}>
-              <CellPattern cells={texture} color={accent} opacity={cell.kind === 'io' ? 0.16 : 0.2} />
+              <CellPattern
+                cells={texture}
+                color={accent}
+                opacity={cell.kind === 'io' ? 0.16 : 0.2}
+              />
             </Group>
           </Group>
         )
@@ -271,11 +378,23 @@ function FillerLayer({
   )
 }
 
-function FabricDetailLayer({ die, layers, colors }: { die: Die; layers: ChipLayerModel; colors: StudioColorSettings }) {
+function FabricDetailLayer({
+  die,
+  layers,
+  colors,
+}: {
+  die: Die
+  layers: ChipLayerModel
+  colors: StudioColorSettings
+}) {
   const markColor = paintColor(colors.mark)
   const traceColor = paintColor(colors.trace)
   return (
-    <Group name="chip-layer-fabric-detail" clipFunc={(context) => clipForDie(context, die)} listening={false}>
+    <Group
+      name="chip-layer-fabric-detail"
+      clipFunc={(context) => clipForDie(context, die)}
+      listening={false}
+    >
       {layers.fabricDetails.map((detail) => {
         if (detail.kind === 'powerRail') {
           return (
@@ -302,10 +421,22 @@ function FabricDetailLayer({ die, layers, colors }: { die: Die; layers: ChipLaye
   )
 }
 
-function TraceLayer({ die, layers, colors }: { die: Die; layers: ChipLayerModel; colors: StudioColorSettings }) {
+function TraceLayer({
+  die,
+  layers,
+  colors,
+}: {
+  die: Die
+  layers: ChipLayerModel
+  colors: StudioColorSettings
+}) {
   const traceColor = paintColor(colors.trace)
   return (
-    <Group name="chip-layer-traces" clipFunc={(context) => clipForDie(context, die)} listening={false}>
+    <Group
+      name="chip-layer-traces"
+      clipFunc={(context) => clipForDie(context, die)}
+      listening={false}
+    >
       {layers.traces.map((trace) => (
         <Line
           key={trace.id}
@@ -371,7 +502,13 @@ export function StudioSprayArtwork({
         globalCompositeOperation={spray.blend}
       />
       {selected ? (
-        <Circle radius={spray.radius} stroke="#f9f4ff" strokeWidth={2} dash={[6, 6]} opacity={0.86} />
+        <Circle
+          radius={spray.radius}
+          stroke="#f9f4ff"
+          strokeWidth={2}
+          dash={[6, 6]}
+          opacity={0.86}
+        />
       ) : null}
     </Group>
   )
@@ -386,9 +523,14 @@ function StudioSprayLayer({
 }) {
   if (project.studio.sprays.length === 0) return null
   return (
-    <Group clipFunc={(context) => clipForDie(context, project.die)} listening={renderStudioSpray !== undefined}>
+    <Group
+      clipFunc={(context) => clipForDie(context, project.die)}
+      listening={renderStudioSpray !== undefined}
+    >
       {project.studio.sprays.map((spray) => (
-        <Fragment key={spray.id}>{renderStudioSpray?.(spray) ?? <StudioSprayArtwork spray={spray} />}</Fragment>
+        <Fragment key={spray.id}>
+          {renderStudioSpray?.(spray) ?? <StudioSprayArtwork spray={spray} />}
+        </Fragment>
       ))}
     </Group>
   )
@@ -420,11 +562,32 @@ export function StudioStickerArtwork({
       {...groupProps}
     >
       {layout.form === 'circle' ? (
-        <Circle radius={26} fill={sticker.color} stroke={stroke} strokeWidth={strokeWidth} {...shadow} />
+        <Circle
+          radius={26}
+          fill={sticker.color}
+          stroke={stroke}
+          strokeWidth={strokeWidth}
+          {...shadow}
+        />
       ) : layout.form === 'star' ? (
-        <Star numPoints={5} innerRadius={12} outerRadius={28} fill={sticker.color} stroke={stroke} strokeWidth={strokeWidth} {...shadow} />
+        <Star
+          numPoints={5}
+          innerRadius={12}
+          outerRadius={28}
+          fill={sticker.color}
+          stroke={stroke}
+          strokeWidth={strokeWidth}
+          {...shadow}
+        />
       ) : layout.form === 'triangle' ? (
-        <RegularPolygon sides={3} radius={30} fill={sticker.color} stroke={stroke} strokeWidth={strokeWidth} {...shadow} />
+        <RegularPolygon
+          sides={3}
+          radius={30}
+          fill={sticker.color}
+          stroke={stroke}
+          strokeWidth={strokeWidth}
+          {...shadow}
+        />
       ) : (
         <Rect
           x={-layout.width / 2}
@@ -462,7 +625,10 @@ function StudioStickerLayer({
 }) {
   if (project.studio.stickers.length === 0) return null
   return (
-    <Group clipFunc={(context) => clipForDie(context, project.die)} listening={renderStudioSticker !== undefined}>
+    <Group
+      clipFunc={(context) => clipForDie(context, project.die)}
+      listening={renderStudioSticker !== undefined}
+    >
       {project.studio.stickers.map((sticker) => (
         <Fragment key={sticker.id}>
           {renderStudioSticker?.(sticker) ?? <StudioStickerArtwork sticker={sticker} />}
@@ -485,7 +651,12 @@ function SoCPeripheryLayer({ project, colors }: { project: Project; colors: Stud
         }),
         { minX: project.die.width, minY: project.die.height, maxX: 0, maxY: 0 },
       )
-    : { minX: project.die.width * 0.36, minY: project.die.height * 0.36, maxX: project.die.width * 0.64, maxY: project.die.height * 0.64 }
+    : {
+        minX: project.die.width * 0.36,
+        minY: project.die.height * 0.36,
+        maxX: project.die.width * 0.64,
+        maxY: project.die.height * 0.64,
+      }
 
   const devices = []
   const rows = 5
@@ -496,23 +667,76 @@ function SoCPeripheryLayer({ project, colors }: { project: Project; colors: Stud
       const topX = pad + col * ((project.die.width - pad * 2) / Math.max(1, cols - 1))
       const topY = pad + row * 14
       const bottomY = project.die.height - pad - row * 14
-      devices.push(<Rect key={`top-${row}-${col}`} x={topX} y={topY} width={8} height={4} fill={markColor} opacity={0.22} listening={false} />)
-      devices.push(<Rect key={`bottom-${row}-${col}`} x={topX} y={bottomY} width={8} height={4} fill={markColor} opacity={0.18} listening={false} />)
+      devices.push(
+        <Rect
+          key={`top-${row}-${col}`}
+          x={topX}
+          y={topY}
+          width={8}
+          height={4}
+          fill={markColor}
+          opacity={0.22}
+          listening={false}
+        />,
+      )
+      devices.push(
+        <Rect
+          key={`bottom-${row}-${col}`}
+          x={topX}
+          y={bottomY}
+          width={8}
+          height={4}
+          fill={markColor}
+          opacity={0.18}
+          listening={false}
+        />,
+      )
     }
   }
 
   const rails = [
-    [16, Math.max(24, blockBounds.minY - 20), project.die.width - 16, Math.max(24, blockBounds.minY - 20)],
-    [16, Math.min(project.die.height - 24, blockBounds.maxY + 20), project.die.width - 16, Math.min(project.die.height - 24, blockBounds.maxY + 20)],
-    [Math.max(24, blockBounds.minX - 20), 16, Math.max(24, blockBounds.minX - 20), project.die.height - 16],
-    [Math.min(project.die.width - 24, blockBounds.maxX + 20), 16, Math.min(project.die.width - 24, blockBounds.maxX + 20), project.die.height - 16],
+    [
+      16,
+      Math.max(24, blockBounds.minY - 20),
+      project.die.width - 16,
+      Math.max(24, blockBounds.minY - 20),
+    ],
+    [
+      16,
+      Math.min(project.die.height - 24, blockBounds.maxY + 20),
+      project.die.width - 16,
+      Math.min(project.die.height - 24, blockBounds.maxY + 20),
+    ],
+    [
+      Math.max(24, blockBounds.minX - 20),
+      16,
+      Math.max(24, blockBounds.minX - 20),
+      project.die.height - 16,
+    ],
+    [
+      Math.min(project.die.width - 24, blockBounds.maxX + 20),
+      16,
+      Math.min(project.die.width - 24, blockBounds.maxX + 20),
+      project.die.height - 16,
+    ],
   ]
 
   return (
-    <Group name="chip-layer-periphery" clipFunc={(context) => clipForDie(context, project.die)} listening={false}>
+    <Group
+      name="chip-layer-periphery"
+      clipFunc={(context) => clipForDie(context, project.die)}
+      listening={false}
+    >
       {devices}
       {rails.map((points, index) => (
-        <Line key={`soc-rail-${index}`} points={points} stroke={traceColor} strokeWidth={1.1} opacity={0.26} dash={[10, 6]} />
+        <Line
+          key={`soc-rail-${index}`}
+          points={points}
+          stroke={traceColor}
+          strokeWidth={1.1}
+          opacity={0.26}
+          dash={[10, 6]}
+        />
       ))}
       {Array.from({ length: 28 }, (_, index) => {
         const x = 24 + (index % 14) * ((project.die.width - 48) / 13)
@@ -529,15 +753,28 @@ function SoCPeripheryLayer({ project, colors }: { project: Project; colors: Stud
   )
 }
 
-function BusInterconnectLayer({ project, colors }: { project: Project; colors: StudioColorSettings }) {
+function BusInterconnectLayer({
+  project,
+  colors,
+}: {
+  project: Project
+  colors: StudioColorSettings
+}) {
   const traceColor = paintColor(colors.trace)
   const pairs = useMemo(() => routedBusPairs(project.blocks), [project.blocks])
   if (pairs.length === 0) return null
   return (
-    <Group name="chip-layer-bus" clipFunc={(context) => clipForDie(context, project.die)} listening={false}>
+    <Group
+      name="chip-layer-bus"
+      clipFunc={(context) => clipForDie(context, project.die)}
+      listening={false}
+    >
       {pairs.map(({ from, to, kind }, index) => {
         // Memory buses are wide multi-wire bundles; IO links are thin.
-        const bundle = busBundle(from, to, { wires: kind === 'memory' ? 5 : 2, spacing: kind === 'memory' ? 3 : 4 })
+        const bundle = busBundle(from, to, {
+          wires: kind === 'memory' ? 5 : 2,
+          spacing: kind === 'memory' ? 3 : 4,
+        })
         const width = kind === 'memory' ? 1.4 : 1.1
         const opacity = kind === 'memory' ? 0.6 : 0.42
         const viaCells = bundle.vias.map((via) => ({ x: via.x - 1.5, y: via.y - 1.5, w: 3, h: 3 }))
@@ -549,7 +786,11 @@ function BusInterconnectLayer({ project, colors }: { project: Project; colors: S
               opacity={opacity}
               width={width}
             />
-            <CellPattern cells={viaCells} color={traceColor} opacity={Math.min(0.85, opacity + 0.2)} />
+            <CellPattern
+              cells={viaCells}
+              color={traceColor}
+              opacity={Math.min(0.85, opacity + 0.2)}
+            />
           </Fragment>
         )
       })}
@@ -557,7 +798,15 @@ function BusInterconnectLayer({ project, colors }: { project: Project; colors: S
   )
 }
 
-function ReadoutLayer({ layers, recipe, colors }: { layers: ChipLayerModel; recipe: ChipMaterialRecipe; colors: StudioColorSettings }) {
+function ReadoutLayer({
+  layers,
+  recipe,
+  colors,
+}: {
+  layers: ChipLayerModel
+  recipe: ChipMaterialRecipe
+  colors: StudioColorSettings
+}) {
   const labelColor = paintColor(colors.label)
   return (
     <Group listening={false}>
@@ -576,7 +825,15 @@ function ReadoutLayer({ layers, recipe, colors }: { layers: ChipLayerModel; reci
   )
 }
 
-function DecorationNode({ decoration, tokens, colors }: { decoration: Decoration; tokens: ThemeTokens; colors: StudioColorSettings }) {
+function DecorationNode({
+  decoration,
+  tokens,
+  colors,
+}: {
+  decoration: Decoration
+  tokens: ThemeTokens
+  colors: StudioColorSettings
+}) {
   const style = resolveDecorationStyle(decoration, tokens)
   const markColor = paintColor(decoration.kind === 'label' ? colors.label : colors.mark)
   switch (decoration.kind) {
@@ -715,7 +972,11 @@ function TileTextureOverlay({
   if (texture.family === 'memory') {
     return (
       <Group clipFunc={(context) => context.rect(0, 0, block.w, block.h)} listening={false}>
-        <CellPattern cells={memoryCells(block.w, block.h, cell, gap)} color={accent} opacity={0.2} />
+        <CellPattern
+          cells={memoryCells(block.w, block.h, cell, gap)}
+          color={accent}
+          opacity={0.2}
+        />
       </Group>
     )
   }
@@ -738,8 +999,18 @@ function TileTextureOverlay({
           stroke={accent}
           strokeWidth={1}
         />
-        <Line points={[12, midY, block.w - 12, midY]} stroke={accent} strokeWidth={1.2} opacity={0.32} />
-        <Line points={[midX, 10, midX, block.h - 10]} stroke={accent} strokeWidth={1.2} opacity={0.32} />
+        <Line
+          points={[12, midY, block.w - 12, midY]}
+          stroke={accent}
+          strokeWidth={1.2}
+          opacity={0.32}
+        />
+        <Line
+          points={[midX, 10, midX, block.h - 10]}
+          stroke={accent}
+          strokeWidth={1.2}
+          opacity={0.32}
+        />
       </Group>
     )
   }
@@ -748,8 +1019,16 @@ function TileTextureOverlay({
     // Dense woven metal: tight vertical SIMD lanes crossed by sparser horizontal rails.
     return (
       <Group clipFunc={(context) => context.rect(0, 0, block.w, block.h)} listening={false}>
-        <LinePattern lines={routingChannels(block.w, block.h, { stride: 7, axis: 'v' })} color={accent} opacity={0.3} />
-        <LinePattern lines={routingChannels(block.w, block.h, { stride: 16, axis: 'h' })} color={subdued} opacity={0.16} />
+        <LinePattern
+          lines={routingChannels(block.w, block.h, { stride: 7, axis: 'v' })}
+          color={accent}
+          opacity={0.3}
+        />
+        <LinePattern
+          lines={routingChannels(block.w, block.h, { stride: 16, axis: 'h' })}
+          color={subdued}
+          opacity={0.16}
+        />
       </Group>
     )
   }
@@ -758,11 +1037,28 @@ function TileTextureOverlay({
     const waves = Array.from({ length: 3 }, (_, index) => midY - 18 + index * 18)
     return (
       <Group clipFunc={(context) => context.rect(0, 0, block.w, block.h)} listening={false}>
-        <LinePattern lines={routingChannels(block.w, block.h, { stride: 9, axis: 'h' })} color={subdued} opacity={0.12} />
+        <LinePattern
+          lines={routingChannels(block.w, block.h, { stride: 9, axis: 'h' })}
+          color={subdued}
+          opacity={0.12}
+        />
         {waves.map((y, index) => (
           <Line
             key={index}
-            points={[8, y, block.w * 0.2, y - 10, block.w * 0.4, y + 10, block.w * 0.6, y - 10, block.w * 0.8, y + 10, block.w - 8, y]}
+            points={[
+              8,
+              y,
+              block.w * 0.2,
+              y - 10,
+              block.w * 0.4,
+              y + 10,
+              block.w * 0.6,
+              y - 10,
+              block.w * 0.8,
+              y + 10,
+              block.w - 8,
+              y,
+            ]}
             stroke={index === 1 ? accent : stroke}
             strokeWidth={1.3}
             opacity={index === 1 ? 0.68 : 0.34}
@@ -793,9 +1089,28 @@ function TileTextureOverlay({
   if (texture.family === 'clock') {
     return (
       <Group listening={false}>
-        <Circle x={midX} y={midY} radius={Math.min(block.w, block.h) * 0.28} stroke={accent} strokeWidth={2.1} opacity={0.62} />
-        <Circle x={midX} y={midY} radius={Math.min(block.w, block.h) * 0.16} stroke={stroke} strokeWidth={1} opacity={0.32} />
-        <Line points={[midX, midY, block.w - 14, midY]} stroke={accent} strokeWidth={1.4} opacity={0.48} />
+        <Circle
+          x={midX}
+          y={midY}
+          radius={Math.min(block.w, block.h) * 0.28}
+          stroke={accent}
+          strokeWidth={2.1}
+          opacity={0.62}
+        />
+        <Circle
+          x={midX}
+          y={midY}
+          radius={Math.min(block.w, block.h) * 0.16}
+          stroke={stroke}
+          strokeWidth={1}
+          opacity={0.32}
+        />
+        <Line
+          points={[midX, midY, block.w - 14, midY]}
+          stroke={accent}
+          strokeWidth={1.4}
+          opacity={0.48}
+        />
         <Line points={[midX, midY, midX, 14]} stroke={accent} strokeWidth={1.4} opacity={0.48} />
       </Group>
     )
@@ -811,7 +1126,12 @@ function TileTextureOverlay({
             <Fragment key={index}>
               <Rect x={4} y={y - 4} width={12} height={8} fill={accent} opacity={0.28} />
               <Rect x={block.w - 16} y={y - 4} width={12} height={8} fill={accent} opacity={0.28} />
-              <Line points={[16, y, block.w - 16, y]} stroke={stroke} strokeWidth={0.9} opacity={0.16} />
+              <Line
+                points={[16, y, block.w - 16, y]}
+                stroke={stroke}
+                strokeWidth={0.9}
+                opacity={0.16}
+              />
             </Fragment>
           )
         })}
@@ -822,7 +1142,28 @@ function TileTextureOverlay({
   if (texture.family === 'expressive') {
     return (
       <Group listening={false}>
-        <Line points={[12, midY, midX - 24, midY, midX - 14, midY - 18, midX, midY + 18, midX + 16, midY - 14, midX + 28, midY, block.w - 12, midY]} stroke={accent} strokeWidth={2} opacity={0.5} tension={0.2} />
+        <Line
+          points={[
+            12,
+            midY,
+            midX - 24,
+            midY,
+            midX - 14,
+            midY - 18,
+            midX,
+            midY + 18,
+            midX + 16,
+            midY - 14,
+            midX + 28,
+            midY,
+            block.w - 12,
+            midY,
+          ]}
+          stroke={accent}
+          strokeWidth={2}
+          opacity={0.5}
+          tension={0.2}
+        />
         <Circle x={midX - 26} y={midY - 20} radius={8} fill={accent} opacity={0.18} />
         <Circle x={midX + 30} y={midY + 18} radius={10} fill={subdued} opacity={0.14} />
       </Group>
@@ -836,7 +1177,17 @@ function TileTextureOverlay({
         {bars.map((index) => {
           const x = 14 + index * ((block.w - 28) / Math.max(1, bars.length - 1))
           const h = 14 + ((index * 11) % Math.max(16, block.h - 24))
-          return <Rect key={index} x={x - 3} y={block.h - h - 8} width={6} height={h} fill={index % 2 ? subdued : accent} opacity={0.28} />
+          return (
+            <Rect
+              key={index}
+              x={x - 3}
+              y={block.h - h - 8}
+              width={6}
+              height={h}
+              fill={index % 2 ? subdued : accent}
+              opacity={0.28}
+            />
+          )
         })}
       </Group>
     )
@@ -845,9 +1196,31 @@ function TileTextureOverlay({
   if (texture.family === 'awareness') {
     return (
       <Group listening={false}>
-        <Circle x={midX} y={midY} radius={Math.min(block.w, block.h) * 0.3} stroke={accent} strokeWidth={1.4} opacity={0.42} />
-        <Circle x={midX} y={midY} radius={Math.min(block.w, block.h) * 0.18} fill={accent} opacity={0.14} />
-        <Star x={midX} y={midY} numPoints={8} innerRadius={Math.min(block.w, block.h) * 0.1} outerRadius={Math.min(block.w, block.h) * 0.26} stroke={subdued} strokeWidth={1} opacity={0.34} />
+        <Circle
+          x={midX}
+          y={midY}
+          radius={Math.min(block.w, block.h) * 0.3}
+          stroke={accent}
+          strokeWidth={1.4}
+          opacity={0.42}
+        />
+        <Circle
+          x={midX}
+          y={midY}
+          radius={Math.min(block.w, block.h) * 0.18}
+          fill={accent}
+          opacity={0.14}
+        />
+        <Star
+          x={midX}
+          y={midY}
+          numPoints={8}
+          innerRadius={Math.min(block.w, block.h) * 0.1}
+          outerRadius={Math.min(block.w, block.h) * 0.26}
+          stroke={subdued}
+          strokeWidth={1}
+          opacity={0.34}
+        />
       </Group>
     )
   }
@@ -855,9 +1228,42 @@ function TileTextureOverlay({
   if (texture.family === 'distortion') {
     return (
       <Group clipFunc={(context) => context.rect(0, 0, block.w, block.h)} listening={false}>
-        <RegularPolygon x={midX - 18} y={midY} sides={4} radius={Math.min(block.w, block.h) * 0.24} stroke={accent} strokeWidth={1.3} opacity={0.38} rotation={24} />
-        <RegularPolygon x={midX + 22} y={midY + 4} sides={5} radius={Math.min(block.w, block.h) * 0.22} stroke={subdued} strokeWidth={1.2} opacity={0.28} rotation={-16} />
-        <Line points={[10, block.h - 12, block.w * 0.32, 14, block.w * 0.58, block.h - 18, block.w - 10, 18]} stroke={accent} strokeWidth={1.2} opacity={0.34} tension={0.16} />
+        <RegularPolygon
+          x={midX - 18}
+          y={midY}
+          sides={4}
+          radius={Math.min(block.w, block.h) * 0.24}
+          stroke={accent}
+          strokeWidth={1.3}
+          opacity={0.38}
+          rotation={24}
+        />
+        <RegularPolygon
+          x={midX + 22}
+          y={midY + 4}
+          sides={5}
+          radius={Math.min(block.w, block.h) * 0.22}
+          stroke={subdued}
+          strokeWidth={1.2}
+          opacity={0.28}
+          rotation={-16}
+        />
+        <Line
+          points={[
+            10,
+            block.h - 12,
+            block.w * 0.32,
+            14,
+            block.w * 0.58,
+            block.h - 18,
+            block.w - 10,
+            18,
+          ]}
+          stroke={accent}
+          strokeWidth={1.2}
+          opacity={0.34}
+          tension={0.16}
+        />
       </Group>
     )
   }
@@ -866,7 +1272,14 @@ function TileTextureOverlay({
     const radius = Math.min(block.w, block.h) * 0.28
     return (
       <Group listening={false}>
-        <Circle x={midX} y={midY} radius={radius} stroke={accent} strokeWidth={1.6} opacity={0.44} />
+        <Circle
+          x={midX}
+          y={midY}
+          radius={radius}
+          stroke={accent}
+          strokeWidth={1.6}
+          opacity={0.44}
+        />
         {Array.from({ length: 8 }, (_, index) => {
           const angle = (Math.PI * 2 * index) / 8
           return (
@@ -935,16 +1348,24 @@ export function BlockArtwork({
         shadowBlur={style.shadowBlur}
         shadowOpacity={style.shadowOpacity}
       />
-      <TileTextureOverlay block={block} tokens={tokens} stroke={style.stroke} colors={colors ?? {
-        background: { mode: 'solid', color: tokens.background[0].color },
-        package: { mode: 'solid', color: tokens.background[0].color },
-        die: { mode: 'solid', color: tokens.dieFill[0].color },
-        block: { mode: 'solid', color: style.fill },
-        tile: { mode: 'solid', color: tokens.accents[0] },
-        trace: { mode: 'solid', color: tokens.accents[0] },
-        label: { mode: 'solid', color: tokens.text },
-        mark: { mode: 'solid', color: tokens.accents[0] },
-      }} detail={detail} />
+      <TileTextureOverlay
+        block={block}
+        tokens={tokens}
+        stroke={style.stroke}
+        colors={
+          colors ?? {
+            background: { mode: 'solid', color: tokens.background[0].color },
+            package: { mode: 'solid', color: tokens.background[0].color },
+            die: { mode: 'solid', color: tokens.dieFill[0].color },
+            block: { mode: 'solid', color: style.fill },
+            tile: { mode: 'solid', color: tokens.accents[0] },
+            trace: { mode: 'solid', color: tokens.accents[0] },
+            label: { mode: 'solid', color: tokens.text },
+            mark: { mode: 'solid', color: tokens.accents[0] },
+          }
+        }
+        detail={detail}
+      />
       {block.imageDataUrl ? <BlockImageOverlay block={block} /> : null}
       <Group clipFunc={(context) => context.rect(0, 0, block.w, block.h)} listening={false}>
         {blockMicroLines(block.w, block.h, blockStride).map((line, index) => (
@@ -957,7 +1378,15 @@ export function BlockArtwork({
           />
         ))}
       </Group>
-      <Rect x={1} y={1} width={block.w - 2} height={1} fill="#ffffff" opacity={0.16} listening={false} />
+      <Rect
+        x={1}
+        y={1}
+        width={block.w - 2}
+        height={1}
+        fill="#ffffff"
+        opacity={0.16}
+        listening={false}
+      />
       {/* Thin inner channel so abutting tiles read as a packed floorplan, not separated cards. */}
       <Rect
         x={1.5}
@@ -1059,7 +1488,10 @@ export const ChipArtwork = memo(function ChipArtwork({
   const tokens = resolveTheme(project.theme)
   const recipe = resolveMaterialRecipe(project.theme)
   const layers = useMemo(() => buildChipLayers(project), [project])
-  const detail = useMemo(() => resolveTileDetail(project.studio.tileSettings), [project.studio.tileSettings])
+  const detail = useMemo(
+    () => resolveTileDetail(project.studio.tileSettings),
+    [project.studio.tileSettings],
+  )
   const colors = project.studio.colorSettings
   return (
     <>
@@ -1069,10 +1501,16 @@ export const ChipArtwork = memo(function ChipArtwork({
       {layerVisibility.M5 ? <DieShape die={project.die} tokens={tokens} colors={colors} /> : null}
       {layerVisibility.M5 ? <SealRingLayer die={project.die} color={tokens.dieStroke} /> : null}
       {layerVisibility.M5 ? <SoCPeripheryLayer project={project} colors={colors} /> : null}
-      {layerVisibility.M1 ? <MaterialMicroLayer die={project.die} layers={layers} colors={colors} /> : null}
+      {layerVisibility.M1 ? (
+        <MaterialMicroLayer die={project.die} layers={layers} colors={colors} />
+      ) : null}
       {layerVisibility.M1 ? <GridLines die={project.die} tokens={tokens} /> : null}
-      {layerVisibility.M1 ? <FillerLayer die={project.die} layers={layers} recipe={recipe} /> : null}
-      {layerVisibility.M1 ? <FabricDetailLayer die={project.die} layers={layers} colors={colors} /> : null}
+      {layerVisibility.M1 ? (
+        <FillerLayer die={project.die} layers={layers} recipe={recipe} />
+      ) : null}
+      {layerVisibility.M1 ? (
+        <FabricDetailLayer die={project.die} layers={layers} colors={colors} />
+      ) : null}
       {layerVisibility.M2 ? <TraceLayer die={project.die} layers={layers} colors={colors} /> : null}
       {layerVisibility.M2 ? <BusInterconnectLayer project={project} colors={colors} /> : null}
       {layerVisibility.M3
@@ -1103,12 +1541,23 @@ export const ChipArtwork = memo(function ChipArtwork({
             .sort((left, right) => left.zIndex - right.zIndex)
             .filter((decoration) => layerVisibility.Label || decoration.kind !== 'label')
             .map((decoration) => (
-              <DecorationNode key={decoration.id} decoration={decoration} tokens={tokens} colors={colors} />
+              <DecorationNode
+                key={decoration.id}
+                decoration={decoration}
+                tokens={tokens}
+                colors={colors}
+              />
             ))
         : null}
-      {layerVisibility.M4 ? <StudioSprayLayer project={project} renderStudioSpray={renderStudioSpray} /> : null}
-      {layerVisibility.M4 ? <StudioStickerLayer project={project} renderStudioSticker={renderStudioSticker} /> : null}
-      {layerVisibility.Label ? <ReadoutLayer layers={layers} recipe={recipe} colors={colors} /> : null}
+      {layerVisibility.M4 ? (
+        <StudioSprayLayer project={project} renderStudioSpray={renderStudioSpray} />
+      ) : null}
+      {layerVisibility.M4 ? (
+        <StudioStickerLayer project={project} renderStudioSticker={renderStudioSticker} />
+      ) : null}
+      {layerVisibility.Label ? (
+        <ReadoutLayer layers={layers} recipe={recipe} colors={colors} />
+      ) : null}
       {layerVisibility.M5 ? <GlassGlowOverlay die={project.die} layers={layers} /> : null}
     </>
   )

@@ -142,9 +142,24 @@ const spaceTokens: TokenGroups = {
 }
 
 export const pageThemes: Record<PageThemeName, PageTheme> = {
-  laboratory: { name: 'laboratory', label: 'Laboratory', tokens: laboratoryTokens, cssVariables: themeCss(laboratoryTokens) },
-  anime: { name: 'anime', label: 'Anime', tokens: animeTokens, cssVariables: themeCss(animeTokens) },
-  space: { name: 'space', label: 'Space', tokens: spaceTokens, cssVariables: themeCss(spaceTokens) },
+  laboratory: {
+    name: 'laboratory',
+    label: 'Laboratory',
+    tokens: laboratoryTokens,
+    cssVariables: themeCss(laboratoryTokens),
+  },
+  anime: {
+    name: 'anime',
+    label: 'Anime',
+    tokens: animeTokens,
+    cssVariables: themeCss(animeTokens),
+  },
+  space: {
+    name: 'space',
+    label: 'Space',
+    tokens: spaceTokens,
+    cssVariables: themeCss(spaceTokens),
+  },
 }
 
 export function isPageThemeName(value: unknown): value is PageThemeName {

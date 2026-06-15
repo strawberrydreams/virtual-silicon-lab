@@ -25,7 +25,9 @@ export function GalleryDetailPage({
   onRemix,
 }: Props) {
   const { slug = '' } = useParams()
-  const [chip, setChip] = useState<GalleryChipDetail | 'loading' | 'missing' | 'offline' | 'error'>('loading')
+  const [chip, setChip] = useState<GalleryChipDetail | 'loading' | 'missing' | 'offline' | 'error'>(
+    'loading',
+  )
   const auth = useAuthStore()
   const isLoggedIn = auth.status === 'authenticated'
   const [likeState, setLikeState] = useState<{ likeCount: number; likedByMe: boolean } | null>(null)
@@ -94,7 +96,10 @@ export function GalleryDetailPage({
   }, [api, chipId, slug])
 
   function refreshComments(id: string) {
-    reactions.listComments(id).then(setComments).catch(() => undefined)
+    reactions
+      .listComments(id)
+      .then(setComments)
+      .catch(() => undefined)
   }
 
   if (chip === 'loading') {
@@ -152,7 +157,9 @@ export function GalleryDetailPage({
           <button
             type="button"
             className="v2-inline-action"
-            onClick={() => onRemix?.(chip.project, { chipId: chip.id, slug: chip.slug, title: chip.title })}
+            onClick={() =>
+              onRemix?.(chip.project, { chipId: chip.id, slug: chip.slug, title: chip.title })
+            }
           >
             Remix into my projects
           </button>
@@ -163,8 +170,12 @@ export function GalleryDetailPage({
                 className="v2-inline-action"
                 disabled={!isLoggedIn}
                 onClick={() => {
-                  const op = likeState.likedByMe ? reactions.unlike(chip.id) : reactions.like(chip.id)
-                  op.then(setLikeState).catch((e) => setActionError(e instanceof Error ? e.message : 'Action failed.'))
+                  const op = likeState.likedByMe
+                    ? reactions.unlike(chip.id)
+                    : reactions.like(chip.id)
+                  op.then(setLikeState).catch((e) =>
+                    setActionError(e instanceof Error ? e.message : 'Action failed.'),
+                  )
                 }}
               >
                 {likeState.likedByMe ? '♥' : '♡'} {likeState.likeCount}
@@ -187,12 +198,18 @@ export function GalleryDetailPage({
             </div>
           )}
         </div>
-        <img alt={`${chip.title} poster`} className="gallery-detail__poster" src={chip.posterImageUrl} />
+        <img
+          alt={`${chip.title} poster`}
+          className="gallery-detail__poster"
+          src={chip.posterImageUrl}
+        />
       </section>
 
       <section className="gallery-spec" aria-label="Published fake spec">
         <p className="v2-kicker">Spec Sheet</p>
-        <h2>{spec.brand} {spec.series}</h2>
+        <h2>
+          {spec.brand} {spec.series}
+        </h2>
         <dl className="gallery-spec__grid">
           <div>
             <dt>Generation</dt>
@@ -233,7 +250,9 @@ export function GalleryDetailPage({
                     reactions
                       .deleteComment(chip.id, comment.id)
                       .then(() => refreshComments(chip.id))
-                      .catch((e) => setActionError(e instanceof Error ? e.message : 'Action failed.'))
+                      .catch((e) =>
+                        setActionError(e instanceof Error ? e.message : 'Action failed.'),
+                      )
                   }}
                 >
                   Delete
@@ -256,7 +275,9 @@ export function GalleryDetailPage({
                   setDraft('')
                   refreshComments(chip.id)
                 })
-                .catch((err) => setActionError(err instanceof Error ? err.message : 'Action failed.'))
+                .catch((err) =>
+                  setActionError(err instanceof Error ? err.message : 'Action failed.'),
+                )
             }}
           >
             <textarea
@@ -265,7 +286,9 @@ export function GalleryDetailPage({
               maxLength={1000}
               onChange={(e) => setDraft(e.target.value)}
             />
-            <button type="submit" className="v2-inline-action">Post comment</button>
+            <button type="submit" className="v2-inline-action">
+              Post comment
+            </button>
           </form>
         ) : (
           <p className="gallery-detail__hint">Sign in to comment.</p>
@@ -279,7 +302,10 @@ export function GalleryDetailPage({
             <ol className="gallery-lineage__spine" aria-label="Ancestors">
               {lineage.ancestors.map((node, i) =>
                 'hidden' in node ? (
-                  <li key={`hidden-${i}`} className="gallery-lineage__node gallery-lineage__node--hidden">
+                  <li
+                    key={`hidden-${i}`}
+                    className="gallery-lineage__node gallery-lineage__node--hidden"
+                  >
                     a private chip
                   </li>
                 ) : (

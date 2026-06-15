@@ -76,7 +76,8 @@ function blockBounds(block: Block): BlockBounds {
 
 function overlapsBlock(x: number, y: number, size: number, bounds: BlockBounds[]): boolean {
   for (const rect of bounds) {
-    if (x < rect.x + rect.w && x + size > rect.x && y < rect.y + rect.h && y + size > rect.y) return true
+    if (x < rect.x + rect.w && x + size > rect.x && y < rect.y + rect.h && y + size > rect.y)
+      return true
   }
   return false
 }
@@ -110,7 +111,15 @@ export function buildFillerCells(project: Project): FillerCell[] {
     for (let x = region.x; x + size <= region.x + region.width + 0.001; x += step) {
       if (overlapsBlock(x, y, size, bounds)) continue
       const seed = (Math.round(x) * 73856093) ^ (Math.round(y) * 19349663)
-      cells.push({ id: `filler-${Math.round(x)}-${Math.round(y)}`, x, y, w: size, h: size, kind: pickKind(seed), seed })
+      cells.push({
+        id: `filler-${Math.round(x)}-${Math.round(y)}`,
+        x,
+        y,
+        w: size,
+        h: size,
+        kind: pickKind(seed),
+        seed,
+      })
     }
   }
   return cells

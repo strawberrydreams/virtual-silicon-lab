@@ -64,7 +64,9 @@ describe('validatePublishInput', () => {
   })
 
   it('rejects non-PNG image data URLs', () => {
-    expect(validatePublishInput({ ...validPayload(), dieImageDataUrl: 'data:image/jpeg;base64,AAAA' })).toEqual({
+    expect(
+      validatePublishInput({ ...validPayload(), dieImageDataUrl: 'data:image/jpeg;base64,AAAA' }),
+    ).toEqual({
       ok: false,
       message: 'dieImageDataUrl must be a PNG data URL.',
     })
@@ -75,7 +77,12 @@ describe('validatePublishInput', () => {
   })
 
   it('rejects PNG data URLs over the configured decoded byte limit', () => {
-    expect(validatePublishInput({ ...validPayload(), dieImageDataUrl: 'data:image/png;base64,AAAAAA==' }, { maxPngBytes: 2 })).toEqual({
+    expect(
+      validatePublishInput(
+        { ...validPayload(), dieImageDataUrl: 'data:image/png;base64,AAAAAA==' },
+        { maxPngBytes: 2 },
+      ),
+    ).toEqual({
       ok: false,
       message: 'dieImageDataUrl must be 2 bytes or smaller.',
     })

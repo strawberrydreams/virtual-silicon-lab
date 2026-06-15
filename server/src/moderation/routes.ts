@@ -21,7 +21,13 @@ type ErrorStatus = 400 | 401 | 403 | 404
 const REPORT_STATUSES: ReportStatus[] = ['open', 'resolved', 'dismissed']
 const MAX_REASON_LENGTH = 500
 
-export function moderationRoutes({ db, sessionSecret, now = Date.now, adminEmails = [], imageStore }: AppDeps) {
+export function moderationRoutes({
+  db,
+  sessionSecret,
+  now = Date.now,
+  adminEmails = [],
+  imageStore,
+}: AppDeps) {
   const routes = new Hono<{ Variables: { adminUser: AccountUser } }>()
 
   function fail(c: Context, status: ErrorStatus, code: string, message: string) {
@@ -59,11 +65,20 @@ export function moderationRoutes({ db, sessionSecret, now = Date.now, adminEmail
     let reason: string | null = null
     if (body.reason !== undefined) {
       if (typeof body.reason !== 'string' || body.reason.length > MAX_REASON_LENGTH) {
-        return fail(c, 400, 'INVALID_INPUT', `reason must be a string up to ${MAX_REASON_LENGTH} chars.`)
+        return fail(
+          c,
+          400,
+          'INVALID_INPUT',
+          `reason must be a string up to ${MAX_REASON_LENGTH} chars.`,
+        )
       }
       reason = body.reason
     }
-    const report = createReport(db, { publishedChipId: body.publishedChipId, reporterUserId: user.id, reason }, now)
+    const report = createReport(
+      db,
+      { publishedChipId: body.publishedChipId, reporterUserId: user.id, reason },
+      now,
+    )
     if (report === 'chip-not-found') return fail(c, 404, 'NOT_FOUND', 'Published chip not found.')
     return c.json({ report }, 201)
   })

@@ -7,7 +7,10 @@ describe('PATCH /api/me', () => {
     const signup = await app.request('/api/auth/signup', jsonRequest('POST', VALID_SIGNUP))
     const cookie = sessionCookie(signup)
 
-    const res = await app.request('/api/me', jsonRequest('PATCH', { displayName: ' Lady Lovelace ' }, cookie))
+    const res = await app.request(
+      '/api/me',
+      jsonRequest('PATCH', { displayName: ' Lady Lovelace ' }, cookie),
+    )
     expect(res.status).toBe(200)
     const body = (await res.json()) as { user: { displayName: string } }
     expect(body.user.displayName).toBe('Lady Lovelace')
@@ -29,7 +32,11 @@ describe('PATCH /api/me', () => {
 
     const res = await app.request(
       '/api/me',
-      jsonRequest('PATCH', { currentPassword: VALID_SIGNUP.password, newPassword: 'new-password-99' }, firstCookie),
+      jsonRequest(
+        'PATCH',
+        { currentPassword: VALID_SIGNUP.password, newPassword: 'new-password-99' },
+        firstCookie,
+      ),
     )
     expect(res.status).toBe(200)
 
@@ -57,7 +64,11 @@ describe('PATCH /api/me', () => {
 
     const res = await app.request(
       '/api/me',
-      jsonRequest('PATCH', { currentPassword: 'not-the-password', newPassword: 'new-password-99' }, cookie),
+      jsonRequest(
+        'PATCH',
+        { currentPassword: 'not-the-password', newPassword: 'new-password-99' },
+        cookie,
+      ),
     )
     expect(res.status).toBe(401)
     const body = (await res.json()) as { error: { code: string } }
@@ -66,7 +77,9 @@ describe('PATCH /api/me', () => {
 
   it('rejects invalid display names and unauthenticated requests', async () => {
     const { app } = createTestApp()
-    expect((await app.request('/api/me', jsonRequest('PATCH', { displayName: 'X' }))).status).toBe(401)
+    expect((await app.request('/api/me', jsonRequest('PATCH', { displayName: 'X' }))).status).toBe(
+      401,
+    )
 
     const signup = await app.request('/api/auth/signup', jsonRequest('POST', VALID_SIGNUP))
     const cookie = sessionCookie(signup)

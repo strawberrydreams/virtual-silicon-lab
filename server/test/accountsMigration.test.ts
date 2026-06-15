@@ -12,7 +12,9 @@ describe('001_accounts migration', () => {
   it('creates users and sessions tables', () => {
     const db = migratedDb()
     const tables = db
-      .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('users', 'sessions') ORDER BY name")
+      .prepare(
+        "SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('users', 'sessions') ORDER BY name",
+      )
       .all()
     expect(tables).toEqual([{ name: 'sessions' }, { name: 'users' }])
   })

@@ -3,9 +3,7 @@ export type RateLimitOptions = {
   max: number
 }
 
-export type RateLimitDecision =
-  | { ok: true }
-  | { ok: false; retryAfterSeconds: number }
+export type RateLimitDecision = { ok: true } | { ok: false; retryAfterSeconds: number }
 
 type Bucket = {
   windowStart: number

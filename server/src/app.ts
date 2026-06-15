@@ -26,7 +26,9 @@ export type AppDeps = {
 export function createApp(deps: AppDeps) {
   const app = new Hono()
   const rateLimiter =
-    deps.rateLimit === undefined ? undefined : createRateLimiter(deps.rateLimit, deps.now ?? Date.now)
+    deps.rateLimit === undefined
+      ? undefined
+      : createRateLimiter(deps.rateLimit, deps.now ?? Date.now)
 
   if (rateLimiter !== undefined) {
     app.use('/api/*', async (c, next) => {
@@ -61,7 +63,10 @@ export function createApp(deps: AppDeps) {
     if (bytes === null) return c.body(null, 404)
     return new Response(new Uint8Array(bytes), {
       status: 200,
-      headers: { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=31536000, immutable' },
+      headers: {
+        'Content-Type': 'image/png',
+        'Cache-Control': 'public, max-age=31536000, immutable',
+      },
     })
   })
   app.route('/api', accountRoutes(deps))

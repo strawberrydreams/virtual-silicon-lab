@@ -36,7 +36,9 @@ export function migrateProject(value: unknown): Project {
     return { ...project, schemaVersion: CURRENT_SCHEMA_VERSION, studio: createDefaultStudioState() }
   }
 
-  const studio = validateStudio(candidate.studio) ? cloneStudioState(candidate.studio) : createDefaultStudioState()
+  const studio = validateStudio(candidate.studio)
+    ? cloneStudioState(candidate.studio)
+    : createDefaultStudioState()
   return { ...project, schemaVersion: CURRENT_SCHEMA_VERSION, studio }
 }
 

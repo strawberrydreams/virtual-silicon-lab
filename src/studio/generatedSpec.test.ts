@@ -12,7 +12,13 @@ function withBlocks(blocks: Block[]): Project {
   }
 }
 
-function block(id: string, type: Block['type'], category: Block['category'], w = 120, h = 80): Block {
+function block(
+  id: string,
+  type: Block['type'],
+  category: Block['category'],
+  w = 120,
+  h = 80,
+): Block {
   return {
     id,
     type,
@@ -49,8 +55,28 @@ describe('generateStudioSpec', () => {
     ])
     project.studio = {
       ...project.studio,
-      sprays: [{ id: 'spray-1', x: 20, y: 20, radius: 160, color: '#ff70dc', intensity: 0.8, blend: 'screen' }],
-      stickers: [{ id: 'sticker-1', kind: 'badge', x: 80, y: 80, text: 'STAR', color: '#f9f4ff', rotation: -8 }],
+      sprays: [
+        {
+          id: 'spray-1',
+          x: 20,
+          y: 20,
+          radius: 160,
+          color: '#ff70dc',
+          intensity: 0.8,
+          blend: 'screen',
+        },
+      ],
+      stickers: [
+        {
+          id: 'sticker-1',
+          kind: 'badge',
+          x: 80,
+          y: 80,
+          text: 'STAR',
+          color: '#f9f4ff',
+          rotation: -8,
+        },
+      ],
     }
     const spec = generateStudioSpec(project)
     expect(spec.metrics.complexity).toBeGreaterThan(45)
@@ -63,12 +89,16 @@ describe('generateStudioSpec', () => {
     const badge = withBlocks(blocks)
     badge.studio = {
       ...badge.studio,
-      stickers: [{ id: 's1', kind: 'badge', x: 40, y: 40, text: 'STAR', color: '#fff', rotation: 0 }],
+      stickers: [
+        { id: 's1', kind: 'badge', x: 40, y: 40, text: 'STAR', color: '#fff', rotation: 0 },
+      ],
     }
     const warning = withBlocks(blocks)
     warning.studio = {
       ...warning.studio,
-      stickers: [{ id: 's1', kind: 'warning', x: 40, y: 40, text: '!', color: '#f55', rotation: 0 }],
+      stickers: [
+        { id: 's1', kind: 'warning', x: 40, y: 40, text: '!', color: '#f55', rotation: 0 },
+      ],
     }
     expect(generateStudioSpec(warning).metrics.stability).toBeLessThan(
       generateStudioSpec(badge).metrics.stability,
@@ -78,10 +108,18 @@ describe('generateStudioSpec', () => {
   it('raises bandwidth as route intensity rises', () => {
     const blocks = [block('cpu', 'CPU', 'real'), block('gpu', 'GPU', 'real')]
     const quiet = withBlocks(blocks)
-    quiet.studio = { ...quiet.studio, tileSettings: { ...quiet.studio.tileSettings, routeIntensity: 0 } }
+    quiet.studio = {
+      ...quiet.studio,
+      tileSettings: { ...quiet.studio.tileSettings, routeIntensity: 0 },
+    }
     const loud = withBlocks(blocks)
-    loud.studio = { ...loud.studio, tileSettings: { ...loud.studio.tileSettings, routeIntensity: 1 } }
-    expect(generateStudioSpec(loud).metrics.bandwidth).toBeGreaterThan(generateStudioSpec(quiet).metrics.bandwidth)
+    loud.studio = {
+      ...loud.studio,
+      tileSettings: { ...loud.studio.tileSettings, routeIntensity: 1 },
+    }
+    expect(generateStudioSpec(loud).metrics.bandwidth).toBeGreaterThan(
+      generateStudioSpec(quiet).metrics.bandwidth,
+    )
     expect(generateStudioSpec(loud).silicon.memoryBandwidthGBs).toBeGreaterThan(
       generateStudioSpec(quiet).silicon.memoryBandwidthGBs,
     )
@@ -111,18 +149,42 @@ describe('generateStudioSpec', () => {
   })
 
   it('reports a clean chip as healthy and an overcrowded sprayed chip as not healthy', () => {
-    const clean = generateStudioSpec(withBlocks([block('cpu', 'CPU', 'real'), block('gpu', 'GPU', 'real')]))
+    const clean = generateStudioSpec(
+      withBlocks([block('cpu', 'CPU', 'real'), block('gpu', 'GPU', 'real')]),
+    )
     expect(clean.health).toBe('healthy')
 
     const crowdedBlocks = Array.from({ length: 10 }, (_, index) =>
-      block(`tile-${index}`, index % 2 === 0 ? 'CPU' : 'RealityDistortionUnit', index % 2 === 0 ? 'real' : 'fantasy', 180, 120),
+      block(
+        `tile-${index}`,
+        index % 2 === 0 ? 'CPU' : 'RealityDistortionUnit',
+        index % 2 === 0 ? 'real' : 'fantasy',
+        180,
+        120,
+      ),
     )
     const crowded = withBlocks(crowdedBlocks)
     crowded.studio = {
       ...crowded.studio,
       sprays: [
-        { id: 'spray-1', x: 20, y: 20, radius: 180, color: '#ff70dc', intensity: 0.9, blend: 'screen' },
-        { id: 'spray-2', x: 300, y: 220, radius: 180, color: '#70eeff', intensity: 0.9, blend: 'screen' },
+        {
+          id: 'spray-1',
+          x: 20,
+          y: 20,
+          radius: 180,
+          color: '#ff70dc',
+          intensity: 0.9,
+          blend: 'screen',
+        },
+        {
+          id: 'spray-2',
+          x: 300,
+          y: 220,
+          radius: 180,
+          color: '#70eeff',
+          intensity: 0.9,
+          blend: 'screen',
+        },
       ],
     }
     const spec = generateStudioSpec(crowded)

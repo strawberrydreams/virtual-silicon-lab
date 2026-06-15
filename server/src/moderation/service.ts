@@ -76,7 +76,11 @@ export function listReports(db: Database.Database, status: ReportStatus): Report
        ORDER BY r.created_at DESC`,
     )
     .all(status) as (ReportRow & { chip_slug: string; chip_title: string })[]
-  return rows.map((row) => ({ ...toReport(row), chipSlug: row.chip_slug, chipTitle: row.chip_title }))
+  return rows.map((row) => ({
+    ...toReport(row),
+    chipSlug: row.chip_slug,
+    chipTitle: row.chip_title,
+  }))
 }
 
 export function resolveReport(

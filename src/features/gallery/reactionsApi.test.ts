@@ -7,10 +7,15 @@ describe('reactionsApi', () => {
   it('likes a chip and returns the like state', async () => {
     const fetchMock = vi
       .spyOn(globalThis, 'fetch')
-      .mockResolvedValue(new Response(JSON.stringify({ likeCount: 3, likedByMe: true }), { status: 200 }))
+      .mockResolvedValue(
+        new Response(JSON.stringify({ likeCount: 3, likedByMe: true }), { status: 200 }),
+      )
     const state = await liveReactionsApi.like('chip1')
     expect(state).toEqual({ likeCount: 3, likedByMe: true })
-    expect(fetchMock).toHaveBeenCalledWith('/api/published-chips/chip1/like', expect.objectContaining({ method: 'POST' }))
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/published-chips/chip1/like',
+      expect.objectContaining({ method: 'POST' }),
+    )
   })
 
   it('lists comments', async () => {
@@ -22,7 +27,9 @@ describe('reactionsApi', () => {
 
   it('throws on a non-ok response', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(JSON.stringify({ error: { code: 'UNAUTHORIZED', message: 'no' } }), { status: 401 }),
+      new Response(JSON.stringify({ error: { code: 'UNAUTHORIZED', message: 'no' } }), {
+        status: 401,
+      }),
     )
     await expect(liveReactionsApi.createComment('chip1', 'hi')).rejects.toThrow()
   })

@@ -40,9 +40,24 @@ export type GeneratedStudioSpec = {
   description: string
 }
 
-const COMPUTE_TYPES = new Set<BlockType>(['CPU', 'GPU', 'DSP', 'ConsciousnessProcessor', 'DreamSynth'])
+const COMPUTE_TYPES = new Set<BlockType>([
+  'CPU',
+  'GPU',
+  'DSP',
+  'ConsciousnessProcessor',
+  'DreamSynth',
+])
 const MEMORY_TYPES = new Set<BlockType>(['SRAM', 'Cache', 'QuantumMemory'])
-const IO_TYPES = new Set<BlockType>(['DAC', 'ADC', 'PLL', 'IO', 'USB', 'EmotionEngine', 'RealityDistortionUnit', 'TimeCore'])
+const IO_TYPES = new Set<BlockType>([
+  'DAC',
+  'ADC',
+  'PLL',
+  'IO',
+  'USB',
+  'EmotionEngine',
+  'RealityDistortionUnit',
+  'TimeCore',
+])
 const GPU_TYPES = new Set<BlockType>(['GPU', 'ConsciousnessProcessor', 'DreamSynth'])
 
 const POWER_SERIES_LENGTH = 24
@@ -60,23 +75,51 @@ export function generateStudioSpec(project: Project): GeneratedStudioSpec {
   const density = dieArea > 0 ? blockArea / dieArea : 0
   const sprayIntensity = project.studio.sprays.reduce((sum, spray) => sum + spray.intensity, 0)
   const stickerCount = project.studio.stickers.length
-  const warningCount = project.studio.stickers.filter((sticker) => sticker.kind === 'warning').length
+  const warningCount = project.studio.stickers.filter(
+    (sticker) => sticker.kind === 'warning',
+  ).length
   const decorationCount = project.decorations.length
   const tile = project.studio.tileSettings
   const routeIntensity = clamp01(tile.routeIntensity)
-  const contactDensity = tile.contactStyle === 'dense' ? 1 : tile.contactStyle === 'minimal' ? 0 : 0.5
+  const contactDensity =
+    tile.contactStyle === 'dense' ? 1 : tile.contactStyle === 'minimal' ? 0 : 0.5
 
   const metrics: StudioSpecMetrics = {
     compute: clampMetric(28 + computeCount * 18 + blockCount * 2 + contactDensity * 10),
-    bandwidth: clampMetric(24 + (memoryArea / Math.max(1, dieArea)) * 340 + ioCount * 5 + routeIntensity * 18),
+    bandwidth: clampMetric(
+      24 + (memoryArea / Math.max(1, dieArea)) * 340 + ioCount * 5 + routeIntensity * 18,
+    ),
     efficiency: clampMetric(
-      96 - Math.max(0, density - 0.58) * 70 - Math.max(0, blockCount - 12) * 1.4 - sprayIntensity * 7 - routeIntensity * 6,
+      96 -
+        Math.max(0, density - 0.58) * 70 -
+        Math.max(0, blockCount - 12) * 1.4 -
+        sprayIntensity * 7 -
+        routeIntensity * 6,
     ),
     stability: clampMetric(
-      96 - Math.max(0, density - 0.72) * 40 - sprayIntensity * 18 - fantasyCount * 3 - contactDensity * 4 - warningCount * 7,
+      96 -
+        Math.max(0, density - 0.72) * 40 -
+        sprayIntensity * 18 -
+        fantasyCount * 3 -
+        contactDensity * 4 -
+        warningCount * 7,
     ),
-    thermals: clampMetric(22 + computeCount * 5 + glowCount * 3 + sprayIntensity * 10 + contactDensity * 4 + density * 14),
-    complexity: clampMetric(20 + blockCount * 3 + fantasyCount * 5 + routeIntensity * 12 + decorationCount * 2 + stickerCount * 3),
+    thermals: clampMetric(
+      22 +
+        computeCount * 5 +
+        glowCount * 3 +
+        sprayIntensity * 10 +
+        contactDensity * 4 +
+        density * 14,
+    ),
+    complexity: clampMetric(
+      20 +
+        blockCount * 3 +
+        fantasyCount * 5 +
+        routeIntensity * 12 +
+        decorationCount * 2 +
+        stickerCount * 3,
+    ),
   }
 
   const silicon = buildSiliconSpec({
@@ -95,7 +138,14 @@ export function generateStudioSpec(project: Project): GeneratedStudioSpec {
   const powerWatts = silicon.tdpWatts
   const powerSeries = buildPowerSeries(metrics, powerWatts)
   const health = resolveHealth(metrics, blockCount)
-  const features = buildFeatures(metrics, memoryArea, dieArea, stickerCount, fantasyCount, blockCount)
+  const features = buildFeatures(
+    metrics,
+    memoryArea,
+    dieArea,
+    stickerCount,
+    fantasyCount,
+    blockCount,
+  )
 
   return {
     metrics,
@@ -116,7 +166,9 @@ function countTypes(project: Project, types: Set<BlockType>) {
 }
 
 function areaForTypes(project: Project, types: Set<BlockType>) {
-  return project.blocks.filter((block) => types.has(block.type)).reduce((sum, block) => sum + block.w * block.h, 0)
+  return project.blocks
+    .filter((block) => types.has(block.type))
+    .reduce((sum, block) => sum + block.w * block.h, 0)
 }
 
 function clamp01(value: number) {
@@ -213,21 +265,35 @@ function buildSiliconSpec({
   const legacy = classLabel === 'Legacy logic profile'
   const processNodeNm = processNodeForScore(eraScore)
   const transistorRaw = logLerp(0.000029, 55, era)
-  const transistorCountBillion = transistorRaw < 1 ? roundSig(transistorRaw, 2) : round1(transistorRaw)
+  const transistorCountBillion =
+    transistorRaw < 1 ? roundSig(transistorRaw, 2) : round1(transistorRaw)
   const dieAreaMm2 = Math.round(lerp(33, 245, Math.pow(era, 0.78)) * (0.88 + density * 0.18))
-  const cpuCores = legacy ? 1 : Math.min(20, Math.max(1, Math.round(1 + computeCount * 2 + era * 8 + contactDensity * 2)))
-  const gpuCores = gpuCount === 0 ? 0 : roundTo(512 + era * 4096 + gpuCount * 768 + fantasyCount * 256, 128)
+  const cpuCores = legacy
+    ? 1
+    : Math.min(20, Math.max(1, Math.round(1 + computeCount * 2 + era * 8 + contactDensity * 2)))
+  const gpuCores =
+    gpuCount === 0 ? 0 : roundTo(512 + era * 4096 + gpuCount * 768 + fantasyCount * 256, 128)
   const aiTops = gpuCores === 0 ? 0 : Math.round((gpuCores / 6144) * 950 * (0.48 + era * 0.52))
   const memoryBandwidthGBs = legacy
     ? roundSig(logLerp(0.008, 0.6, Math.max(0.05, era)), 2)
-    : Math.round(Math.min(320, logLerp(0.6, 273, era) + memoryRatio * 80 + ioCount * 3 + routeIntensity * 26))
+    : Math.round(
+        Math.min(
+          320,
+          logLerp(0.6, 273, era) + memoryRatio * 80 + ioCount * 3 + routeIntensity * 26,
+        ),
+      )
   const cacheMB = legacy ? 0 : round1(Math.min(96, memoryRatio * 100 + era * 8 + blockCount * 0.12))
   const peakClockGHz = legacy
     ? roundSig(logLerp(0.005, 0.012, Math.max(0.05, era)), 2)
     : round1(lerp(0.09, 4.1, Math.pow(era, 0.62)))
   const tdpWatts = legacy
     ? round1(lerp(1, 2, era))
-    : round1(Math.min(65, 4 + era * 40 + computeCount * 1.2 + gpuCount * 2.5 + density * 7 + routeIntensity * 4))
+    : round1(
+        Math.min(
+          65,
+          4 + era * 40 + computeCount * 1.2 + gpuCount * 2.5 + density * 7 + routeIntensity * 4,
+        ),
+      )
 
   return {
     classLabel,
@@ -247,7 +313,8 @@ function buildSiliconSpec({
 // Deterministic decorative telemetry trace for the POWER ESTIMATE sparkline:
 // a fixed-length series in [0,1] seeded by the metrics so it is stable per design.
 function buildPowerSeries(metrics: StudioSpecMetrics, powerWatts: number): number[] {
-  const seed = metrics.compute + metrics.bandwidth * 2 + metrics.thermals * 3 + Math.round(powerWatts * 10)
+  const seed =
+    metrics.compute + metrics.bandwidth * 2 + metrics.thermals * 3 + Math.round(powerWatts * 10)
   return Array.from({ length: POWER_SERIES_LENGTH }, (_, index) => {
     const wave = Math.sin((index + seed) * 0.7) * 0.28 + Math.sin((index + seed) * 0.23) * 0.16
     return clamp01(0.5 + wave)

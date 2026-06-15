@@ -33,7 +33,9 @@ describe('authStore', () => {
   })
 
   it('becomes authenticated when /me returns a user', async () => {
-    const store = createAuthStore(fakeApi({ me: vi.fn().mockResolvedValue({ user, isAdmin: false }) }))
+    const store = createAuthStore(
+      fakeApi({ me: vi.fn().mockResolvedValue({ user, isAdmin: false }) }),
+    )
     await store.getState().init()
     expect(store.getState()).toMatchObject({ status: 'authenticated', user })
   })
@@ -60,7 +62,9 @@ describe('authStore', () => {
 
   it('signup and login set the authenticated user', async () => {
     const store = createAuthStore(fakeApi())
-    await store.getState().signup({ email: user.email, displayName: 'Ada', password: 'hunter22hunter22' })
+    await store
+      .getState()
+      .signup({ email: user.email, displayName: 'Ada', password: 'hunter22hunter22' })
     expect(store.getState()).toMatchObject({ status: 'authenticated', user })
 
     await store.getState().logout()
@@ -72,7 +76,9 @@ describe('authStore', () => {
 
   it('propagates API errors from actions so forms can show them', async () => {
     const store = createAuthStore(
-      fakeApi({ login: vi.fn().mockRejectedValue(new AuthApiError('INVALID_CREDENTIALS', 'Nope.')) }),
+      fakeApi({
+        login: vi.fn().mockRejectedValue(new AuthApiError('INVALID_CREDENTIALS', 'Nope.')),
+      }),
     )
     await expect(
       store.getState().login({ email: user.email, password: 'wrong' }),
@@ -81,14 +87,18 @@ describe('authStore', () => {
   })
 
   it('updateDisplayName refreshes the user in place', async () => {
-    const store = createAuthStore(fakeApi({ me: vi.fn().mockResolvedValue({ user, isAdmin: false }) }))
+    const store = createAuthStore(
+      fakeApi({ me: vi.fn().mockResolvedValue({ user, isAdmin: false }) }),
+    )
     await store.getState().init()
     await store.getState().updateDisplayName('Lady Lovelace')
     expect(store.getState().user?.displayName).toBe('Lady Lovelace')
   })
 
   it('deleteAccount returns the store to anonymous', async () => {
-    const store = createAuthStore(fakeApi({ me: vi.fn().mockResolvedValue({ user, isAdmin: false }) }))
+    const store = createAuthStore(
+      fakeApi({ me: vi.fn().mockResolvedValue({ user, isAdmin: false }) }),
+    )
     await store.getState().init()
     await store.getState().deleteAccount('hunter22hunter22')
     expect(store.getState()).toMatchObject({ status: 'anonymous', user: null })

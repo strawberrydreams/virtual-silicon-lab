@@ -36,8 +36,12 @@ describe('resolveTileDetail', () => {
     const low = resolveTileDetail(settings({ detailDensity: -1, routeIntensity: -1 }))
     const high = resolveTileDetail(settings({ detailDensity: 5, routeIntensity: 5 }))
 
-    expect(low.microStep).toBe(resolveTileDetail(settings({ detailDensity: 0, routeIntensity: 0 })).microStep)
-    expect(high.microStep).toBe(resolveTileDetail(settings({ detailDensity: 1, routeIntensity: 1 })).microStep)
+    expect(low.microStep).toBe(
+      resolveTileDetail(settings({ detailDensity: 0, routeIntensity: 0 })).microStep,
+    )
+    expect(high.microStep).toBe(
+      resolveTileDetail(settings({ detailDensity: 1, routeIntensity: 1 })).microStep,
+    )
     expect(low.microStep).toBeGreaterThan(high.microStep)
   })
 

@@ -12,10 +12,12 @@ import {
 } from '../src/moderation/service'
 
 function seed(db: ReturnType<typeof openDatabase>) {
-  db.prepare('INSERT INTO users (id, email, display_name, password_hash, created_at, updated_at) VALUES (?,?,?,?,?,?)')
-    .run('u1', 'a@b.c', 'Ada', 'h', 0, 0)
-  db.prepare('INSERT INTO users (id, email, display_name, password_hash, created_at, updated_at) VALUES (?,?,?,?,?,?)')
-    .run('admin', 'ad@b.c', 'Admin', 'h', 0, 0)
+  db.prepare(
+    'INSERT INTO users (id, email, display_name, password_hash, created_at, updated_at) VALUES (?,?,?,?,?,?)',
+  ).run('u1', 'a@b.c', 'Ada', 'h', 0, 0)
+  db.prepare(
+    'INSERT INTO users (id, email, display_name, password_hash, created_at, updated_at) VALUES (?,?,?,?,?,?)',
+  ).run('admin', 'ad@b.c', 'Admin', 'h', 0, 0)
   db.prepare(
     `INSERT INTO published_chips (id, owner_user_id, source_project_id, slug, title, project_json, die_image_data_url, poster_image_data_url, is_public, created_at, updated_at, published_at)
      VALUES (?,?,?,?,?,?,?,?,1,?,?,?)`,
@@ -27,7 +29,11 @@ describe('moderation service', () => {
     const db = openDatabase(':memory:')
     runMigrations(db, migrations)
     seed(db)
-    const created = createReport(db, { publishedChipId: 'chip1', reporterUserId: 'u1', reason: 'spam' }, () => 5)
+    const created = createReport(
+      db,
+      { publishedChipId: 'chip1', reporterUserId: 'u1', reason: 'spam' },
+      () => 5,
+    )
     expect(created).not.toBe('chip-not-found')
     const open = listReports(db, 'open')
     expect(open).toHaveLength(1)
@@ -38,16 +44,20 @@ describe('moderation service', () => {
     const db = openDatabase(':memory:')
     runMigrations(db, migrations)
     seed(db)
-    expect(createReport(db, { publishedChipId: 'nope', reporterUserId: 'u1', reason: null }, () => 5)).toBe(
-      'chip-not-found',
-    )
+    expect(
+      createReport(db, { publishedChipId: 'nope', reporterUserId: 'u1', reason: null }, () => 5),
+    ).toBe('chip-not-found')
   })
 
   it('resolves a report and removes it from the open queue', () => {
     const db = openDatabase(':memory:')
     runMigrations(db, migrations)
     seed(db)
-    const created = createReport(db, { publishedChipId: 'chip1', reporterUserId: 'u1', reason: 'x' }, () => 5)
+    const created = createReport(
+      db,
+      { publishedChipId: 'chip1', reporterUserId: 'u1', reason: 'x' },
+      () => 5,
+    )
     if (created === 'chip-not-found') throw new Error('seed failed')
     const resolved = resolveReport(db, created.id, 'dismissed', 'admin', () => 9)
     expect(resolved?.status).toBe('dismissed')
@@ -71,7 +81,9 @@ describe('moderation service', () => {
     expect(hidden.hidden_by).toBe('admin')
     expect(hidden.updated_at).toBe(7)
     expect(unhideChip(db, 'chip1', () => 8)).toBe(true)
-    const back = db.prepare('SELECT moderation_status FROM published_chips WHERE id = ?').get('chip1') as {
+    const back = db
+      .prepare('SELECT moderation_status FROM published_chips WHERE id = ?')
+      .get('chip1') as {
       moderation_status: string
     }
     expect(back.moderation_status).toBe('visible')

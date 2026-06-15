@@ -12,13 +12,18 @@ import {
   unlikeChip,
 } from '../src/reactions/service'
 
-function seed(db: ReturnType<typeof openDatabase>, opts: { isPublic?: number; hidden?: boolean } = {}) {
+function seed(
+  db: ReturnType<typeof openDatabase>,
+  opts: { isPublic?: number; hidden?: boolean } = {},
+) {
   const isPublic = opts.isPublic ?? 1
   const status = opts.hidden ? 'hidden' : 'visible'
-  db.prepare('INSERT INTO users (id, email, display_name, password_hash, created_at, updated_at) VALUES (?,?,?,?,?,?)')
-    .run('u1', 'a@b.c', 'Ada', 'h', 0, 0)
-  db.prepare('INSERT INTO users (id, email, display_name, password_hash, created_at, updated_at) VALUES (?,?,?,?,?,?)')
-    .run('u2', 'b@b.c', 'Bea', 'h', 0, 0)
+  db.prepare(
+    'INSERT INTO users (id, email, display_name, password_hash, created_at, updated_at) VALUES (?,?,?,?,?,?)',
+  ).run('u1', 'a@b.c', 'Ada', 'h', 0, 0)
+  db.prepare(
+    'INSERT INTO users (id, email, display_name, password_hash, created_at, updated_at) VALUES (?,?,?,?,?,?)',
+  ).run('u2', 'b@b.c', 'Bea', 'h', 0, 0)
   db.prepare(
     `INSERT INTO published_chips (id, owner_user_id, source_project_id, slug, title, project_json, die_image_data_url, poster_image_data_url, is_public, moderation_status, created_at, updated_at)
      VALUES ('c1','u1','p1','s1','T','{}','','',?,?,0,0)`,
@@ -64,7 +69,11 @@ describe('reactions service — comments', () => {
     const db = openDatabase(':memory:')
     runMigrations(db, migrations)
     seed(db)
-    const first = createComment(db, { publishedChipId: 'c1', authorUserId: 'u1', body: 'nice' }, () => 10)
+    const first = createComment(
+      db,
+      { publishedChipId: 'c1', authorUserId: 'u1', body: 'nice' },
+      () => 10,
+    )
     createComment(db, { publishedChipId: 'c1', authorUserId: 'u2', body: 'cool' }, () => 20)
     const list = listComments(db, 'c1')
     expect(list).toHaveLength(2)

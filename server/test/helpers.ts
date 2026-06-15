@@ -5,7 +5,10 @@ import { migrations } from '../src/migrations'
 
 export const TEST_SECRET = 'test-session-secret'
 
-export function createTestApp(now: () => number = Date.now, options: Partial<Omit<AppDeps, 'db' | 'now'>> = {}) {
+export function createTestApp(
+  now: () => number = Date.now,
+  options: Partial<Omit<AppDeps, 'db' | 'now'>> = {},
+) {
   const db = openDatabase(':memory:')
   runMigrations(db, migrations)
   return { app: createApp({ db, sessionSecret: TEST_SECRET, now, ...options }), db }

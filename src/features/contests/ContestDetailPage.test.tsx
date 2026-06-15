@@ -58,7 +58,13 @@ function fakeApi(overrides: Partial<ContestsApi> = {}): ContestsApi {
 function renderPage(api: ContestsApi) {
   return render(
     <MemoryRouter initialEntries={['/contests/c1']}>
-      <ContestDetailPage contestId="c1" api={api} isAuthenticated={false} isAdmin={false} currentUserId={null} />
+      <ContestDetailPage
+        contestId="c1"
+        api={api}
+        isAuthenticated={false}
+        isAdmin={false}
+        currentUserId={null}
+      />
     </MemoryRouter>,
   )
 }

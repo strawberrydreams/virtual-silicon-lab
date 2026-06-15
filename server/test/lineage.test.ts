@@ -50,10 +50,9 @@ describe('getChipLineage', () => {
     insertChip(db, { id: 'c', slug: 'c-slug', title: 'C', parentId: 'b', updatedAt: 3 })
     insertChip(db, { id: 'd', slug: 'd-slug', title: 'D', parentId: 'a', updatedAt: 4 })
 
-    expect(getChipLineage(db, 'c-slug')?.ancestors.map((a) => ('hidden' in a ? 'hidden' : a.slug))).toEqual([
-      'a-slug',
-      'b-slug',
-    ])
+    expect(
+      getChipLineage(db, 'c-slug')?.ancestors.map((a) => ('hidden' in a ? 'hidden' : a.slug)),
+    ).toEqual(['a-slug', 'b-slug'])
     const aLineage = getChipLineage(db, 'a-slug')
     expect(aLineage?.children.map((child) => child.slug).sort()).toEqual(['b-slug', 'd-slug'])
     expect(aLineage?.childCount).toBe(2)
@@ -71,7 +70,13 @@ describe('getChipLineage', () => {
     const db = setup()
     insertChip(db, { id: 'a', slug: 'a-slug', title: 'A' })
     insertChip(db, { id: 'b', slug: 'b-slug', title: 'B', parentId: 'a' })
-    insertChip(db, { id: 'e', slug: 'e-slug', title: 'E', parentId: 'a', moderationStatus: 'hidden' })
+    insertChip(db, {
+      id: 'e',
+      slug: 'e-slug',
+      title: 'E',
+      parentId: 'a',
+      moderationStatus: 'hidden',
+    })
 
     const lineage = getChipLineage(db, 'a-slug')
     expect(lineage?.children.map((child) => child.slug)).toEqual(['b-slug'])

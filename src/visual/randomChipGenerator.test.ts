@@ -16,7 +16,12 @@ describe('generateRandomChipProject', () => {
     const project = generateRandomChipProject('bounded', 'bounded-project', 100)
     expect(project.blocks.length).toBeGreaterThanOrEqual(6)
     for (const block of project.blocks) {
-      expect(clampBlockToDie(block, project.die)).toEqual({ x: block.x, y: block.y, w: block.w, h: block.h })
+      expect(clampBlockToDie(block, project.die)).toEqual({
+        x: block.x,
+        y: block.y,
+        w: block.w,
+        h: block.h,
+      })
     }
   })
 

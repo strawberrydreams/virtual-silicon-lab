@@ -75,12 +75,14 @@ export function BlockPalette({ addBlock, addDecoration, addSticker, addSpray }: 
   const visibleGroups = useMemo(
     () =>
       BLOCK_GROUPS.map((group) => {
-        const category: LibraryFilter = group.label === 'Hardware Tiles' ? 'hardware' : 'speculative'
+        const category: LibraryFilter =
+          group.label === 'Hardware Tiles' ? 'hardware' : 'speculative'
         return {
           ...group,
           blocks: group.blocks.filter((type) => {
             const matchesFilter = filter === 'all' || filter === category
-            const matchesQuery = normalizedQuery.length === 0 || type.toLowerCase().includes(normalizedQuery)
+            const matchesQuery =
+              normalizedQuery.length === 0 || type.toLowerCase().includes(normalizedQuery)
             return matchesFilter && matchesQuery
           }),
         }
@@ -122,10 +124,18 @@ export function BlockPalette({ addBlock, addDecoration, addSticker, addSpray }: 
               />
             </label>
             <div aria-label="Library filters" className="editor-library-filters" role="group">
-              <button aria-pressed={filter === 'all'} onClick={() => setFilter('all')} type="button">
+              <button
+                aria-pressed={filter === 'all'}
+                onClick={() => setFilter('all')}
+                type="button"
+              >
                 All
               </button>
-              <button aria-pressed={filter === 'hardware'} onClick={() => setFilter('hardware')} type="button">
+              <button
+                aria-pressed={filter === 'hardware'}
+                onClick={() => setFilter('hardware')}
+                type="button"
+              >
                 Hardware
               </button>
               <button
@@ -172,14 +182,21 @@ export function BlockPalette({ addBlock, addDecoration, addSticker, addSpray }: 
                   </div>
                 </section>
               ))}
-              <button aria-label="Add custom tile" className="editor-add-custom-tile" type="button" disabled>
+              <button
+                aria-label="Add custom tile"
+                className="editor-add-custom-tile"
+                type="button"
+                disabled
+              >
                 + Add custom tile
               </button>
             </>
           ) : null}
           {showDecorate ? (
             <section className="editor-studio-tools" aria-label="Studio decoration tools">
-              <h3 className="editor-section-label">{activeMode === 'Decorate' ? 'Decoration Tools' : 'Decorate'}</h3>
+              <h3 className="editor-section-label">
+                {activeMode === 'Decorate' ? 'Decoration Tools' : 'Decorate'}
+              </h3>
               <div className="mt-2 grid gap-2">
                 {STICKER_KINDS.map(({ kind, label }) => (
                   <button
@@ -209,8 +226,15 @@ export function BlockPalette({ addBlock, addDecoration, addSticker, addSpray }: 
           {activeMode === 'Connect' ? (
             <section aria-label="Connection tools" className="editor-mode-panel">
               <h3 className="editor-section-label">Connection Tools</h3>
-              <ToolNote title="Bus guide" body="Add a visible routing guide, then tune bus color and layer visibility in the inspector." />
-              <button className="editor-block-button" type="button" onClick={() => addDecoration('neonLine')}>
+              <ToolNote
+                title="Bus guide"
+                body="Add a visible routing guide, then tune bus color and layer visibility in the inspector."
+              />
+              <button
+                className="editor-block-button"
+                type="button"
+                onClick={() => addDecoration('neonLine')}
+              >
                 Add route guide
               </button>
             </section>
@@ -218,8 +242,15 @@ export function BlockPalette({ addBlock, addDecoration, addSticker, addSpray }: 
           {activeMode === 'Text' ? (
             <section aria-label="Text tools" className="editor-mode-panel">
               <h3 className="editor-section-label">Text Actions</h3>
-              <ToolNote title="Die annotation" body="Place an editable label on the die and adjust its text from the inspector." />
-              <button className="editor-block-button" type="button" onClick={() => addDecoration('label')}>
+              <ToolNote
+                title="Die annotation"
+                body="Place an editable label on the die and adjust its text from the inspector."
+              />
+              <button
+                className="editor-block-button"
+                type="button"
+                onClick={() => addDecoration('label')}
+              >
                 Add text label
               </button>
             </section>
@@ -227,13 +258,19 @@ export function BlockPalette({ addBlock, addDecoration, addSticker, addSpray }: 
           {activeMode === 'Layers' ? (
             <section aria-label="Layer controls" className="editor-mode-panel">
               <h3 className="editor-section-label">Layer Controls</h3>
-              <ToolNote title="Layer visibility" body="Use the right inspector to toggle M1-M5 and label visibility." />
+              <ToolNote
+                title="Layer visibility"
+                body="Use the right inspector to toggle M1-M5 and label visibility."
+              />
             </section>
           ) : null}
           {activeMode === 'Settings' ? (
             <section aria-label="Settings controls" className="editor-mode-panel">
               <h3 className="editor-section-label">Settings Tools</h3>
-              <ToolNote title="Appearance settings" body="Use the right inspector to adjust density, routing intensity, colors, and tile imagery." />
+              <ToolNote
+                title="Appearance settings"
+                body="Use the right inspector to adjust density, routing intensity, colors, and tile imagery."
+              />
             </section>
           ) : null}
         </div>

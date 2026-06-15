@@ -34,7 +34,12 @@ export function createAuthStore(api: AuthApi = liveAuthApi) {
         set(
           me === null
             ? { status: 'anonymous', user: null, isAdmin: false, signupsOpen: config.signupsOpen }
-            : { status: 'authenticated', user: me.user, isAdmin: me.isAdmin, signupsOpen: config.signupsOpen },
+            : {
+                status: 'authenticated',
+                user: me.user,
+                isAdmin: me.isAdmin,
+                signupsOpen: config.signupsOpen,
+              },
         )
       } catch (error) {
         // signupsOpen keeps its previous value (default true) — fail open so a

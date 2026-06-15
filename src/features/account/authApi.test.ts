@@ -28,7 +28,11 @@ describe('liveAuthApi', () => {
   it('me() returns null on 401 instead of throwing', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn().mockResolvedValue(jsonResponse(401, { error: { code: 'UNAUTHORIZED', message: 'Sign in required.' } })),
+      vi
+        .fn()
+        .mockResolvedValue(
+          jsonResponse(401, { error: { code: 'UNAUTHORIZED', message: 'Sign in required.' } }),
+        ),
     )
     expect(await liveAuthApi.me()).toBeNull()
   })
@@ -46,7 +50,11 @@ describe('liveAuthApi', () => {
   it('maps server error bodies to AuthApiError with code and message', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn().mockResolvedValue(jsonResponse(409, { error: { code: 'EMAIL_TAKEN', message: 'Taken.' } })),
+      vi
+        .fn()
+        .mockResolvedValue(
+          jsonResponse(409, { error: { code: 'EMAIL_TAKEN', message: 'Taken.' } }),
+        ),
     )
     await expect(
       liveAuthApi.signup({ email: 'a@b.co', displayName: 'A', password: 'hunter22hunter22' }),
@@ -69,7 +77,9 @@ describe('liveAuthApi', () => {
   it('login posts JSON and returns the user', async () => {
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse(200, { user }))
     vi.stubGlobal('fetch', fetchMock)
-    expect(await liveAuthApi.login({ email: 'ada@example.com', password: 'pw-long-enough' })).toEqual(user)
+    expect(
+      await liveAuthApi.login({ email: 'ada@example.com', password: 'pw-long-enough' }),
+    ).toEqual(user)
     expect(fetchMock).toHaveBeenCalledWith(
       '/api/auth/login',
       expect.objectContaining({ method: 'POST', headers: { 'content-type': 'application/json' } }),
@@ -82,7 +92,11 @@ describe('liveAuthApi', () => {
 
     vi.stubGlobal(
       'fetch',
-      vi.fn().mockResolvedValue(jsonResponse(401, { error: { code: 'WRONG_PASSWORD', message: 'Nope.' } })),
+      vi
+        .fn()
+        .mockResolvedValue(
+          jsonResponse(401, { error: { code: 'WRONG_PASSWORD', message: 'Nope.' } }),
+        ),
     )
     await expect(liveAuthApi.deleteAccount('bad')).rejects.toMatchObject({ code: 'WRONG_PASSWORD' })
   })

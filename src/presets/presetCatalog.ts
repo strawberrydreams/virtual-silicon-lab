@@ -86,15 +86,17 @@ export const BASE_PRESET_CATALOG: readonly PresetMetadata[] = [
 ]
 
 export const PRESET_CATALOG: readonly PresetMetadata[] = [
-  ...HERO_SET_CATALOG.map((hero): PresetMetadata => ({
-    id: hero.id,
-    name: hero.name,
-    tagline: hero.tagline,
-    theme: hero.theme,
-    dieShape: hero.dieShape,
-    accent: hero.accent,
-    featured: hero.featured,
-    previewBlocks: [...hero.previewBlocks],
-  })),
+  ...HERO_SET_CATALOG.map(
+    (hero): PresetMetadata => ({
+      id: hero.id,
+      name: hero.name,
+      tagline: hero.tagline,
+      theme: hero.theme,
+      dieShape: hero.dieShape,
+      accent: hero.accent,
+      featured: hero.featured,
+      previewBlocks: [...hero.previewBlocks],
+    }),
+  ),
   ...BASE_PRESET_CATALOG,
 ]

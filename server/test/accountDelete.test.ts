@@ -7,7 +7,10 @@ describe('DELETE /api/me', () => {
     const signup = await app.request('/api/auth/signup', jsonRequest('POST', VALID_SIGNUP))
     const cookie = sessionCookie(signup)
 
-    const res = await app.request('/api/me', jsonRequest('DELETE', { password: VALID_SIGNUP.password }, cookie))
+    const res = await app.request(
+      '/api/me',
+      jsonRequest('DELETE', { password: VALID_SIGNUP.password }, cookie),
+    )
     expect(res.status).toBe(204)
     expect(res.headers.get('set-cookie') ?? '').toMatch(/vsl_session=;|vsl_session=""/)
     expect(db.prepare('SELECT COUNT(*) AS n FROM users').get()).toEqual({ n: 0 })
@@ -26,7 +29,10 @@ describe('DELETE /api/me', () => {
     const signup = await app.request('/api/auth/signup', jsonRequest('POST', VALID_SIGNUP))
     const cookie = sessionCookie(signup)
 
-    const res = await app.request('/api/me', jsonRequest('DELETE', { password: 'not-it-at-all' }, cookie))
+    const res = await app.request(
+      '/api/me',
+      jsonRequest('DELETE', { password: 'not-it-at-all' }, cookie),
+    )
     expect(res.status).toBe(401)
     const body = (await res.json()) as { error: { code: string } }
     expect(body.error.code).toBe('WRONG_PASSWORD')
@@ -35,7 +41,9 @@ describe('DELETE /api/me', () => {
 
   it('requires authentication and a password field', async () => {
     const { app } = createTestApp()
-    expect((await app.request('/api/me', jsonRequest('DELETE', { password: 'x' }))).status).toBe(401)
+    expect((await app.request('/api/me', jsonRequest('DELETE', { password: 'x' }))).status).toBe(
+      401,
+    )
 
     const signup = await app.request('/api/auth/signup', jsonRequest('POST', VALID_SIGNUP))
     const cookie = sessionCookie(signup)

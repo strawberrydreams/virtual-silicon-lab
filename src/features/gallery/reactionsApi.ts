@@ -44,11 +44,15 @@ export const liveReactionsApi: ReactionsApi = {
     return ((await res.json()) as { comments: GalleryComment[] }).comments
   },
   async createComment(chipId, body) {
-    const res = await ok(await fetch(`/api/published-chips/${chipId}/comments`, jsonInit('POST', { body })))
+    const res = await ok(
+      await fetch(`/api/published-chips/${chipId}/comments`, jsonInit('POST', { body })),
+    )
     return ((await res.json()) as { comment: GalleryComment }).comment
   },
   async deleteComment(chipId, commentId) {
-    await ok(await fetch(`/api/published-chips/${chipId}/comments/${commentId}`, { method: 'DELETE' }))
+    await ok(
+      await fetch(`/api/published-chips/${chipId}/comments/${commentId}`, { method: 'DELETE' }),
+    )
   },
   async reportChip(chipId, reason) {
     await ok(await fetch('/api/reports', jsonInit('POST', { publishedChipId: chipId, reason })))

@@ -25,7 +25,11 @@ function decodedBase64Bytes(dataUrl: string): number {
   return Math.floor((normalized.length * 3) / 4) - padding
 }
 
-function validatePngDataUrl(value: unknown, field: string, maxBytes: number): ValidationResult<string> {
+function validatePngDataUrl(
+  value: unknown,
+  field: string,
+  maxBytes: number,
+): ValidationResult<string> {
   if (typeof value !== 'string' || !PNG_DATA_URL_RE.test(value)) {
     return { ok: false, message: `${field} must be a PNG data URL.` }
   }
@@ -58,7 +62,11 @@ export function validatePublishInput(
 
   const dieImageDataUrl = validatePngDataUrl(body.dieImageDataUrl, 'dieImageDataUrl', maxPngBytes)
   if (!dieImageDataUrl.ok) return dieImageDataUrl
-  const posterImageDataUrl = validatePngDataUrl(body.posterImageDataUrl, 'posterImageDataUrl', maxPngBytes)
+  const posterImageDataUrl = validatePngDataUrl(
+    body.posterImageDataUrl,
+    'posterImageDataUrl',
+    maxPngBytes,
+  )
   if (!posterImageDataUrl.ok) return posterImageDataUrl
 
   if (body.isPublic !== undefined && typeof body.isPublic !== 'boolean') {

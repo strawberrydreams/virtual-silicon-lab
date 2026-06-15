@@ -20,7 +20,10 @@ import { reflowBlocksGlobally } from '../studio/globalReflow'
 
 const MAX_HISTORY = 100
 
-const STICKER_PRESETS: Record<StudioStickerKind, { text: string; color: string; rotation: number }> = {
+const STICKER_PRESETS: Record<
+  StudioStickerKind,
+  { text: string; color: string; rotation: number }
+> = {
   badge: { text: 'STAR', color: '#f9f4ff', rotation: -8 },
   mascot: { text: 'MAX', color: '#ffd84d', rotation: -6 },
   warning: { text: '!', color: '#ff5a5a', rotation: 0 },
@@ -63,9 +66,18 @@ export type EditorState = {
   transformBlock: (id: string, transform: BlockTransform) => void
   transformSticker: (id: string, transform: StickerTransform) => void
   transformSpray: (id: string, transform: SprayTransform) => void
-  updateSticker: (id: string, patch: Partial<Pick<StudioSticker, 'kind' | 'text' | 'color' | 'rotation'>>) => void
-  updateSpray: (id: string, patch: Partial<Pick<StudioSpray, 'color' | 'intensity' | 'radius' | 'blend'>>) => void
-  updateBlockVisual: (id: string, patch: Partial<Pick<Block, 'colorOverride' | 'imageDataUrl'>>) => void
+  updateSticker: (
+    id: string,
+    patch: Partial<Pick<StudioSticker, 'kind' | 'text' | 'color' | 'rotation'>>,
+  ) => void
+  updateSpray: (
+    id: string,
+    patch: Partial<Pick<StudioSpray, 'color' | 'intensity' | 'radius' | 'blend'>>,
+  ) => void
+  updateBlockVisual: (
+    id: string,
+    patch: Partial<Pick<Block, 'colorOverride' | 'imageDataUrl'>>,
+  ) => void
   setTileSettings: (patch: Partial<StudioTileSettings>) => void
   setColorPaint: (target: StudioColorTarget, paint: StudioColorPaint) => void
   deleteSelected: () => void
@@ -129,11 +141,15 @@ export function createEditorStore(initialProject: Project, options: Options = {}
 
     function hasSelectedStudioItem(project: Project, item: SelectedStudioItem | null) {
       if (item === null) return false
-      if (item.kind === 'sticker') return project.studio.stickers.some((sticker) => sticker.id === item.id)
+      if (item.kind === 'sticker')
+        return project.studio.stickers.some((sticker) => sticker.id === item.id)
       return project.studio.sprays.some((spray) => spray.id === item.id)
     }
 
-    function offsetStudioCopy<T extends { id: string; x: number; y: number }>(project: Project, source: T): T {
+    function offsetStudioCopy<T extends { id: string; x: number; y: number }>(
+      project: Project,
+      source: T,
+    ): T {
       return {
         ...source,
         id: createId(),
@@ -200,7 +216,10 @@ export function createEditorStore(initialProject: Project, options: Options = {}
                 target: { x: 0, y: 0 },
               })
             : blocks
-        commit(replaceBlocks(project, nextBlocks), { selectedBlockId: block.id, selectedStudioItem: null })
+        commit(replaceBlocks(project, nextBlocks), {
+          selectedBlockId: block.id,
+          selectedStudioItem: null,
+        })
       },
 
       addSticker(kind = 'badge') {
@@ -213,13 +232,16 @@ export function createEditorStore(initialProject: Project, options: Options = {}
           y: project.die.height / 2,
           ...preset,
         }
-        commit({
-          ...project,
-          studio: {
-            ...project.studio,
-            stickers: [...project.studio.stickers, sticker],
+        commit(
+          {
+            ...project,
+            studio: {
+              ...project.studio,
+              stickers: [...project.studio.stickers, sticker],
+            },
           },
-        }, { selectedBlockId: null, selectedStudioItem: { kind: 'sticker', id: sticker.id } })
+          { selectedBlockId: null, selectedStudioItem: { kind: 'sticker', id: sticker.id } },
+        )
       },
 
       addSpray(color = '#ff70dc') {
@@ -233,13 +255,16 @@ export function createEditorStore(initialProject: Project, options: Options = {}
           intensity: 0.72,
           blend: 'screen' as const,
         }
-        commit({
-          ...project,
-          studio: {
-            ...project.studio,
-            sprays: [...project.studio.sprays, spray],
+        commit(
+          {
+            ...project,
+            studio: {
+              ...project.studio,
+              sprays: [...project.studio.sprays, spray],
+            },
           },
-        }, { selectedBlockId: null, selectedStudioItem: { kind: 'spray', id: spray.id } })
+          { selectedBlockId: null, selectedStudioItem: { kind: 'spray', id: spray.id } },
+        )
       },
 
       transformBlock(id, transform) {
@@ -357,7 +382,9 @@ export function createEditorStore(initialProject: Project, options: Options = {}
                           ? spray.intensity
                           : Math.min(Math.max(0, patch.intensity), 1),
                       radius:
-                        patch.radius === undefined ? spray.radius : clampSprayRadius(project.die, patch.radius),
+                        patch.radius === undefined
+                          ? spray.radius
+                          : clampSprayRadius(project.die, patch.radius),
                     }
                   : spray,
               ),
@@ -387,8 +414,12 @@ export function createEditorStore(initialProject: Project, options: Options = {}
         const next: StudioTileSettings = {
           ...tile,
           ...patch,
-          detailDensity: patch.detailDensity === undefined ? tile.detailDensity : clamp01(patch.detailDensity),
-          routeIntensity: patch.routeIntensity === undefined ? tile.routeIntensity : clamp01(patch.routeIntensity),
+          detailDensity:
+            patch.detailDensity === undefined ? tile.detailDensity : clamp01(patch.detailDensity),
+          routeIntensity:
+            patch.routeIntensity === undefined
+              ? tile.routeIntensity
+              : clamp01(patch.routeIntensity),
         }
         commit(
           { ...project, studio: { ...project.studio, tileSettings: next } },
@@ -425,7 +456,9 @@ export function createEditorStore(initialProject: Project, options: Options = {}
                 ...project.studio,
                 stickers:
                   selectedStudioItem.kind === 'sticker'
-                    ? project.studio.stickers.filter((sticker) => sticker.id !== selectedStudioItem.id)
+                    ? project.studio.stickers.filter(
+                        (sticker) => sticker.id !== selectedStudioItem.id,
+                      )
                     : project.studio.stickers,
                 sprays:
                   selectedStudioItem.kind === 'spray'
@@ -450,7 +483,9 @@ export function createEditorStore(initialProject: Project, options: Options = {}
       duplicateSelected() {
         const { project, selectedBlockId, selectedStudioItem } = get()
         if (selectedStudioItem?.kind === 'sticker') {
-          const source = project.studio.stickers.find((sticker) => sticker.id === selectedStudioItem.id)
+          const source = project.studio.stickers.find(
+            (sticker) => sticker.id === selectedStudioItem.id,
+          )
           if (source === undefined) return
           const copy = offsetStudioCopy(project, source)
           commit(
@@ -488,7 +523,10 @@ export function createEditorStore(initialProject: Project, options: Options = {}
           },
           project,
         )
-        commit(replaceBlocks(project, [...project.blocks, copy]), { selectedBlockId: copy.id, selectedStudioItem: null })
+        commit(replaceBlocks(project, [...project.blocks, copy]), {
+          selectedBlockId: copy.id,
+          selectedStudioItem: null,
+        })
       },
 
       bringForward() {
@@ -549,7 +587,9 @@ export function createEditorStore(initialProject: Project, options: Options = {}
           selectedBlockId: previous.blocks.some((block) => block.id === selectedBlockId)
             ? selectedBlockId
             : null,
-          selectedStudioItem: hasSelectedStudioItem(previous, selectedStudioItem) ? selectedStudioItem : null,
+          selectedStudioItem: hasSelectedStudioItem(previous, selectedStudioItem)
+            ? selectedStudioItem
+            : null,
         })
       },
 
@@ -565,7 +605,9 @@ export function createEditorStore(initialProject: Project, options: Options = {}
           selectedBlockId: next.blocks.some((block) => block.id === selectedBlockId)
             ? selectedBlockId
             : null,
-          selectedStudioItem: hasSelectedStudioItem(next, selectedStudioItem) ? selectedStudioItem : null,
+          selectedStudioItem: hasSelectedStudioItem(next, selectedStudioItem)
+            ? selectedStudioItem
+            : null,
         })
       },
     }

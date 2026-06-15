@@ -27,7 +27,12 @@ function db() {
   return d
 }
 
-function seedUser(d: ReturnType<typeof openDatabase>, id: string, email = `${id}@b.c`, displayName = id) {
+function seedUser(
+  d: ReturnType<typeof openDatabase>,
+  id: string,
+  email = `${id}@b.c`,
+  displayName = id,
+) {
   d.prepare(
     'INSERT OR IGNORE INTO users (id, email, display_name, password_hash, created_at, updated_at) VALUES (?,?,?,?,?,?)',
   ).run(id, email, displayName, 'h', 0, 0)
@@ -129,11 +134,19 @@ describe('contest entries', () => {
     seedUserChip(d, 'u1', 'chipA')
     const c = createContest(d, { title: 'A', theme: 't', createdBy: 'admin' }, now)
 
-    const entry = createEntry(d, { contestId: c.id, publishedChipId: 'chipA', ownerUserId: 'u1' }, now)
+    const entry = createEntry(
+      d,
+      { contestId: c.id, publishedChipId: 'chipA', ownerUserId: 'u1' },
+      now,
+    )
 
     expect(entry).not.toBe('duplicate')
     if (entry === 'duplicate') throw new Error('unreachable')
-    expect(getEntryMeta(d, entry.entryId)).toEqual({ id: entry.entryId, contestId: c.id, ownerUserId: 'u1' })
+    expect(getEntryMeta(d, entry.entryId)).toEqual({
+      id: entry.entryId,
+      contestId: c.id,
+      ownerUserId: 'u1',
+    })
   })
 
   it('rejects a second entry by the same user', () => {
@@ -144,16 +157,20 @@ describe('contest entries', () => {
 
     createEntry(d, { contestId: c.id, publishedChipId: 'chipA', ownerUserId: 'u1' }, now)
 
-    expect(createEntry(d, { contestId: c.id, publishedChipId: 'chipB', ownerUserId: 'u1' }, now)).toBe(
-      'duplicate',
-    )
+    expect(
+      createEntry(d, { contestId: c.id, publishedChipId: 'chipB', ownerUserId: 'u1' }, now),
+    ).toBe('duplicate')
   })
 
   it('withdraws an entry', () => {
     const d = db()
     seedUserChip(d, 'u1', 'chipA')
     const c = createContest(d, { title: 'A', theme: 't', createdBy: 'admin' }, now)
-    const entry = createEntry(d, { contestId: c.id, publishedChipId: 'chipA', ownerUserId: 'u1' }, now)
+    const entry = createEntry(
+      d,
+      { contestId: c.id, publishedChipId: 'chipA', ownerUserId: 'u1' },
+      now,
+    )
     if (entry === 'duplicate') throw new Error('unreachable')
 
     expect(withdrawEntry(d, entry.entryId)).toBe(true)
@@ -166,8 +183,16 @@ describe('contest votes + results', () => {
     seedUserChip(d, 'u1', 'chipA')
     seedUserChip(d, 'u2', 'chipB')
     const c = createContest(d, { title: 'A', theme: 't', createdBy: 'admin' }, () => 1)
-    const a = createEntry(d, { contestId: c.id, publishedChipId: 'chipA', ownerUserId: 'u1' }, () => 1)
-    const b = createEntry(d, { contestId: c.id, publishedChipId: 'chipB', ownerUserId: 'u2' }, () => 2)
+    const a = createEntry(
+      d,
+      { contestId: c.id, publishedChipId: 'chipA', ownerUserId: 'u1' },
+      () => 1,
+    )
+    const b = createEntry(
+      d,
+      { contestId: c.id, publishedChipId: 'chipB', ownerUserId: 'u2' },
+      () => 2,
+    )
     if (a === 'duplicate' || b === 'duplicate') throw new Error('unreachable')
     return { c, a, b }
   }
@@ -190,7 +215,9 @@ describe('contest votes + results', () => {
 
     castVote(d, { contestId: c.id, entryId: b.entryId, voterUserId: 'voter' }, now)
     expect(getMyVote(d, c.id, 'voter')).toBe(b.entryId)
-    expect(d.prepare('SELECT COUNT(*) AS n FROM contest_votes WHERE contest_id = ?').get(c.id)).toEqual({ n: 1 })
+    expect(
+      d.prepare('SELECT COUNT(*) AS n FROM contest_votes WHERE contest_id = ?').get(c.id),
+    ).toEqual({ n: 1 })
   })
 
   it('retracts a vote', () => {

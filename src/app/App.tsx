@@ -14,7 +14,12 @@ import { PRESET_CATALOG } from '../presets/presetCatalog'
 import { AuthStoreProvider, useAuthStore } from '../stores/authStoreContext'
 import { ProjectStoreProvider, useProjectStore } from '../stores/projectStoreContext'
 import { resolveHeroSetForProject } from '../visual/heroSetCatalog'
-import { PAGE_THEME_NAMES, pageThemes, resolvePageTheme, type PageThemeName } from '../visual/pageThemes'
+import {
+  PAGE_THEME_NAMES,
+  pageThemes,
+  resolvePageTheme,
+  type PageThemeName,
+} from '../visual/pageThemes'
 import { usePageTheme } from '../visual/pageThemeStore'
 
 function LandingRoute() {
@@ -79,7 +84,9 @@ function EditorRoute() {
   if (project === 'missing') {
     return (
       <main className="min-h-screen bg-[#071015] p-8 text-[#d8f7ff]">
-        <p className="text-xs uppercase tracking-[0.45em] text-cyan-300">Concept Fabrication Terminal</p>
+        <p className="text-xs uppercase tracking-[0.45em] text-cyan-300">
+          Concept Fabrication Terminal
+        </p>
         <h1 className="mt-4 text-2xl uppercase tracking-[0.18em]">Project not found</h1>
         <p className="mt-3 max-w-xl text-sm text-slate-400">
           This project may have been deleted, or the link is no longer valid.

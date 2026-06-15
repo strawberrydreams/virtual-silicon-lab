@@ -23,7 +23,13 @@ export function resolveStickerLayout(kind: StudioStickerKind, text: string): Sti
   const form = FORMS[kind] ?? 'circle'
   switch (form) {
     case 'pill':
-      return { form, width: Math.max(76, text.length * 9 + 18), height: 32, fontSize: 12, letterSpacing: 1 }
+      return {
+        form,
+        width: Math.max(76, text.length * 9 + 18),
+        height: 32,
+        fontSize: 12,
+        letterSpacing: 1,
+      }
     case 'triangle':
       return { form, width: 56, height: 56, fontSize: 18, letterSpacing: 0 }
     case 'star':

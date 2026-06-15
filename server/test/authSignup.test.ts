@@ -7,7 +7,9 @@ describe('POST /api/auth/signup', () => {
     const res = await app.request('/api/auth/signup', jsonRequest('POST', VALID_SIGNUP))
 
     expect(res.status).toBe(201)
-    const { user } = (await res.json()) as { user: { id: string; email: string; displayName: string; createdAt: number } }
+    const { user } = (await res.json()) as {
+      user: { id: string; email: string; displayName: string; createdAt: number }
+    }
     expect(user.email).toBe('ada@example.com')
     expect(user.displayName).toBe('Ada')
     expect(user.createdAt).toBe(1_000)

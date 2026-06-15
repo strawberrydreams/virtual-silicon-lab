@@ -12,7 +12,15 @@ describe('StudioInspector', () => {
       studio: {
         ...createProject('p', 'p1', 0).studio,
         stickers: [
-          { id: 'sticker-1', kind: 'badge' as const, x: 120, y: 160, text: 'STAR', color: '#f9f4ff', rotation: -8 },
+          {
+            id: 'sticker-1',
+            kind: 'badge' as const,
+            x: 120,
+            y: 160,
+            text: 'STAR',
+            color: '#f9f4ff',
+            rotation: -8,
+          },
         ],
       },
     }
@@ -44,7 +52,15 @@ describe('StudioInspector', () => {
       studio: {
         ...createProject('p', 'p1', 0).studio,
         stickers: [
-          { id: 'sticker-1', kind: 'badge' as const, x: 120, y: 160, text: 'STAR', color: '#f9f4ff', rotation: -8 },
+          {
+            id: 'sticker-1',
+            kind: 'badge' as const,
+            x: 120,
+            y: 160,
+            text: 'STAR',
+            color: '#f9f4ff',
+            rotation: -8,
+          },
         ],
       },
     }
@@ -69,7 +85,17 @@ describe('StudioInspector', () => {
       ...createProject('p', 'p1', 0),
       studio: {
         ...createProject('p', 'p1', 0).studio,
-        sprays: [{ id: 'spray-1', x: 240, y: 240, radius: 120, color: '#ff70dc', intensity: 0.72, blend: 'screen' as const }],
+        sprays: [
+          {
+            id: 'spray-1',
+            x: 240,
+            y: 240,
+            radius: 120,
+            color: '#ff70dc',
+            intensity: 0.72,
+            blend: 'screen' as const,
+          },
+        ],
       },
     }
 

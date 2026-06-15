@@ -3,7 +3,10 @@ import type { FakeSpec } from '../../domain/project'
 import { SPEC_EXAMPLES } from './specExamples'
 
 function featureLines(value: string) {
-  return value.split('\n').map((line) => line.trim()).filter(Boolean)
+  return value
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
 }
 
 function coreCountFromInput(value: string) {
@@ -55,11 +58,19 @@ export function FakeSpecForm({ spec, onChange }: Props) {
 
       <label className={labelClass}>
         Brand
-        <input className={fieldClass} value={spec.brand} onChange={(event) => emit({ brand: event.target.value })} />
+        <input
+          className={fieldClass}
+          value={spec.brand}
+          onChange={(event) => emit({ brand: event.target.value })}
+        />
       </label>
       <label className={labelClass}>
         Series
-        <input className={fieldClass} value={spec.series} onChange={(event) => emit({ series: event.target.value })} />
+        <input
+          className={fieldClass}
+          value={spec.series}
+          onChange={(event) => emit({ series: event.target.value })}
+        />
       </label>
       <label className={labelClass}>
         Generation
@@ -71,7 +82,11 @@ export function FakeSpecForm({ spec, onChange }: Props) {
       </label>
       <label className={labelClass}>
         Process
-        <input className={fieldClass} value={spec.process} onChange={(event) => emit({ process: event.target.value })} />
+        <input
+          className={fieldClass}
+          value={spec.process}
+          onChange={(event) => emit({ process: event.target.value })}
+        />
       </label>
       <label className={labelClass}>
         Cores

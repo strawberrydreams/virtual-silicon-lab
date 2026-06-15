@@ -76,7 +76,10 @@ function fakeReactions(): ReactionsApi {
 function renderDetail(
   api: GalleryApi,
   slug = 'ada-chip-deadbeef',
-  onRemix?: (project: GalleryChipDetail['project'], origin: { chipId: string; slug: string; title: string }) => void,
+  onRemix?: (
+    project: GalleryChipDetail['project'],
+    origin: { chipId: string; slug: string; title: string },
+  ) => void,
 ) {
   return render(
     <AuthStoreProvider api={fakeAuthApi()}>
@@ -97,7 +100,10 @@ describe('GalleryDetailPage', () => {
     renderDetail(fakeApi())
 
     expect(await screen.findByRole('heading', { name: 'Ada Chip' })).toBeInTheDocument()
-    expect(screen.getByRole('img', { name: 'Ada Chip poster' })).toHaveAttribute('src', detail.posterImageUrl)
+    expect(screen.getByRole('img', { name: 'Ada Chip poster' })).toHaveAttribute(
+      'src',
+      detail.posterImageUrl,
+    )
     expect(screen.getByText('Published by Ada')).toBeInTheDocument()
     expect(screen.getByText('Version 2')).toBeInTheDocument()
     expect(screen.getByText('ADA PUBLIC')).toBeInTheDocument()
@@ -133,8 +139,12 @@ describe('GalleryDetailPage', () => {
 
   it('renders ancestor and child lineage nodes when present', async () => {
     const lineage: ChipLineage = {
-      ancestors: [{ slug: 'parent', title: 'Parent Chip', ownerDisplayName: 'Ada', posterImageUrl: '/p.png' }],
-      children: [{ slug: 'kid', title: 'Kid Chip', ownerDisplayName: 'Grace', posterImageUrl: '/k.png' }],
+      ancestors: [
+        { slug: 'parent', title: 'Parent Chip', ownerDisplayName: 'Ada', posterImageUrl: '/p.png' },
+      ],
+      children: [
+        { slug: 'kid', title: 'Kid Chip', ownerDisplayName: 'Grace', posterImageUrl: '/k.png' },
+      ],
       childCount: 1,
     }
     renderDetail(fakeApi({ getLineage: vi.fn().mockResolvedValue(lineage) }))
@@ -145,7 +155,13 @@ describe('GalleryDetailPage', () => {
   })
 
   it('shows a private-ancestor placeholder for hidden lineage nodes', async () => {
-    renderDetail(fakeApi({ getLineage: vi.fn().mockResolvedValue({ ancestors: [{ hidden: true }], children: [], childCount: 0 }) }))
+    renderDetail(
+      fakeApi({
+        getLineage: vi
+          .fn()
+          .mockResolvedValue({ ancestors: [{ hidden: true }], children: [], childCount: 0 }),
+      }),
+    )
 
     expect(await screen.findByText(/private chip/i)).toBeInTheDocument()
   })
@@ -154,6 +170,8 @@ describe('GalleryDetailPage', () => {
     renderDetail(fakeApi({ get: vi.fn().mockRejectedValue(new ServerUnreachableError()) }))
 
     await screen.findByText(/share server is offline/i)
-    expect(screen.queryByRole('button', { name: /remix into my projects/i })).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: /remix into my projects/i }),
+    ).not.toBeInTheDocument()
   })
 })

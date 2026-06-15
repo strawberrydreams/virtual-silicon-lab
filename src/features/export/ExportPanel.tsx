@@ -75,7 +75,10 @@ export function ExportPanel({ project }: { project: Project }) {
         Share Poster
       </button>
 
-      <div className="pointer-events-none absolute left-[-10000px] top-[-10000px]" aria-hidden="true">
+      <div
+        className="pointer-events-none absolute left-[-10000px] top-[-10000px]"
+        aria-hidden="true"
+      >
         <DieExportStage ref={dieStageRef} project={project} />
         <PosterExportStage ref={posterStageRef} project={project} format={posterFormat} />
       </div>

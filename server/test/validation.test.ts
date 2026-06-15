@@ -44,7 +44,11 @@ describe('validatePassword', () => {
 describe('composite inputs', () => {
   it('validates a full signup body', () => {
     expect(
-      validateSignupInput({ email: 'Ada@Example.com', displayName: ' Ada ', password: 'hunter22hunter22' }),
+      validateSignupInput({
+        email: 'Ada@Example.com',
+        displayName: ' Ada ',
+        password: 'hunter22hunter22',
+      }),
     ).toEqual({
       ok: true,
       value: { email: 'ada@example.com', displayName: 'Ada', password: 'hunter22hunter22' },

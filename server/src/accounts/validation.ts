@@ -44,7 +44,10 @@ export function validateSignupInput(body: unknown): ValidationResult<SignupInput
   if (!displayName.ok) return displayName
   const password = validatePassword(record.password)
   if (!password.ok) return password
-  return { ok: true, value: { email: email.value, displayName: displayName.value, password: password.value } }
+  return {
+    ok: true,
+    value: { email: email.value, displayName: displayName.value, password: password.value },
+  }
 }
 
 export function validateLoginInput(body: unknown): ValidationResult<LoginInput> {

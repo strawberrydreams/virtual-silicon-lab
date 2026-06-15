@@ -15,7 +15,14 @@ function block(type: Block['type'], w: number, h: number): Block {
   return {
     id: `${type}-1`,
     type,
-    category: ['EmotionEngine', 'DreamSynth', 'QuantumMemory', 'ConsciousnessProcessor', 'RealityDistortionUnit', 'TimeCore'].includes(type)
+    category: [
+      'EmotionEngine',
+      'DreamSynth',
+      'QuantumMemory',
+      'ConsciousnessProcessor',
+      'RealityDistortionUnit',
+      'TimeCore',
+    ].includes(type)
       ? 'fantasy'
       : 'real',
     x: 24,

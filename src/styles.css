@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 :root {
   --v2-bg: #03070b;
@@ -132,7 +132,7 @@ button {
   color: var(--v2-accent-2);
 }
 
-.page-theme-switcher__button[aria-pressed="true"] {
+.page-theme-switcher__button[aria-pressed='true'] {
   border-color: var(--v2-border-strong);
   background: color-mix(in srgb, var(--v2-accent) 18%, transparent);
   color: var(--v2-accent-2);
@@ -262,7 +262,11 @@ button {
     linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
     radial-gradient(circle at 55% 50%, var(--v2-shadow), transparent 24rem),
     color-mix(in srgb, var(--v2-panel) 86%, black);
-  background-size: 28px 28px, 28px 28px, auto, auto;
+  background-size:
+    28px 28px,
+    28px 28px,
+    auto,
+    auto;
   padding: 1.25rem;
   box-shadow: 0 28px 110px rgba(0, 0, 0, 0.38);
 }
@@ -280,8 +284,7 @@ button {
   border: 1px solid var(--v2-border-strong);
   background:
     linear-gradient(135deg, rgba(255, 255, 255, 0.08), transparent 24%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(0, 0, 0, 0.32)),
-    #080d12;
+    linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(0, 0, 0, 0.32)), #080d12;
   padding: 4.5rem 5rem;
   box-shadow:
     0 0 80px var(--v2-shadow),
@@ -303,7 +306,11 @@ button {
 .v2-hero-chip__die span {
   border: 1px solid color-mix(in srgb, var(--v2-accent) 38%, transparent);
   background:
-    repeating-linear-gradient(90deg, transparent 0 8px, color-mix(in srgb, var(--v2-accent) 16%, transparent) 8px 9px),
+    repeating-linear-gradient(
+      90deg,
+      transparent 0 8px,
+      color-mix(in srgb, var(--v2-accent) 16%, transparent) 8px 9px
+    ),
     color-mix(in srgb, var(--v2-accent) 9%, transparent);
 }
 
@@ -404,14 +411,22 @@ button {
 .v2-mini-chip__tile[data-tile='CPU'],
 .v2-mini-chip__tile[data-tile='ConsciousnessProcessor'] {
   background:
-    radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--v2-accent) 30%, transparent), transparent 42%),
+    radial-gradient(
+      circle at 50% 50%,
+      color-mix(in srgb, var(--v2-accent) 30%, transparent),
+      transparent 42%
+    ),
     color-mix(in srgb, var(--v2-panel-strong) 72%, transparent);
 }
 
 .v2-mini-chip__tile[data-tile='GPU'],
 .v2-mini-chip__tile[data-tile='DreamSynth'] {
   background:
-    repeating-linear-gradient(135deg, color-mix(in srgb, var(--v2-accent) 20%, transparent) 0 2px, transparent 2px 8px),
+    repeating-linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--v2-accent) 20%, transparent) 0 2px,
+      transparent 2px 8px
+    ),
     color-mix(in srgb, var(--v2-panel-strong) 72%, transparent);
 }
 
@@ -420,7 +435,11 @@ button {
 .v2-mini-chip__tile[data-tile='QuantumMemory'] {
   background:
     linear-gradient(color-mix(in srgb, var(--v2-accent) 18%, transparent) 1px, transparent 1px),
-    linear-gradient(90deg, color-mix(in srgb, var(--v2-accent) 18%, transparent) 1px, transparent 1px),
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--v2-accent) 18%, transparent) 1px,
+      transparent 1px
+    ),
     color-mix(in srgb, var(--v2-panel-strong) 72%, transparent);
   background-size: 9px 9px;
 }
@@ -428,14 +447,24 @@ button {
 .v2-mini-chip__tile[data-tile='PLL'],
 .v2-mini-chip__tile[data-tile='TimeCore'] {
   background:
-    radial-gradient(circle, transparent 0 28%, color-mix(in srgb, var(--v2-accent) 32%, transparent) 29% 34%, transparent 35%),
+    radial-gradient(
+      circle,
+      transparent 0 28%,
+      color-mix(in srgb, var(--v2-accent) 32%, transparent) 29% 34%,
+      transparent 35%
+    ),
     color-mix(in srgb, var(--v2-panel-strong) 72%, transparent);
 }
 
 .v2-mini-chip__tile[data-tile='IO'],
 .v2-mini-chip__tile[data-tile='USB'] {
   background:
-    linear-gradient(90deg, color-mix(in srgb, var(--v2-accent) 30%, transparent) 0 12%, transparent 12% 88%, color-mix(in srgb, var(--v2-accent) 30%, transparent) 88%),
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--v2-accent) 30%, transparent) 0 12%,
+      transparent 12% 88%,
+      color-mix(in srgb, var(--v2-accent) 30%, transparent) 88%
+    ),
     color-mix(in srgb, var(--v2-panel-strong) 72%, transparent);
 }
 
@@ -704,8 +733,7 @@ button {
   border-right: 1px solid rgba(91, 213, 240, 0.12);
   background:
     linear-gradient(rgba(91, 213, 240, 0.035) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(91, 213, 240, 0.035) 1px, transparent 1px),
-    rgba(2, 7, 12, 0.84);
+    linear-gradient(90deg, rgba(91, 213, 240, 0.035) 1px, transparent 1px), rgba(2, 7, 12, 0.84);
   background-size: 28px 28px;
 }
 
@@ -717,8 +745,7 @@ button {
   overscroll-behavior: contain;
   border-color: var(--v2-border);
   background:
-    linear-gradient(180deg, rgba(12, 34, 46, 0.94), rgba(3, 9, 14, 0.96)),
-    var(--v2-panel);
+    linear-gradient(180deg, rgba(12, 34, 46, 0.94), rgba(3, 9, 14, 0.96)), var(--v2-panel);
   padding: 1rem;
 }
 
@@ -923,9 +950,13 @@ button {
     linear-gradient(rgba(91, 213, 240, 0.045) 1px, transparent 1px),
     linear-gradient(90deg, rgba(91, 213, 240, 0.045) 1px, transparent 1px),
     radial-gradient(circle at 50% 46%, rgba(88, 217, 245, 0.17), transparent 31rem),
-    radial-gradient(circle at 50% 88%, rgba(88, 217, 245, 0.1), transparent 22rem),
-    #03080c;
-  background-size: 28px 28px, 28px 28px, auto, auto, auto;
+    radial-gradient(circle at 50% 88%, rgba(88, 217, 245, 0.1), transparent 22rem), #03080c;
+  background-size:
+    28px 28px,
+    28px 28px,
+    auto,
+    auto,
+    auto;
   padding: 1.5rem;
   box-shadow: inset 0 0 80px rgba(0, 0, 0, 0.55);
 }
@@ -953,7 +984,7 @@ button {
 }
 
 .editor-statusbar span:first-child::before {
-  content: "";
+  content: '';
   width: 0.4rem;
   height: 0.4rem;
   margin-right: 0.45rem;
@@ -1099,7 +1130,7 @@ button {
 
 .editor-stage-wrap::before,
 .editor-stage-wrap::after {
-  content: "";
+  content: '';
   pointer-events: none;
   position: absolute;
   left: 8%;
@@ -1121,8 +1152,7 @@ button {
   border: 1px solid rgba(91, 213, 240, 0.2);
   background:
     linear-gradient(135deg, rgba(255, 255, 255, 0.045), transparent 22%),
-    radial-gradient(circle at 50% 50%, rgba(88, 217, 245, 0.09), transparent 34rem),
-    #020506;
+    radial-gradient(circle at 50% 50%, rgba(88, 217, 245, 0.09), transparent 34rem), #020506;
   box-shadow:
     0 28px 90px rgba(0, 0, 0, 0.5),
     0 0 70px rgba(88, 217, 245, 0.12),
@@ -1138,16 +1168,25 @@ button {
 }
 
 .chip-stage-frame__chrome::before {
-  content: "";
+  content: '';
   pointer-events: none;
   position: absolute;
   inset: 18px;
   border: 1px solid rgba(91, 213, 240, 0.15);
   background:
-    linear-gradient(90deg, rgba(91, 213, 240, 0.12), transparent 18%, transparent 82%, rgba(91, 213, 240, 0.12)),
+    linear-gradient(
+      90deg,
+      rgba(91, 213, 240, 0.12),
+      transparent 18%,
+      transparent 82%,
+      rgba(91, 213, 240, 0.12)
+    ),
     linear-gradient(rgba(91, 213, 240, 0.07) 1px, transparent 1px),
     linear-gradient(90deg, rgba(91, 213, 240, 0.07) 1px, transparent 1px);
-  background-size: auto, 24px 24px, 24px 24px;
+  background-size:
+    auto,
+    24px 24px,
+    24px 24px;
   mask-image: linear-gradient(black, transparent 96%);
 }
 
@@ -1434,8 +1473,7 @@ button {
 .editor-mode-note {
   border: 1px solid rgba(91, 213, 240, 0.16);
   background:
-    linear-gradient(135deg, rgba(91, 213, 240, 0.07), transparent 54%),
-    rgba(2, 8, 12, 0.58);
+    linear-gradient(135deg, rgba(91, 213, 240, 0.07), transparent 54%), rgba(2, 8, 12, 0.58);
   color: var(--v2-muted);
   padding: 0.75rem;
   font-size: 0.68rem;
@@ -1543,8 +1581,7 @@ button {
   margin-top: 0.95rem;
   border: 1px solid rgba(91, 213, 240, 0.14);
   background:
-    linear-gradient(135deg, rgba(91, 213, 240, 0.07), transparent 52%),
-    rgba(2, 8, 12, 0.58);
+    linear-gradient(135deg, rgba(91, 213, 240, 0.07), transparent 52%), rgba(2, 8, 12, 0.58);
   padding: 0.75rem;
 }
 
@@ -1642,8 +1679,7 @@ button {
 .selected-tile-panel__empty {
   border: 1px dashed rgba(91, 213, 240, 0.2);
   background:
-    linear-gradient(135deg, rgba(91, 213, 240, 0.06), transparent 48%),
-    rgba(2, 8, 12, 0.5);
+    linear-gradient(135deg, rgba(91, 213, 240, 0.06), transparent 48%), rgba(2, 8, 12, 0.5);
   color: var(--v2-muted);
   padding: 0.85rem;
   font-size: 0.7rem;
@@ -1715,8 +1751,7 @@ button {
   margin-top: 0.9rem;
   border: 1px solid rgba(91, 213, 240, 0.14);
   background:
-    linear-gradient(135deg, rgba(91, 213, 240, 0.07), transparent 52%),
-    rgba(2, 8, 12, 0.52);
+    linear-gradient(135deg, rgba(91, 213, 240, 0.07), transparent 52%), rgba(2, 8, 12, 0.52);
   padding: 0.68rem;
 }
 
@@ -1785,14 +1820,13 @@ button {
   border: 1px solid rgba(91, 213, 240, 0.2);
   background:
     linear-gradient(rgba(91, 213, 240, 0.12) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(91, 213, 240, 0.12) 1px, transparent 1px),
-    rgba(2, 8, 12, 0.74);
+    linear-gradient(90deg, rgba(91, 213, 240, 0.12) 1px, transparent 1px), rgba(2, 8, 12, 0.74);
   background-size: 9px 9px;
   overflow: hidden;
 }
 
 .selected-tile-panel__mini::before {
-  content: "";
+  content: '';
   position: absolute;
   inset: 22% 18%;
   border: 1px solid rgba(91, 213, 240, 0.76);
@@ -1839,8 +1873,7 @@ button {
 .studio-item-inspector {
   border: 1px solid rgba(91, 213, 240, 0.16);
   background:
-    linear-gradient(180deg, rgba(91, 213, 240, 0.07), transparent 42%),
-    rgba(3, 10, 16, 0.68);
+    linear-gradient(180deg, rgba(91, 213, 240, 0.07), transparent 42%), rgba(3, 10, 16, 0.68);
   padding: 0.95rem;
 }
 
@@ -1899,8 +1932,7 @@ button {
 .tile-settings-panel {
   border: 1px solid rgba(91, 213, 240, 0.16);
   background:
-    linear-gradient(180deg, rgba(91, 213, 240, 0.07), transparent 42%),
-    rgba(3, 10, 16, 0.68);
+    linear-gradient(180deg, rgba(91, 213, 240, 0.07), transparent 42%), rgba(3, 10, 16, 0.68);
   padding: 0.95rem;
 }
 
@@ -1908,8 +1940,7 @@ button {
 .block-visual-panel {
   border: 1px solid rgba(91, 213, 240, 0.16);
   background:
-    linear-gradient(180deg, rgba(91, 213, 240, 0.07), transparent 42%),
-    rgba(3, 10, 16, 0.68);
+    linear-gradient(180deg, rgba(91, 213, 240, 0.07), transparent 42%), rgba(3, 10, 16, 0.68);
   padding: 0.95rem;
 }
 
@@ -2031,9 +2062,21 @@ button {
   border-radius: 999px;
   background: currentColor;
 }
-.generated-spec-panel__health--healthy { color: #34d399; border-color: rgba(52, 211, 153, 0.4); background: rgba(52, 211, 153, 0.1); }
-.generated-spec-panel__health--warn { color: #fbbf24; border-color: rgba(251, 191, 36, 0.4); background: rgba(251, 191, 36, 0.1); }
-.generated-spec-panel__health--critical { color: #f87171; border-color: rgba(248, 113, 113, 0.4); background: rgba(248, 113, 113, 0.1); }
+.generated-spec-panel__health--healthy {
+  color: #34d399;
+  border-color: rgba(52, 211, 153, 0.4);
+  background: rgba(52, 211, 153, 0.1);
+}
+.generated-spec-panel__health--warn {
+  color: #fbbf24;
+  border-color: rgba(251, 191, 36, 0.4);
+  background: rgba(251, 191, 36, 0.1);
+}
+.generated-spec-panel__health--critical {
+  color: #f87171;
+  border-color: rgba(248, 113, 113, 0.4);
+  background: rgba(248, 113, 113, 0.1);
+}
 .generated-spec-panel__power {
   margin-top: 0.5rem;
   padding-top: 0.6rem;
@@ -2107,9 +2150,7 @@ button {
 .gallery-page,
 .gallery-detail {
   min-height: calc(100vh - 128px);
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent 28%),
-    var(--v2-bg);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent 28%), var(--v2-bg);
   color: var(--v2-text);
 }
 
@@ -2403,9 +2444,7 @@ button {
 .contests-page,
 .contest-detail {
   min-height: calc(100vh - 128px);
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent 28%),
-    var(--v2-bg);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent 28%), var(--v2-bg);
   color: var(--v2-text);
 }
 

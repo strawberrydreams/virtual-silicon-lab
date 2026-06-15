@@ -1,6 +1,16 @@
-import { type BlockBlueprint, type DecorationBlueprint, materializeDecoration } from '../domain/blueprint'
+import {
+  type BlockBlueprint,
+  type DecorationBlueprint,
+  materializeDecoration,
+} from '../domain/blueprint'
 import { createHeroChip } from '../domain/heroChip'
-import { CURRENT_SCHEMA_VERSION, type Die, type FakeSpec, type Project, type StyleTheme } from '../domain/project'
+import {
+  CURRENT_SCHEMA_VERSION,
+  type Die,
+  type FakeSpec,
+  type Project,
+  type StyleTheme,
+} from '../domain/project'
 import { createDefaultStudioState } from '../domain/studioDefaults'
 import { createHeroSetProject, isHeroSetId } from '../visual/heroSetCatalog'
 import type { BasePresetId, PresetId } from './presetCatalog'
@@ -21,10 +31,39 @@ const BLUEPRINTS: Record<Exclude<BasePresetId, 'aurora-c1'>, PresetBlueprint> = 
     theme: 'neon',
     blocks: [
       { type: 'IO', category: 'real', x: 285, y: 112, w: 150, h: 72, rotation: 0, glow: true },
-      { type: 'EmotionEngine', category: 'fantasy', x: 250, y: 240, w: 220, h: 108, rotation: 0, glow: true, colorOverride: '#22d3ee' },
-      { type: 'RealityDistortionUnit', category: 'fantasy', x: 176, y: 382, w: 168, h: 92, rotation: 0, glow: true, colorOverride: '#ff2bd6' },
+      {
+        type: 'EmotionEngine',
+        category: 'fantasy',
+        x: 250,
+        y: 240,
+        w: 220,
+        h: 108,
+        rotation: 0,
+        glow: true,
+        colorOverride: '#22d3ee',
+      },
+      {
+        type: 'RealityDistortionUnit',
+        category: 'fantasy',
+        x: 176,
+        y: 382,
+        w: 168,
+        h: 92,
+        rotation: 0,
+        glow: true,
+        colorOverride: '#ff2bd6',
+      },
       { type: 'GPU', category: 'real', x: 376, y: 382, w: 168, h: 92, rotation: 0, glow: true },
-      { type: 'QuantumMemory', category: 'fantasy', x: 250, y: 492, w: 220, h: 58, rotation: 0, glow: true },
+      {
+        type: 'QuantumMemory',
+        category: 'fantasy',
+        x: 250,
+        y: 492,
+        w: 220,
+        h: 58,
+        rotation: 0,
+        glow: true,
+      },
     ],
     decorations: [
       { kind: 'label', x: 268, y: 202, text: 'NEON DISTRICT N-9' },
@@ -50,7 +89,16 @@ const BLUEPRINTS: Record<Exclude<BasePresetId, 'aurora-c1'>, PresetBlueprint> = 
     blocks: [
       { type: 'IO', category: 'real', x: 72, y: 92, w: 150, h: 88, rotation: 0, glow: false },
       { type: 'USB', category: 'real', x: 72, y: 206, w: 150, h: 88, rotation: 0, glow: false },
-      { type: 'TimeCore', category: 'fantasy', x: 310, y: 190, w: 300, h: 176, rotation: 0, glow: true },
+      {
+        type: 'TimeCore',
+        category: 'fantasy',
+        x: 310,
+        y: 190,
+        w: 300,
+        h: 176,
+        rotation: 0,
+        glow: true,
+      },
       { type: 'SRAM', category: 'real', x: 682, y: 92, w: 160, h: 88, rotation: 0, glow: false },
       { type: 'Cache', category: 'real', x: 682, y: 206, w: 160, h: 88, rotation: 0, glow: false },
       { type: 'PLL', category: 'real', x: 682, y: 320, w: 160, h: 88, rotation: 0, glow: false },
@@ -68,7 +116,8 @@ const BLUEPRINTS: Record<Exclude<BasePresetId, 'aurora-c1'>, PresetBlueprint> = 
       cores: 32,
       bandwidth: '2.4 TB/s',
       features: ['Rad-Hardened', 'Faraday Seal', 'Failover Core'],
-      description: 'Slows time by 1.5x in hostile environments. Warranty applies in peacetime only.',
+      description:
+        'Slows time by 1.5x in hostile environments. Warranty applies in peacetime only.',
     },
   },
   'lucid-88': {
@@ -77,7 +126,16 @@ const BLUEPRINTS: Record<Exclude<BasePresetId, 'aurora-c1'>, PresetBlueprint> = 
     theme: 'retro',
     blocks: [
       { type: 'DSP', category: 'real', x: 278, y: 136, w: 164, h: 82, rotation: 0, glow: true },
-      { type: 'DreamSynth', category: 'fantasy', x: 238, y: 278, w: 244, h: 132, rotation: 0, glow: true },
+      {
+        type: 'DreamSynth',
+        category: 'fantasy',
+        x: 238,
+        y: 278,
+        w: 244,
+        h: 132,
+        rotation: 0,
+        glow: true,
+      },
       { type: 'SRAM', category: 'real', x: 166, y: 444, w: 164, h: 82, rotation: 0, glow: false },
       { type: 'DAC', category: 'real', x: 390, y: 444, w: 164, h: 82, rotation: 0, glow: false },
     ],
@@ -128,10 +186,29 @@ const BLUEPRINTS: Record<Exclude<BasePresetId, 'aurora-c1'>, PresetBlueprint> = 
     theme: 'neon',
     blocks: [
       { type: 'GPU', category: 'real', x: 80, y: 100, w: 250, h: 126, rotation: 0, glow: true },
-      { type: 'EmotionEngine', category: 'fantasy', x: 362, y: 198, w: 300, h: 166, rotation: 0, glow: true, colorOverride: '#ff2bd6' },
+      {
+        type: 'EmotionEngine',
+        category: 'fantasy',
+        x: 362,
+        y: 198,
+        w: 300,
+        h: 166,
+        rotation: 0,
+        glow: true,
+        colorOverride: '#ff2bd6',
+      },
       { type: 'DSP', category: 'real', x: 704, y: 100, w: 140, h: 104, rotation: 0, glow: true },
       { type: 'Cache', category: 'real', x: 704, y: 244, w: 140, h: 104, rotation: 0, glow: false },
-      { type: 'QuantumMemory', category: 'fantasy', x: 80, y: 438, w: 764, h: 72, rotation: 0, glow: true },
+      {
+        type: 'QuantumMemory',
+        category: 'fantasy',
+        x: 80,
+        y: 438,
+        w: 764,
+        h: 72,
+        rotation: 0,
+        glow: true,
+      },
     ],
     decorations: [
       { kind: 'label', x: 362, y: 152, text: 'SOLAR FLARE X' },
@@ -167,7 +244,11 @@ export function createPresetProject(
     createdAt: now,
     updatedAt: now,
     die: { ...blueprint.die },
-    blocks: blueprint.blocks.map((block, index) => ({ ...block, id: `${id}-block-${index}`, zIndex: index })),
+    blocks: blueprint.blocks.map((block, index) => ({
+      ...block,
+      id: `${id}-block-${index}`,
+      zIndex: index,
+    })),
     decorations: blueprint.decorations.map((decoration, index) =>
       materializeDecoration(decoration, `${id}-decoration-${index}`, index),
     ),

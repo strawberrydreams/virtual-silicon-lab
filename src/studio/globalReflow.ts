@@ -48,7 +48,10 @@ export function reflowBlocksGlobally({ blocks, die, targetBlockId, target }: Ref
       return { block, sortX: block.x, sortY: block.y }
     })
     .slice()
-    .sort((a: OrderedBlock, b: OrderedBlock) => a.sortY - b.sortY || a.sortX - b.sortX || a.block.zIndex - b.block.zIndex)
+    .sort(
+      (a: OrderedBlock, b: OrderedBlock) =>
+        a.sortY - b.sortY || a.sortX - b.sortX || a.block.zIndex - b.block.zIndex,
+    )
     .forEach((item) => {
       const zone = nearestZone(zones, item.sortX + item.block.w / 2, item.sortY + item.block.h / 2)
       buckets.get(zone.id)!.push(item)
@@ -163,7 +166,14 @@ function fitExtents(block: Block, region: PackRegion): FitExtents {
     h = Math.max(GRID, h * scale)
     extents = rotatedExtents(w, h, rotation)
   }
-  return { minX: extents.minX, minY: extents.minY, width: extents.width, height: extents.height, blockW: w, blockH: h }
+  return {
+    minX: extents.minX,
+    minY: extents.minY,
+    width: extents.width,
+    height: extents.height,
+    blockW: w,
+    blockH: h,
+  }
 }
 
 // Axis-aligned bounding box of a block rotated around its top-left origin, matching

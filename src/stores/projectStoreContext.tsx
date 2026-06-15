@@ -30,7 +30,9 @@ export function ProjectStoreProvider({
     void store.current?.getState().load()
   }, [])
 
-  return <ProjectStoreContext.Provider value={store.current}>{children}</ProjectStoreContext.Provider>
+  return (
+    <ProjectStoreContext.Provider value={store.current}>{children}</ProjectStoreContext.Provider>
+  )
 }
 
 export function useProjectStore() {

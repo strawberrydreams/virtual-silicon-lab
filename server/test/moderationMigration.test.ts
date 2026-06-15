@@ -4,7 +4,9 @@ import { migrations } from '../src/migrations'
 
 describe('004_moderation migration', () => {
   function columns(db: ReturnType<typeof openDatabase>, table: string): string[] {
-    return (db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[]).map((c) => c.name)
+    return (db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[]).map(
+      (c) => c.name,
+    )
   }
 
   it('adds moderation columns to published_chips', () => {
@@ -20,13 +22,16 @@ describe('004_moderation migration', () => {
   it('defaults moderation_status to visible for inserted chips', () => {
     const db = openDatabase(':memory:')
     runMigrations(db, migrations)
-    db.prepare('INSERT INTO users (id, email, display_name, password_hash, created_at, updated_at) VALUES (?,?,?,?,?,?)')
-      .run('u1', 'a@b.c', 'A', 'h', 0, 0)
+    db.prepare(
+      'INSERT INTO users (id, email, display_name, password_hash, created_at, updated_at) VALUES (?,?,?,?,?,?)',
+    ).run('u1', 'a@b.c', 'A', 'h', 0, 0)
     db.prepare(
       `INSERT INTO published_chips (id, owner_user_id, source_project_id, slug, title, project_json, die_image_data_url, poster_image_data_url, created_at, updated_at)
        VALUES (?,?,?,?,?,?,?,?,?,?)`,
     ).run('c1', 'u1', 'p1', 's1', 'T', '{}', '', '', 0, 0)
-    const row = db.prepare('SELECT moderation_status FROM published_chips WHERE id = ?').get('c1') as {
+    const row = db
+      .prepare('SELECT moderation_status FROM published_chips WHERE id = ?')
+      .get('c1') as {
       moderation_status: string
     }
     expect(row.moderation_status).toBe('visible')

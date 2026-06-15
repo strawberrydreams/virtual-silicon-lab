@@ -44,7 +44,9 @@ function blockCenter(block: RoutableBlock): Point {
 
 function nearest(from: Point, candidates: Point[]): Point {
   return candidates.reduce((best, point) =>
-    Math.hypot(point.x - from.x, point.y - from.y) < Math.hypot(best.x - from.x, best.y - from.y) ? point : best,
+    Math.hypot(point.x - from.x, point.y - from.y) < Math.hypot(best.x - from.x, best.y - from.y)
+      ? point
+      : best,
   )
 }
 
@@ -56,9 +58,10 @@ function nearest(from: Point, candidates: Point[]): Point {
 export function routedBusPairs(blocks: RoutableBlock[]): BusPair[] {
   if (blocks.length === 0) return []
   const computeBlocks = blocks.filter((block) => COMPUTE_TYPES.has(block.type))
-  const anchorBlocks = computeBlocks.length > 0
-    ? computeBlocks
-    : [blocks.reduce((best, block) => (block.w * block.h > best.w * best.h ? block : best))]
+  const anchorBlocks =
+    computeBlocks.length > 0
+      ? computeBlocks
+      : [blocks.reduce((best, block) => (block.w * block.h > best.w * best.h ? block : best))]
   const anchorCenters = anchorBlocks.map(blockCenter)
   const anchorSet = new Set(anchorBlocks)
   const pairs: BusPair[] = []

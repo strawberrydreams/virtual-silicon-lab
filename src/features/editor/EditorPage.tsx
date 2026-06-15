@@ -39,7 +39,7 @@ export function EditorPage({ project, persist }: Props) {
   const selectedBlock =
     state.selectedBlockId === null
       ? null
-      : state.project.blocks.find((block) => block.id === state.selectedBlockId) ?? null
+      : (state.project.blocks.find((block) => block.id === state.selectedBlockId) ?? null)
   const toggleLayerVisibility = (layer: ChipLayerId) => {
     setLayerVisibility((current) => ({ ...current, [layer]: !current[layer] }))
   }
@@ -57,7 +57,11 @@ export function EditorPage({ project, persist }: Props) {
       />
       <section aria-label="Editor canvas workspace" className="editor-mainframe" role="region">
         <section aria-label="Product analysis stage" className="editor-center" role="region">
-          <div aria-label="Editor top command bar" className="editor-command-deck editor-topbar" role="region">
+          <div
+            aria-label="Editor top command bar"
+            className="editor-command-deck editor-topbar"
+            role="region"
+          >
             <div>
               <p className="editor-kicker">Active project</p>
               <h1 className="editor-title">{state.project.name}</h1>
@@ -77,16 +81,32 @@ export function EditorPage({ project, persist }: Props) {
               </span>
             </div>
             <div className="editor-topbar-actions">
-              <button className="editor-icon-button" type="button" onClick={state.undo} disabled={state.past.length === 0}>
-                <span className="editor-icon-button__icon" aria-hidden="true"><UndoIcon /></span>
+              <button
+                className="editor-icon-button"
+                type="button"
+                onClick={state.undo}
+                disabled={state.past.length === 0}
+              >
+                <span className="editor-icon-button__icon" aria-hidden="true">
+                  <UndoIcon />
+                </span>
                 Undo
               </button>
-              <button className="editor-icon-button" type="button" onClick={state.redo} disabled={state.future.length === 0}>
-                <span className="editor-icon-button__icon" aria-hidden="true"><RedoIcon /></span>
+              <button
+                className="editor-icon-button"
+                type="button"
+                onClick={state.redo}
+                disabled={state.future.length === 0}
+              >
+                <span className="editor-icon-button__icon" aria-hidden="true">
+                  <RedoIcon />
+                </span>
                 Redo
               </button>
               <button className="editor-simulate-button" type="button" disabled>
-                <span className="editor-icon-button__icon" aria-hidden="true"><PlayIcon /></span>
+                <span className="editor-icon-button__icon" aria-hidden="true">
+                  <PlayIcon />
+                </span>
                 Simulate
               </button>
               <Link className="editor-exit-link" to="/dashboard">

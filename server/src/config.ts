@@ -87,7 +87,11 @@ export function loadRuntimeConfig(env: RuntimeEnv = process.env): RuntimeConfig 
       signupsOpen,
       adminEmails,
       rateLimit: {
-        windowMs: readPositiveInteger(env, 'VSL_RATE_LIMIT_WINDOW_MS', DEFAULT_RATE_LIMIT_WINDOW_MS),
+        windowMs: readPositiveInteger(
+          env,
+          'VSL_RATE_LIMIT_WINDOW_MS',
+          DEFAULT_RATE_LIMIT_WINDOW_MS,
+        ),
         max: readPositiveInteger(env, 'VSL_RATE_LIMIT_MAX', DEFAULT_RATE_LIMIT_MAX),
       },
     }

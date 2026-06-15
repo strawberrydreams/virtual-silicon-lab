@@ -17,8 +17,8 @@ describe('shared domain modules under node', () => {
   })
 
   it('rejects a structurally corrupt snapshot', () => {
-    expect(() =>
-      migrateProject({ schemaVersion: CURRENT_SCHEMA_VERSION, id: 42 }),
-    ).toThrow('Corrupt project record')
+    expect(() => migrateProject({ schemaVersion: CURRENT_SCHEMA_VERSION, id: 42 })).toThrow(
+      'Corrupt project record',
+    )
   })
 })

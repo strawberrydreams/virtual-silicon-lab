@@ -3,3 +3,8 @@ server/dist
 node_modules
 coverage
 package-lock.json
+
+# local working-context docs (gitignored, not part of the repo)
+/docs/
+/CLAUDE.md
+/implementation.md

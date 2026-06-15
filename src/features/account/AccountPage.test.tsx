@@ -83,7 +83,11 @@ describe('AccountPage anonymous forms', () => {
 
   it('shows the server error message when login fails', async () => {
     const api = fakeApi({
-      login: vi.fn().mockRejectedValue(new AuthApiError('INVALID_CREDENTIALS', 'Email or password is incorrect.')),
+      login: vi
+        .fn()
+        .mockRejectedValue(
+          new AuthApiError('INVALID_CREDENTIALS', 'Email or password is incorrect.'),
+        ),
     })
     renderAccountPage(api)
 
@@ -97,7 +101,10 @@ describe('AccountPage anonymous forms', () => {
 
 describe('AccountPage profile management', () => {
   function authedApi(overrides: Partial<AuthApi> = {}) {
-    return fakeApi({ me: vi.fn().mockResolvedValue({ user: testUser, isAdmin: false }), ...overrides })
+    return fakeApi({
+      me: vi.fn().mockResolvedValue({ user: testUser, isAdmin: false }),
+      ...overrides,
+    })
   }
 
   it('renames the account', async () => {
@@ -149,7 +156,9 @@ describe('AccountPage profile management', () => {
 
   it('surfaces a wrong delete password without leaving the profile', async () => {
     const api = authedApi({
-      deleteAccount: vi.fn().mockRejectedValue(new AuthApiError('WRONG_PASSWORD', 'Password is incorrect.')),
+      deleteAccount: vi
+        .fn()
+        .mockRejectedValue(new AuthApiError('WRONG_PASSWORD', 'Password is incorrect.')),
     })
     renderAccountPage(api)
 

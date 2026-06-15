@@ -42,7 +42,10 @@ function chipRegion(die: Die, region: PosterRegion): PosterChipRegion {
   return { ...region, scale: scaleFor(die, region) }
 }
 
-export function resolvePosterComposition(die: Die, format: PosterFormat = 'press-hero'): PosterComposition {
+export function resolvePosterComposition(
+  die: Die,
+  format: PosterFormat = 'press-hero',
+): PosterComposition {
   switch (format) {
     case 'architecture-slide':
       return {

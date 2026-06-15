@@ -17,7 +17,12 @@ describe('posterCompositions', () => {
   it('keeps every composition region inside the logical poster canvas', () => {
     for (const format of POSTER_FORMATS) {
       const composition = resolvePosterComposition(die, format.id)
-      for (const region of [composition.chip, composition.title, composition.specs, composition.footer]) {
+      for (const region of [
+        composition.chip,
+        composition.title,
+        composition.specs,
+        composition.footer,
+      ]) {
         expect(region.x).toBeGreaterThanOrEqual(0)
         expect(region.y).toBeGreaterThanOrEqual(0)
         expect(region.x + region.width).toBeLessThanOrEqual(POSTER_EXPORT.logicalWidth)
