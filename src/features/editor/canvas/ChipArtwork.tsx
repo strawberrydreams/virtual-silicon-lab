@@ -1433,10 +1433,10 @@ function BlockImageOverlay({ block }: { block: Block }) {
   const [image, setImage] = useState<HTMLImageElement | null>(null)
 
   useEffect(() => {
-    if (!block.imageDataUrl) {
-      setImage(null)
-      return
-    }
+    // The parent only mounts this overlay when block.imageDataUrl is truthy
+    // (BlockArtwork guards on it), so the loader never needs to reset to null
+    // synchronously — it just loads the data URL and swaps the image in once ready.
+    if (!block.imageDataUrl) return
     let cancelled = false
     const nextImage = new window.Image()
     const handleLoad = () => {
