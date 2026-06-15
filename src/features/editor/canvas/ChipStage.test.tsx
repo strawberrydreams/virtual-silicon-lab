@@ -5,7 +5,6 @@ import { createProject } from '../../../domain/projectFactory'
 import { ChipStage } from './ChipStage'
 
 vi.mock('react-konva', async () => {
-  const React = await import('react')
   function node(type: string) {
     return ({
       children,
@@ -13,7 +12,7 @@ vi.mock('react-konva', async () => {
       name,
       text,
     }: {
-      children?: React.ReactNode
+      children?: import('react').ReactNode
       className?: string
       name?: string
       text?: string
