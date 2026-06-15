@@ -56,6 +56,7 @@ export function AdminPage({
   )
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- imperative load of moderation data on mount / when admin status resolves; refresh() only setStates after awaiting the server
     if (auth.isAdmin) void refresh()
   }, [auth.isAdmin, refresh])
 
