@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 import type { Project } from '@domain/project'
 import type { AppDeps } from '../app'
-import { getPublicPublishedChipBySlug } from '../publish/service'
+import { getChipLineage, getPublicPublishedChipBySlug } from '../publish/service'
 import { resolvePublicBaseUrl } from './baseUrl'
 import { decodePngDataUrl } from './poster'
 import { renderNotFoundHtml, renderViewerHtml } from './viewer'
@@ -29,6 +29,8 @@ export function shareRoutes({ db, publicBaseUrl, imageStore }: AppDeps) {
     const chip = getPublicPublishedChipBySlug(db, c.req.param('slug'))
     if (chip === null) return c.html(renderNotFoundHtml({ baseUrl }), 404)
     const project = JSON.parse(chip.projectJson) as Project
+    const parent = getChipLineage(db, chip.slug)?.ancestors.at(-1)
+    const remixedFrom = parent && !('hidden' in parent) ? { slug: parent.slug, title: parent.title } : undefined
     return c.html(
       renderViewerHtml({
         title: chip.title,
@@ -36,6 +38,7 @@ export function shareRoutes({ db, publicBaseUrl, imageStore }: AppDeps) {
         slug: chip.slug,
         project,
         baseUrl,
+        remixedFrom,
       }),
     )
   })

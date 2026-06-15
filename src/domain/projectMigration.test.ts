@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { CURRENT_SCHEMA_VERSION } from './project'
 import { migrateProject, migrateProjects } from './projectMigration'
 
 function validProject(id: string) {
@@ -49,7 +50,7 @@ describe('migrateProject', () => {
       },
     })
 
-    expect(project.schemaVersion).toBe(4)
+    expect(project.schemaVersion).toBe(CURRENT_SCHEMA_VERSION)
     expect(project.studio).toEqual({
       layoutMode: 'global-reflow',
       detailMode: 'semi-auto',
@@ -69,7 +70,7 @@ describe('migrateProject', () => {
     })
   })
 
-  it('migrates a schema version 2 studio project to v3, defaulting spray blend', () => {
+  it('migrates a schema version 2 studio project to current version, defaulting spray blend', () => {
     const project = migrateProject({
       ...validProject('studio-1'),
       schemaVersion: 2,
@@ -105,7 +106,7 @@ describe('migrateProject', () => {
       },
     })
 
-    expect(project.schemaVersion).toBe(4)
+    expect(project.schemaVersion).toBe(CURRENT_SCHEMA_VERSION)
     expect(project.studio.sprays).toHaveLength(1)
     expect(project.studio.sprays[0].blend).toBe('screen')
     expect(project.studio.stickers).toHaveLength(1)
@@ -155,9 +156,31 @@ describe('migrateProject', () => {
       },
     })
 
-    expect(project.schemaVersion).toBe(4)
+    expect(project.schemaVersion).toBe(CURRENT_SCHEMA_VERSION)
     expect(project.studio.colorSettings.die).toEqual({ mode: 'gradient', from: '#111111', to: '#333333' })
     expect(project.blocks[0].imageDataUrl).toBe('data:image/png;base64,abc')
+  })
+
+  it('migrates a schema version 4 project to current version without a remix origin', () => {
+    const migrated = migrateProject({
+      ...validProject('v4-no-origin'),
+      schemaVersion: 4,
+      studio: undefined,
+    })
+
+    expect(migrated.schemaVersion).toBe(CURRENT_SCHEMA_VERSION)
+    expect(migrated.remixedFrom).toBeUndefined()
+  })
+
+  it('preserves remixedFrom when migrating a current-version project', () => {
+    const migrated = migrateProject({
+      ...validProject('with-origin'),
+      schemaVersion: CURRENT_SCHEMA_VERSION,
+      studio: undefined,
+      remixedFrom: { chipId: 'c1', slug: 's1', title: 'Parent' },
+    })
+
+    expect(migrated.remixedFrom).toEqual({ chipId: 'c1', slug: 's1', title: 'Parent' })
   })
 
   it('rejects data without a supported schema version', () => {

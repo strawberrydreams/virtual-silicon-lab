@@ -1023,3 +1023,66 @@ M3의 남은 작업을 완료해 공개 contest lifecycle을 서버/클라이언
 - **알려진 기존 이슈.** Admin으로 sign out 후 일반 유저 signup 시 header의 Admin 링크가 남는 auth store reset 문제가 보였다.
   M0 때 기록된 `isAdmin` 세팅/리셋 계열의 기존 auth 상태 문제이며, 이번 M3 contest backend authorization은 서버 guard가
   별도로 강제한다. M3 범위에서는 수정하지 않았다.
+
+## V4-M4 리믹스 계보 시작: 도메인 스키마 v5 (2026-06-15)
+
+스펙: `docs/superpowers/specs/2026-06-15-v4-m4-remix-lineage-design.md` ·
+플랜: `docs/superpowers/plans/2026-06-15-v4-m4-remix-lineage.md`. M4 구현은 도메인 schema carrier부터 시작했다.
+현재 범위는 local-first `Project`가 remix provenance를 publish 시점까지 운반할 수 있게 만드는 기반이며, 서버
+`007_remix_lineage`와 gallery lineage UI는 아직 들어가지 않았다.
+
+- **스키마 v5.** `CURRENT_SCHEMA_VERSION`을 4에서 5로 올리고, `RemixOrigin`(`chipId`/`slug`/`title`)과
+  `Project.remixedFrom?` 선택 필드를 추가했다. `chipId`는 서버 published chip FK용 내구성 키이고, `slug`/`title`은
+  UI 링크와 표시용으로 함께 운반한다.
+- **Migration 호환성.** `migrateProject`의 supported source versions에 v4를 명시적으로 추가했다. v4 프로젝트는
+  current v5로 승격되며 `remixedFrom`은 undefined로 남는다. current-version 프로젝트에 `remixedFrom`이 있으면 기존
+  spread migration 경로가 그대로 보존한다.
+- **검증.** RED: `npm run test:client -- src/domain/project.test.ts`가 schemaVersion 4/5 차이로 실패했고,
+  `npm run test:client -- src/domain/projectMigration.test.ts`가 v4 unsupported로 실패했다. GREEN:
+  `npm run test:client -- src/domain/project.test.ts src/domain/projectFactory.test.ts src/domain/projectMigration.test.ts`
+  통과(3 files / 11 tests). M4는 진행 중이라 아직 커밋하지 않았다.
+- **빌드 보정.** schemaVersion literal `4`를 직접 쓰던 `src/studio/floorplan.test.ts` fixture는
+  `CURRENT_SCHEMA_VERSION`로 교체했다. 전체 `npm test` 통과: client 73 files / 356 tests, server 36 files / 173 tests.
+  `npm run build` 통과(기존 Vite >500 kB chunk 경고만).
+
+## V4-M4 리믹스 계보 구현 완료(검증 제외) (2026-06-15)
+
+사용자 요청에 따라 M4의 남은 구현을 모두 반영하되, 이번 패스에서는 테스트/빌드/브라우저 QA와 커밋을 실행하지 않았다.
+따라서 아래 내용은 구현 상태 기록이며, green 상태 증명은 후속 검증 패스가 필요하다.
+
+- **Origin threading.** `importRemixedProject(snapshot, id, now, origin?)`가 optional `RemixOrigin`을 받아 새 local project의
+  `remixedFrom`에 기록한다. `projectStore.remixImport(snapshot, origin?)`와 `GalleryDetailPage`/`App`의 `onRemix` contract도
+  함께 변경해 gallery detail에서 `{ chipId, slug, title }` origin이 editor/import/publish 경로까지 전달된다.
+- **DB parent pointer.** `007_remix_lineage` migration을 추가해 `published_chips.remixed_from_chip_id` nullable self-FK를 만들고
+  `ON DELETE SET NULL` 및 `idx_published_chips_remixed_from` index를 둔다. 부모 chip id가 서버에 없으면 publish 실패 대신
+  `NULL`을 저장한다.
+- **Publish 저장.** `PublishedChip`/row mapper/API serialization에 `remixedFromChipId`를 추가했다. `upsertPublishedChip`는
+  `input.project.remixedFrom?.chipId`를 실제 `published_chips.id`로 resolve해 insert/update 모두에 저장한다.
+- **Read-side lineage.** `getChipLineage(db, slug)`는 target이 public+visible일 때만 ancestor chain과 direct children을 반환한다.
+  ancestor는 root-first로 정렬하고, private/hidden parent를 만나면 `{ hidden: true }` placeholder를 하나 추가한 뒤 climb을
+  중단한다. children과 `childCount`는 public+visible direct child만 센다. 별도 cache/materialized view는 만들지 않았다.
+- **API/Share.** `GET /api/gallery/:slug/lineage`를 추가해 `posterImageUrl`까지 직렬화한다. `/s/:slug` share viewer는 visible
+  direct parent가 있을 때만 `Remixed from {title}` gallery 링크를 렌더한다.
+- **Client lineage UI.** `galleryApi.getLineage(slug)`와 `ChipLineage` 타입을 추가했다. `GalleryDetailPage`는 chip detail 로딩 후
+  lineage를 lazy-load하고, 실패해도 detail 화면은 유지한다. ancestor spine, private placeholder, direct child thumbnail grid를
+  `gallery-lineage*` CSS로 추가했다.
+- **테스트 파일.** domain/store/server/client 테스트를 추가/수정했지만, 이번 요청이 "검증은 하지 마세요"였기 때문에 새 테스트와
+  전체 suite는 실행하지 않았다. 다음 검증 패스에서는 `npm test`, `npm run build`, `npm run typecheck --workspace server`,
+  그리고 browser QA acceptance gate를 실행해야 한다.
+
+## V4-M4 리믹스 계보 검증 완료 (2026-06-15)
+
+M4 전체 검증을 수행하고, 발견된 테스트 mock 문제를 수정했다. `src/app/App.test.tsx`의 gallery detail fetch mock이
+새 `/api/gallery/:slug/lineage` 요청에도 detail 응답을 반환해 `lineage.ancestors`가 없는 객체가 들어가던 것이 원인이었다.
+mock을 endpoint별로 분기해 lineage에는 `{ ancestors: [], children: [], childCount: 0 }`를 반환하도록 수정했다.
+
+- **자동 검증.** `npm test` 통과: client 73 files / 362 tests, server 38 files / 184 tests. `npm run build` 통과
+  (기존 Vite >500 kB chunk 경고만). `npm run typecheck --workspace server` 통과.
+- **브라우저 QA.** Vite dev server와 QA용 API server를 띄워 A→B→C 계보 데이터를 생성했다. `/gallery/B`에서
+  `Alpha Parent Valid` ancestor와 B의 child `Gamma Grandchild Valid` thumbnail 로딩을 확인했고, `/gallery/A`에서
+  `Beta Child Valid` child count 1, `/gallery/C`에서 root-first ancestor `Alpha Parent Valid → Beta Child Valid`를
+  확인했다. `/s/B` share viewer는 `Remixed from Alpha Parent Valid` 링크를 렌더했다.
+- **Visibility/delete gate.** A를 private으로 전환하면 B의 ancestor가 `a private chip` placeholder로 표시되고 parent title은
+  숨겨졌다. A 삭제 후 `ON DELETE SET NULL`에 따라 B의 ancestor는 사라지고 direct child `Gamma Grandchild Valid`만 남았다.
+- **Local-first 회귀.** API server를 내린 상태에서 `/`의 `Start Blank`로 editor 진입이 가능했고, Publish panel은 offline
+  상태를 표시하면서 local editing은 유지됐다. 브라우저 console warn/error 0.

@@ -21,6 +21,21 @@ export type GalleryChipDetail = GalleryChipSummary & {
   project: Project
 }
 
+export type LineageChipNode = {
+  slug: string
+  title: string
+  ownerDisplayName: string
+  posterImageUrl: string
+}
+
+export type LineageNode = LineageChipNode | { hidden: true }
+
+export type ChipLineage = {
+  ancestors: LineageNode[]
+  children: LineageChipNode[]
+  childCount: number
+}
+
 export class GalleryApiError extends Error {
   constructor(
     readonly code: string,
@@ -41,6 +56,7 @@ export class ServerUnreachableError extends Error {
 export type GalleryApi = {
   list: (sort?: GallerySort) => Promise<GalleryChipSummary[]>
   get: (slug: string) => Promise<GalleryChipDetail | null>
+  getLineage: (slug: string) => Promise<ChipLineage | null>
 }
 
 const GATEWAY_ERROR_STATUSES = new Set([502, 503, 504])
@@ -81,5 +97,11 @@ export const liveGalleryApi: GalleryApi = {
     if (!res.ok) throw await toApiError(res)
     const body = (await res.json()) as { chip: GalleryChipDetail }
     return body.chip
+  },
+  async getLineage(slug) {
+    const res = await request(`/api/gallery/${encodeURIComponent(slug)}/lineage`)
+    if (res.status === 404) return null
+    if (!res.ok) throw await toApiError(res)
+    return (await res.json()) as ChipLineage
   },
 }

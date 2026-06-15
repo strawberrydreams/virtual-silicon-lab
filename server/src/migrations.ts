@@ -137,4 +137,14 @@ export const migrations: Migration[] = [
       `)
     },
   },
+  {
+    id: '007_remix_lineage',
+    up: (db) => {
+      db.exec(`
+        ALTER TABLE published_chips
+          ADD COLUMN remixed_from_chip_id TEXT REFERENCES published_chips(id) ON DELETE SET NULL;
+        CREATE INDEX idx_published_chips_remixed_from ON published_chips(remixed_from_chip_id);
+      `)
+    },
+  },
 ]

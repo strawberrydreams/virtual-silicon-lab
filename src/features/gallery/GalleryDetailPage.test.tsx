@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { createProject } from '../../domain/projectFactory'
 import type { AuthApi } from '../account/authApi'
 import { AuthStoreProvider } from '../../stores/authStoreContext'
-import type { GalleryApi, GalleryChipDetail } from './galleryApi'
+import type { ChipLineage, GalleryApi, GalleryChipDetail } from './galleryApi'
 import { ServerUnreachableError } from './galleryApi'
 import type { ReactionsApi } from './reactionsApi'
 import { GalleryDetailPage } from './GalleryDetailPage'
@@ -44,6 +44,7 @@ function fakeApi(overrides: Partial<GalleryApi> = {}): GalleryApi {
   return {
     list: vi.fn(),
     get: vi.fn().mockResolvedValue(detail),
+    getLineage: vi.fn().mockResolvedValue({ ancestors: [], children: [], childCount: 0 }),
     ...overrides,
   }
 }
@@ -75,7 +76,7 @@ function fakeReactions(): ReactionsApi {
 function renderDetail(
   api: GalleryApi,
   slug = 'ada-chip-deadbeef',
-  onRemix?: (project: GalleryChipDetail['project']) => void,
+  onRemix?: (project: GalleryChipDetail['project'], origin: { chipId: string; slug: string; title: string }) => void,
 ) {
   return render(
     <AuthStoreProvider api={fakeAuthApi()}>
@@ -117,13 +118,36 @@ describe('GalleryDetailPage', () => {
     expect(screen.getByText(/local editing is unaffected/i)).toBeInTheDocument()
   })
 
-  it('remixes the loaded chip snapshot into local projects', async () => {
+  it('passes the loaded chip origin when remixing into local projects', async () => {
     const onRemix = vi.fn()
     renderDetail(fakeApi(), 'ada-chip-deadbeef', onRemix)
 
     await userEvent.click(await screen.findByRole('button', { name: /remix into my projects/i }))
 
-    expect(onRemix).toHaveBeenCalledWith(detail.project)
+    expect(onRemix).toHaveBeenCalledWith(detail.project, {
+      chipId: detail.id,
+      slug: detail.slug,
+      title: detail.title,
+    })
+  })
+
+  it('renders ancestor and child lineage nodes when present', async () => {
+    const lineage: ChipLineage = {
+      ancestors: [{ slug: 'parent', title: 'Parent Chip', ownerDisplayName: 'Ada', posterImageUrl: '/p.png' }],
+      children: [{ slug: 'kid', title: 'Kid Chip', ownerDisplayName: 'Grace', posterImageUrl: '/k.png' }],
+      childCount: 1,
+    }
+    renderDetail(fakeApi({ getLineage: vi.fn().mockResolvedValue(lineage) }))
+
+    expect(await screen.findByText('Parent Chip')).toBeInTheDocument()
+    expect(screen.getByText('Kid Chip')).toBeInTheDocument()
+    expect(screen.getByText('1 remix of this chip')).toBeInTheDocument()
+  })
+
+  it('shows a private-ancestor placeholder for hidden lineage nodes', async () => {
+    renderDetail(fakeApi({ getLineage: vi.fn().mockResolvedValue({ ancestors: [{ hidden: true }], children: [], childCount: 0 }) }))
+
+    expect(await screen.findByText(/private chip/i)).toBeInTheDocument()
   })
 
   it('does not show the remix button while loading or offline', async () => {

@@ -7,6 +7,7 @@ export type PublishedChip = {
   id: string
   ownerUserId: string
   sourceProjectId: string
+  remixedFromChipId: string | null
   slug: string
   title: string
   projectJson: string
@@ -42,6 +43,7 @@ type PublishedChipRow = {
   id: string
   owner_user_id: string
   source_project_id: string
+  remixed_from_chip_id: string | null
   slug: string
   title: string
   project_json: string
@@ -68,6 +70,7 @@ function toPublishedChip(row: PublishedChipRow): PublishedChip {
     id: row.id,
     ownerUserId: row.owner_user_id,
     sourceProjectId: row.source_project_id,
+    remixedFromChipId: row.remixed_from_chip_id,
     slug: row.slug,
     title: row.title,
     projectJson: row.project_json,
@@ -103,6 +106,14 @@ function getByOwnerProject(
     .get(ownerUserId, sourceProjectId) as PublishedChipRow | undefined
 }
 
+function resolveRemixParentId(db: Database.Database, chipId: string | undefined): string | null {
+  if (chipId === undefined) return null
+  const row = db.prepare('SELECT id FROM published_chips WHERE id = ?').get(chipId) as
+    | { id: string }
+    | undefined
+  return row?.id ?? null
+}
+
 function slugify(title: string): string {
   const base = title
     .toLowerCase()
@@ -135,6 +146,7 @@ export function upsertPublishedChip(
     const timestamp = now()
     const projectJson = JSON.stringify(input.project)
     const publishedAt = input.isPublic ? timestamp : existing?.published_at ?? 0
+    const remixedFromChipId = resolveRemixParentId(db, input.project.remixedFrom?.chipId)
     // Republishing overwrites both images at a new version; clear the prior
     // version's files first so superseded PNGs are not orphaned on disk.
     if (imageStore !== undefined && existing !== undefined) {
@@ -168,8 +180,8 @@ export function upsertPublishedChip(
     if (existing === undefined) {
       db.prepare(
         `INSERT INTO published_chips
-         (id, owner_user_id, source_project_id, slug, title, project_json, die_image_data_url, poster_image_data_url, die_image_path, poster_image_path, is_public, created_at, updated_at, published_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         (id, owner_user_id, source_project_id, slug, title, project_json, die_image_data_url, poster_image_data_url, die_image_path, poster_image_path, is_public, created_at, updated_at, published_at, remixed_from_chip_id)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       ).run(
         id,
         ownerUserId,
@@ -185,6 +197,7 @@ export function upsertPublishedChip(
         timestamp,
         timestamp,
         publishedAt,
+        remixedFromChipId,
       )
     } else {
       db.prepare(
@@ -196,6 +209,7 @@ export function upsertPublishedChip(
              die_image_path = ?,
              poster_image_path = ?,
              is_public = ?,
+             remixed_from_chip_id = ?,
              version = version + 1,
              updated_at = ?,
              published_at = ?
@@ -208,6 +222,7 @@ export function upsertPublishedChip(
         images.dieImagePath,
         images.posterImagePath,
         input.isPublic ? 1 : 0,
+        remixedFromChipId,
         timestamp,
         publishedAt,
         existing.id,
@@ -323,4 +338,101 @@ export function getPublicPublishedChipBySlug(
     )
     .get(slug) as PublicGalleryChipRow | undefined
   return row === undefined ? null : toPublicGalleryChip(row)
+}
+
+export type LineageChip = {
+  slug: string
+  title: string
+  ownerDisplayName: string
+  posterImagePath: string | null
+  posterImageDataUrl: string
+}
+
+export type LineageNode = LineageChip | { hidden: true }
+
+export type ChipLineage = {
+  ancestors: LineageNode[]
+  children: LineageChip[]
+  childCount: number
+}
+
+const MAX_LINEAGE_DEPTH = 20
+
+type LineageRow = {
+  slug: string
+  title: string
+  poster_image_path: string | null
+  poster_image_data_url: string
+  owner_display_name: string
+  remixed_from_chip_id: string | null
+  is_public: 0 | 1
+  moderation_status: 'visible' | 'hidden'
+}
+
+function toLineageChip(row: LineageRow): LineageChip {
+  return {
+    slug: row.slug,
+    title: row.title,
+    ownerDisplayName: row.owner_display_name,
+    posterImagePath: row.poster_image_path,
+    posterImageDataUrl: row.poster_image_data_url,
+  }
+}
+
+export function getChipLineage(db: Database.Database, slug: string): ChipLineage | null {
+  const target = db
+    .prepare(
+      `SELECT id, remixed_from_chip_id FROM published_chips
+       WHERE slug = ? AND is_public = 1 AND moderation_status = 'visible'`,
+    )
+    .get(slug) as { id: string; remixed_from_chip_id: string | null } | undefined
+  if (target === undefined) return null
+
+  const byId = db.prepare(
+    `SELECT p.slug, p.title, p.poster_image_path, p.poster_image_data_url,
+            p.remixed_from_chip_id, p.is_public, p.moderation_status,
+            u.display_name AS owner_display_name
+     FROM published_chips p
+     JOIN users u ON u.id = p.owner_user_id
+     WHERE p.id = ?`,
+  )
+
+  const ancestors: LineageNode[] = []
+  let parentId = target.remixed_from_chip_id
+  let depth = 0
+  while (parentId !== null && depth < MAX_LINEAGE_DEPTH) {
+    const row = byId.get(parentId) as LineageRow | undefined
+    if (row === undefined) break
+    if (row.is_public !== 1 || row.moderation_status !== 'visible') {
+      ancestors.unshift({ hidden: true })
+      break
+    }
+    ancestors.unshift(toLineageChip(row))
+    parentId = row.remixed_from_chip_id
+    depth += 1
+  }
+
+  const childRows = db
+    .prepare(
+      `SELECT p.slug, p.title, p.poster_image_path, p.poster_image_data_url,
+              p.remixed_from_chip_id, p.is_public, p.moderation_status,
+              u.display_name AS owner_display_name
+       FROM published_chips p
+       JOIN users u ON u.id = p.owner_user_id
+       WHERE p.remixed_from_chip_id = ? AND p.is_public = 1 AND p.moderation_status = 'visible'
+       ORDER BY p.updated_at DESC
+       LIMIT 12`,
+    )
+    .all(target.id) as LineageRow[]
+
+  const childCount = (
+    db
+      .prepare(
+        `SELECT COUNT(*) AS c FROM published_chips
+         WHERE remixed_from_chip_id = ? AND is_public = 1 AND moderation_status = 'visible'`,
+      )
+      .get(target.id) as { c: number }
+  ).c
+
+  return { ancestors, children: childRows.map(toLineageChip), childCount }
 }

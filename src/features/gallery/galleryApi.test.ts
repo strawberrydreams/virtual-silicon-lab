@@ -55,6 +55,23 @@ describe('liveGalleryApi', () => {
     expect(await liveGalleryApi.get('missing')).toBeNull()
   })
 
+  it('loads lineage by slug and maps 404 to null', async () => {
+    const lineage = {
+      ancestors: [{ slug: 'parent', title: 'Parent', ownerDisplayName: 'Ada', posterImageUrl: '/p.png' }],
+      children: [],
+      childCount: 0,
+    }
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse(200, lineage))
+      .mockResolvedValueOnce(jsonResponse(404, { error: { code: 'NOT_FOUND', message: 'Missing.' } }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    expect(await liveGalleryApi.getLineage('child-slug')).toEqual(lineage)
+    expect(fetchMock).toHaveBeenCalledWith('/api/gallery/child-slug/lineage')
+    expect(await liveGalleryApi.getLineage('missing')).toBeNull()
+  })
+
   it('maps server error bodies to GalleryApiError', async () => {
     vi.stubGlobal(
       'fetch',

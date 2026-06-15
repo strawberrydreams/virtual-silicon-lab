@@ -1,5 +1,5 @@
 import { createStore } from 'zustand/vanilla'
-import type { Project } from '../domain/project'
+import type { Project, RemixOrigin } from '../domain/project'
 import { createProject } from '../domain/projectFactory'
 import { importRemixedProject } from '../domain/remixImport'
 import type { PresetId } from '../presets/presetCatalog'
@@ -13,7 +13,7 @@ type ProjectState = {
   create: (name: string) => Promise<Project>
   createRandom: () => Promise<Project>
   remixPreset: (presetId: PresetId) => Promise<Project>
-  remixImport: (snapshot: unknown) => Promise<Project>
+  remixImport: (snapshot: unknown, origin?: RemixOrigin) => Promise<Project>
   duplicate: (id: string) => Promise<Project>
   remove: (id: string) => Promise<void>
   get: (id: string) => Promise<Project | undefined>
@@ -49,8 +49,8 @@ export function createProjectStore(
       set({ projects: [project, ...get().projects] })
       return project
     },
-    async remixImport(snapshot) {
-      const project = importRemixedProject(snapshot, createId(), now())
+    async remixImport(snapshot, origin) {
+      const project = importRemixedProject(snapshot, createId(), now(), origin)
       await repository.save(project)
       set({ projects: [project, ...get().projects] })
       return project

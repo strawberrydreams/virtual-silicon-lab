@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, Navigate, Route, Routes, useNavigate, useParams } from 'react-router-dom'
-import type { Project } from '../domain/project'
+import type { Project, RemixOrigin } from '../domain/project'
 import { AccountPage } from '../features/account/AccountPage'
 import { AdminPage } from '../features/admin/AdminPage'
 import { ContestDetailPage } from '../features/contests/ContestDetailPage'
@@ -115,8 +115,8 @@ function GalleryDetailRoute() {
     [setPageTheme],
   )
   const onRemix = useCallback(
-    async (project: Project) => {
-      const remix = await store.remixImport(project)
+    async (project: Project, origin: RemixOrigin) => {
+      const remix = await store.remixImport(project, origin)
       navigate(`/editor/${remix.id}`)
     },
     [store, navigate],

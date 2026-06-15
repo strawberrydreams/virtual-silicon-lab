@@ -116,6 +116,12 @@ describe('App', () => {
       'fetch',
       vi.fn(async (input: RequestInfo | URL) => {
         const url = String(input)
+        if (url.includes('/api/gallery/') && url.endsWith('/lineage')) {
+          return new Response(JSON.stringify({ ancestors: [], children: [], childCount: 0 }), {
+            status: 200,
+            headers: { 'content-type': 'application/json' },
+          })
+        }
         if (url.includes('/api/gallery/')) {
           return new Response(JSON.stringify({ chip: detail }), {
             status: 200,

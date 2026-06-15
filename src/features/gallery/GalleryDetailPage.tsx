@@ -5,6 +5,7 @@ import { useAuthStore } from '../../stores/authStoreContext'
 import {
   liveGalleryApi,
   ServerUnreachableError,
+  type ChipLineage,
   type GalleryApi,
   type GalleryChipDetail,
 } from './galleryApi'
@@ -14,7 +15,7 @@ type Props = {
   api?: GalleryApi
   reactions?: ReactionsApi
   onProjectLoaded?: (project: Project) => void
-  onRemix?: (project: Project) => void
+  onRemix?: (project: Project, origin: { chipId: string; slug: string; title: string }) => void
 }
 
 export function GalleryDetailPage({
@@ -31,11 +32,13 @@ export function GalleryDetailPage({
   const [reported, setReported] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
   const [comments, setComments] = useState<GalleryComment[]>([])
+  const [lineage, setLineage] = useState<ChipLineage | null>(null)
   const [draft, setDraft] = useState('')
 
   useEffect(() => {
     let active = true
     setChip('loading')
+    setLineage(null)
     api
       .get(slug)
       .then((nextChip) => {
@@ -73,6 +76,22 @@ export function GalleryDetailPage({
       active = false
     }
   }, [chipId, reactions])
+
+  useEffect(() => {
+    if (chipId === null) return
+    let active = true
+    api
+      .getLineage(slug)
+      .then((next) => {
+        if (active) setLineage(next)
+      })
+      .catch(() => {
+        // Lineage is non-critical; leave it empty on failure.
+      })
+    return () => {
+      active = false
+    }
+  }, [api, chipId, slug])
 
   function refreshComments(id: string) {
     reactions.listComments(id).then(setComments).catch(() => undefined)
@@ -130,7 +149,11 @@ export function GalleryDetailPage({
           <Link className="v2-inline-action" to="/gallery">
             Back to Gallery
           </Link>
-          <button type="button" className="v2-inline-action" onClick={() => onRemix?.(chip.project)}>
+          <button
+            type="button"
+            className="v2-inline-action"
+            onClick={() => onRemix?.(chip.project, { chipId: chip.id, slug: chip.slug, title: chip.title })}
+          >
             Remix into my projects
           </button>
           {likeState !== null && (
@@ -248,6 +271,47 @@ export function GalleryDetailPage({
           <p className="gallery-detail__hint">Sign in to comment.</p>
         )}
       </section>
+
+      {lineage && (lineage.ancestors.length > 0 || lineage.childCount > 0) && (
+        <section className="gallery-lineage" aria-label="Remix lineage">
+          <p className="v2-kicker">Lineage</p>
+          {lineage.ancestors.length > 0 && (
+            <ol className="gallery-lineage__spine" aria-label="Ancestors">
+              {lineage.ancestors.map((node, i) =>
+                'hidden' in node ? (
+                  <li key={`hidden-${i}`} className="gallery-lineage__node gallery-lineage__node--hidden">
+                    a private chip
+                  </li>
+                ) : (
+                  <li key={node.slug} className="gallery-lineage__node">
+                    <Link to={`/gallery/${node.slug}`}>
+                      <img src={node.posterImageUrl} alt={node.title} loading="lazy" />
+                      <span>{node.title}</span>
+                    </Link>
+                  </li>
+                ),
+              )}
+            </ol>
+          )}
+          {lineage.childCount > 0 && (
+            <>
+              <p className="gallery-lineage__count">
+                {lineage.childCount} remix{lineage.childCount === 1 ? '' : 'es'} of this chip
+              </p>
+              <ul className="gallery-lineage__children" aria-label="Remixes">
+                {lineage.children.map((node) => (
+                  <li key={node.slug} className="gallery-lineage__node">
+                    <Link to={`/gallery/${node.slug}`}>
+                      <img src={node.posterImageUrl} alt={node.title} loading="lazy" />
+                      <span>{node.title}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+        </section>
+      )}
     </main>
   )
 }

@@ -96,6 +96,44 @@ describe('public gallery routes', () => {
     expect((await app.request(`/api/gallery/${privateChip.slug}`)).status).toBe(404)
     expect((await app.request('/api/gallery/not-a-real-slug')).status).toBe(404)
   })
+
+  it('returns remix lineage with serialized poster URLs', async () => {
+    const { app, db } = createTestApp()
+    insertUser(db, 'u1', 'ada@example.com', 'Ada')
+    insertUser(db, 'u2', 'grace@example.com', 'Grace')
+    const parent = upsertPublishedChip(db, 'u1', {
+      project: createProject('Parent Chip', 'parent-project', 1_000),
+      title: 'Parent Chip',
+      dieImageDataUrl: pngA,
+      posterImageDataUrl: pngB,
+      isPublic: true,
+    }, () => 2_000)
+    const child = upsertPublishedChip(db, 'u2', {
+      project: {
+        ...createProject('Child Chip', 'child-project', 1_000),
+        remixedFrom: { chipId: parent.id, slug: parent.slug, title: parent.title },
+      },
+      title: 'Child Chip',
+      dieImageDataUrl: pngB,
+      posterImageDataUrl: pngA,
+      isPublic: true,
+    }, () => 3_000)
+
+    const res = await app.request(`/api/gallery/${child.slug}/lineage`)
+
+    expect(res.status).toBe(200)
+    const body = (await res.json()) as {
+      ancestors: Array<{ slug?: string; posterImageUrl?: string; hidden?: boolean }>
+      children: unknown[]
+      childCount: number
+    }
+    expect(body.ancestors).toEqual([
+      expect.objectContaining({ slug: parent.slug, posterImageUrl: pngB }),
+    ])
+    expect(body.children).toEqual([])
+    expect(body.childCount).toBe(0)
+    expect((await app.request('/api/gallery/not-a-real-slug/lineage')).status).toBe(404)
+  })
 })
 
 describe('gallery reaction fields', () => {

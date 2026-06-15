@@ -168,4 +168,55 @@ describe('publish service', () => {
     expect(deletePublishedChip(db, 'u1', 'project-1')).toBe(true)
     expect(getPublishedChipForOwnerProject(db, 'u1', 'project-1')).toBeNull()
   })
+
+  it('records remixed_from_chip_id when the project remixedFrom chip id exists', () => {
+    const db = dbWithUsers()
+    const parent = upsertPublishedChip(db, 'u1', {
+      project: createProject('Parent Chip', 'parent-project', 1_000),
+      title: 'Parent Chip',
+      dieImageDataUrl: pngA,
+      posterImageDataUrl: pngB,
+      isPublic: true,
+    }, () => 2_000)
+
+    const childProject = {
+      ...createProject('Child Chip', 'child-project', 1_000),
+      remixedFrom: { chipId: parent.id, slug: parent.slug, title: parent.title },
+    }
+    const child = upsertPublishedChip(db, 'u2', {
+      project: childProject,
+      title: 'Child Chip',
+      dieImageDataUrl: pngB,
+      posterImageDataUrl: pngA,
+      isPublic: true,
+    }, () => 3_000)
+
+    expect(child.remixedFromChipId).toBe(parent.id)
+  })
+
+  it('stores null when remixedFrom chip id is missing or absent', () => {
+    const db = dbWithUsers()
+    const orphanProject = {
+      ...createProject('Orphan Chip', 'orphan-project', 1_000),
+      remixedFrom: { chipId: 'missing', slug: 'missing-slug', title: 'Missing' },
+    }
+
+    const orphan = upsertPublishedChip(db, 'u2', {
+      project: orphanProject,
+      title: 'Orphan Chip',
+      dieImageDataUrl: pngB,
+      posterImageDataUrl: pngA,
+      isPublic: true,
+    }, () => 3_000)
+    const plain = upsertPublishedChip(db, 'u1', {
+      project: createProject('Plain Chip', 'plain-project', 1_000),
+      title: 'Plain Chip',
+      dieImageDataUrl: pngA,
+      posterImageDataUrl: pngB,
+      isPublic: true,
+    }, () => 4_000)
+
+    expect(orphan.remixedFromChipId).toBeNull()
+    expect(plain.remixedFromChipId).toBeNull()
+  })
 })

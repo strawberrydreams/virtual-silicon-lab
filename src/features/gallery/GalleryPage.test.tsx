@@ -23,6 +23,7 @@ function fakeApi(overrides: Partial<GalleryApi> = {}): GalleryApi {
   return {
     list: vi.fn().mockResolvedValue([chip]),
     get: vi.fn(),
+    getLineage: vi.fn(),
     ...overrides,
   }
 }
