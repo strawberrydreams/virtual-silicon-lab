@@ -36,11 +36,17 @@ export function GalleryDetailPage({
   const [comments, setComments] = useState<GalleryComment[]>([])
   const [lineage, setLineage] = useState<ChipLineage | null>(null)
   const [draft, setDraft] = useState('')
+  // Reset to loading (and clear stale lineage) when the slug changes, derived
+  // during render so the effect only owns the async fetch.
+  const [loadedSlug, setLoadedSlug] = useState(slug)
+  if (loadedSlug !== slug) {
+    setLoadedSlug(slug)
+    setChip('loading')
+    setLineage(null)
+  }
 
   useEffect(() => {
     let active = true
-    setChip('loading')
-    setLineage(null)
     api
       .get(slug)
       .then((nextChip) => {

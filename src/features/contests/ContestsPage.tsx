@@ -15,10 +15,16 @@ const STATUS_LABEL: Record<ContestSummary['status'], string> = {
 
 export function ContestsPage({ api = liveContestsApi }: Props) {
   const [contests, setContests] = useState<ContestSummary[] | 'loading' | 'error'>('loading')
+  // Reset to loading if the api changes, derived during render so the effect only
+  // owns the async fetch.
+  const [loadedApi, setLoadedApi] = useState(api)
+  if (loadedApi !== api) {
+    setLoadedApi(api)
+    setContests('loading')
+  }
 
   useEffect(() => {
     let active = true
-    setContests('loading')
     api
       .list()
       .then((list) => {

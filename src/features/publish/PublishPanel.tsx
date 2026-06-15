@@ -30,14 +30,20 @@ export function PublishPanel({ project, api = livePublishApi, captureImages }: P
   const [published, setPublished] = useState<PublishedChip | null>(null)
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
-
-  useEffect(() => {
-    let active = true
+  // Reset the publish UI (and prime the loading flag) when the project or auth
+  // status changes, derived during render so the effect only owns the async load.
+  const fetchKey = `${project.id}:${auth.status}`
+  const [loadedKey, setLoadedKey] = useState(fetchKey)
+  if (loadedKey !== fetchKey) {
+    setLoadedKey(fetchKey)
     setPublished(null)
     setMessage(null)
-    if (auth.status !== 'authenticated') return
+    setLoading(auth.status === 'authenticated')
+  }
 
-    setLoading(true)
+  useEffect(() => {
+    if (auth.status !== 'authenticated') return
+    let active = true
     api
       .getForProject(project.id)
       .then((chip) => {

@@ -23,10 +23,16 @@ export function GalleryPage({ api = liveGalleryApi }: Props) {
   const [chips, setChips] = useState<GalleryChipSummary[] | 'loading' | 'offline' | 'error'>(
     'loading',
   )
+  // Reset to loading when the sort changes, derived during render so the effect
+  // only owns the async fetch.
+  const [loadedSort, setLoadedSort] = useState(sort)
+  if (loadedSort !== sort) {
+    setLoadedSort(sort)
+    setChips('loading')
+  }
 
   useEffect(() => {
     let active = true
-    setChips('loading')
     api
       .list(sort)
       .then((nextChips) => {
