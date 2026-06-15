@@ -10,6 +10,7 @@ describe('GET /api/health', () => {
     expect(await res.json()).toEqual({
       ok: true,
       projectSchemaVersion: CURRENT_SCHEMA_VERSION,
+      signupsOpen: true,
     })
   })
 

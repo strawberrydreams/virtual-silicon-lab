@@ -180,3 +180,32 @@ describe('publish routes', () => {
     }
   })
 })
+
+describe('GET /api/published-chips/mine', () => {
+  it("returns the signed-in user's public visible chips only; 401 when anonymous", async () => {
+    const { app, db } = createTestApp(() => 1_000, { signupsOpen: true, adminEmails: [] })
+    const signup = await app.request(
+      '/api/auth/signup',
+      jsonRequest('POST', { email: 'me@test.com', displayName: 'Me', password: 'hunter22hunter22' }),
+    )
+    const cookie = sessionCookie(signup)
+    const me = db.prepare('SELECT id FROM users WHERE email = ?').get('me@test.com') as { id: string }
+    const insert = (id: string, isPublic: number, status: string) =>
+      db
+        .prepare(
+          `INSERT INTO published_chips (id, owner_user_id, source_project_id, slug, title, project_json, die_image_data_url, poster_image_data_url, is_public, moderation_status, created_at, updated_at, published_at)
+           VALUES (?,?,?,?,?,'{}','','poster',?,?,0,1,0)`,
+        )
+        .run(id, me.id, `p-${id}`, `slug-${id}`, id, isPublic, status)
+    insert('pub', 1, 'visible')
+    insert('priv', 0, 'visible')
+    insert('hidden', 1, 'hidden')
+
+    const mine = (await (await app.request('/api/published-chips/mine', { headers: { cookie } })).json()) as {
+      chips: { id: string }[]
+    }
+
+    expect(mine.chips.map((chip) => chip.id)).toEqual(['pub'])
+    expect((await app.request('/api/published-chips/mine')).status).toBe(401)
+  })
+})

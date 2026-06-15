@@ -17,6 +17,7 @@ export const testUser: AuthUser = {
 export function fakeApi(overrides: Partial<AuthApi> = {}): AuthApi {
   return {
     me: vi.fn().mockResolvedValue(null),
+    serverConfig: vi.fn().mockResolvedValue({ signupsOpen: true }),
     signup: vi.fn().mockResolvedValue(testUser),
     login: vi.fn().mockResolvedValue(testUser),
     logout: vi.fn().mockResolvedValue(undefined),
@@ -96,7 +97,7 @@ describe('AccountPage anonymous forms', () => {
 
 describe('AccountPage profile management', () => {
   function authedApi(overrides: Partial<AuthApi> = {}) {
-    return fakeApi({ me: vi.fn().mockResolvedValue(testUser), ...overrides })
+    return fakeApi({ me: vi.fn().mockResolvedValue({ user: testUser, isAdmin: false }), ...overrides })
   }
 
   it('renames the account', async () => {

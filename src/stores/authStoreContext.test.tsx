@@ -9,6 +9,7 @@ function api(me: AuthApi['me']): AuthApi {
   const reject = () => Promise.reject(new Error('not under test'))
   return {
     me,
+    serverConfig: vi.fn().mockResolvedValue({ signupsOpen: true }),
     signup: reject,
     login: reject,
     logout: reject,
@@ -26,7 +27,7 @@ function StatusProbe() {
 describe('AuthStoreProvider', () => {
   it('initializes the session on mount', async () => {
     render(
-      <AuthStoreProvider api={api(vi.fn().mockResolvedValue(user))}>
+      <AuthStoreProvider api={api(vi.fn().mockResolvedValue({ user, isAdmin: false }))}>
         <StatusProbe />
       </AuthStoreProvider>,
     )

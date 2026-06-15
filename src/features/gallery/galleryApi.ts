@@ -1,5 +1,7 @@
 import type { Project } from '../../domain/project'
 
+export type GallerySort = 'trending' | 'top' | 'newest'
+
 export type GalleryChipSummary = {
   id: string
   slug: string
@@ -10,10 +12,28 @@ export type GalleryChipSummary = {
   version: number
   updatedAt: number
   publishedAt: number
+  likeCount: number
 }
 
 export type GalleryChipDetail = GalleryChipSummary & {
+  commentCount: number
+  likedByMe: boolean
   project: Project
+}
+
+export type LineageChipNode = {
+  slug: string
+  title: string
+  ownerDisplayName: string
+  posterImageUrl: string
+}
+
+export type LineageNode = LineageChipNode | { hidden: true }
+
+export type ChipLineage = {
+  ancestors: LineageNode[]
+  children: LineageChipNode[]
+  childCount: number
 }
 
 export class GalleryApiError extends Error {
@@ -34,8 +54,9 @@ export class ServerUnreachableError extends Error {
 }
 
 export type GalleryApi = {
-  list: () => Promise<GalleryChipSummary[]>
+  list: (sort?: GallerySort) => Promise<GalleryChipSummary[]>
   get: (slug: string) => Promise<GalleryChipDetail | null>
+  getLineage: (slug: string) => Promise<ChipLineage | null>
 }
 
 const GATEWAY_ERROR_STATUSES = new Set([502, 503, 504])
@@ -64,8 +85,8 @@ async function toApiError(res: Response): Promise<GalleryApiError> {
 }
 
 export const liveGalleryApi: GalleryApi = {
-  async list() {
-    const res = await request('/api/gallery')
+  async list(sort) {
+    const res = await request(sort === undefined ? '/api/gallery' : `/api/gallery?sort=${sort}`)
     if (!res.ok) throw await toApiError(res)
     const body = (await res.json()) as { chips: GalleryChipSummary[] }
     return body.chips
@@ -76,5 +97,11 @@ export const liveGalleryApi: GalleryApi = {
     if (!res.ok) throw await toApiError(res)
     const body = (await res.json()) as { chip: GalleryChipDetail }
     return body.chip
+  },
+  async getLineage(slug) {
+    const res = await request(`/api/gallery/${encodeURIComponent(slug)}/lineage`)
+    if (res.status === 404) return null
+    if (!res.ok) throw await toApiError(res)
+    return (await res.json()) as ChipLineage
   },
 }

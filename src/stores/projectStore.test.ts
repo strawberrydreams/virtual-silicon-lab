@@ -59,6 +59,21 @@ describe('project store', () => {
     expect(await repository.get(first.id)).toEqual(first)
   })
 
+  it('remixImport persists the provided origin as remixedFrom', async () => {
+    const repository = createMemoryRepository()
+    const store = createProjectStore(repository, () => 9_000, () => 'import-0')
+    const snapshot = createProject('Ada Chip', 'source-id', 1_000)
+
+    const project = await store.getState().remixImport(snapshot, {
+      chipId: 'c1',
+      slug: 's1',
+      title: 'Parent',
+    })
+
+    expect(project.remixedFrom).toEqual({ chipId: 'c1', slug: 's1', title: 'Parent' })
+    expect(await repository.get(project.id)).toEqual(project)
+  })
+
   it('persists a deterministic random chip project and lists it first', async () => {
     const repository = createMemoryRepository()
     const store = createProjectStore(repository, () => 2000, () => 'random-seed')

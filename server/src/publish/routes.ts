@@ -5,26 +5,36 @@ import type { AppDeps } from '../app'
 import { getSessionUser, type AccountUser } from '../accounts/service'
 import {
   deletePublishedChip,
+  getChipLineage,
   getPublicPublishedChipBySlug,
   getPublishedChipForOwnerProject,
+  listOwnerPublicChips,
   listPublicPublishedChips,
   setPublishedChipVisibility,
   upsertPublishedChip,
+  type GallerySort,
+  type LineageNode,
   type PublishedChip,
   type PublicGalleryChip,
 } from './service'
 import { validatePublishInput } from './validation'
+import { getLikeState } from '../reactions/service'
 import { buildShareUrl, resolvePublicBaseUrl } from '../share/baseUrl'
 
 const SESSION_COOKIE = 'vsl_session'
 
 type ErrorStatus = 400 | 401 | 404
 
+function parseGallerySort(raw: string | undefined): GallerySort {
+  return raw === 'top' || raw === 'newest' || raw === 'trending' ? raw : 'trending'
+}
+
 function serializePublishedChip(chip: PublishedChip, baseUrl: string) {
   return {
     id: chip.id,
     ownerUserId: chip.ownerUserId,
     sourceProjectId: chip.sourceProjectId,
+    remixedFromChipId: chip.remixedFromChipId,
     slug: chip.slug,
     title: chip.title,
     dieImageUrl: resolveImageUrl(baseUrl, chip.dieImagePath, chip.dieImageDataUrl),
@@ -53,14 +63,28 @@ function serializeGallerySummary(chip: PublicGalleryChip, baseUrl: string) {
     version: chip.version,
     updatedAt: chip.updatedAt,
     publishedAt: chip.publishedAt,
+    likeCount: chip.likeCount,
   }
 }
 
-function serializeGalleryDetail(chip: PublicGalleryChip, baseUrl: string) {
+function serializeGalleryDetail(chip: PublicGalleryChip, baseUrl: string, likedByMe: boolean) {
   return {
     ...serializeGallerySummary(chip, baseUrl),
+    commentCount: chip.commentCount,
+    likedByMe,
     project: JSON.parse(chip.projectJson) as unknown,
   }
+}
+
+function serializeLineageNode(node: LineageNode, baseUrl: string) {
+  return 'hidden' in node
+    ? { hidden: true as const }
+    : {
+        slug: node.slug,
+        title: node.title,
+        ownerDisplayName: node.ownerDisplayName,
+        posterImageUrl: resolveImageUrl(baseUrl, node.posterImagePath, node.posterImageDataUrl),
+      }
 }
 
 export function publishRoutes({
@@ -95,6 +119,20 @@ export function publishRoutes({
     return c.json({ chip: serializePublishedChip(chip, baseUrl) }, existing === null ? 201 : 200)
   })
 
+  routes.get('/published-chips/mine', async (c) => {
+    const user = await readUser(c)
+    if (user === null) return fail(c, 401, 'UNAUTHORIZED', 'Sign in required.')
+    const baseUrl = resolvePublicBaseUrl(c.req.url, publicBaseUrl)
+    return c.json({
+      chips: listOwnerPublicChips(db, user.id).map((chip) => ({
+        id: chip.id,
+        slug: chip.slug,
+        title: chip.title,
+        posterImageUrl: resolveImageUrl(baseUrl, chip.posterImagePath, chip.posterImageDataUrl),
+      })),
+    })
+  })
+
   routes.get('/published-chips/source/:sourceProjectId', async (c) => {
     const user = await readUser(c)
     if (user === null) return fail(c, 401, 'UNAUTHORIZED', 'Sign in required.')
@@ -126,13 +164,29 @@ export function publishRoutes({
 
   routes.get('/gallery', (c) => {
     const baseUrl = resolvePublicBaseUrl(c.req.url, publicBaseUrl)
-    return c.json({ chips: listPublicPublishedChips(db).map((chip) => serializeGallerySummary(chip, baseUrl)) })
+    const sort = parseGallerySort(c.req.query('sort'))
+    return c.json({
+      chips: listPublicPublishedChips(db, { sort, now }).map((chip) => serializeGallerySummary(chip, baseUrl)),
+    })
   })
 
-  routes.get('/gallery/:slug', (c) => {
+  routes.get('/gallery/:slug', async (c) => {
     const chip = getPublicPublishedChipBySlug(db, c.req.param('slug'))
     if (chip === null) return fail(c, 404, 'NOT_FOUND', 'Published chip not found.')
-    return c.json({ chip: serializeGalleryDetail(chip, resolvePublicBaseUrl(c.req.url, publicBaseUrl)) })
+    const user = await readUser(c)
+    const likedByMe = user === null ? false : getLikeState(db, chip.id, user.id).likedByMe
+    return c.json({ chip: serializeGalleryDetail(chip, resolvePublicBaseUrl(c.req.url, publicBaseUrl), likedByMe) })
+  })
+
+  routes.get('/gallery/:slug/lineage', (c) => {
+    const lineage = getChipLineage(db, c.req.param('slug'))
+    if (lineage === null) return fail(c, 404, 'NOT_FOUND', 'Published chip not found.')
+    const baseUrl = resolvePublicBaseUrl(c.req.url, publicBaseUrl)
+    return c.json({
+      ancestors: lineage.ancestors.map((node) => serializeLineageNode(node, baseUrl)),
+      children: lineage.children.map((node) => serializeLineageNode(node, baseUrl)),
+      childCount: lineage.childCount,
+    })
   })
 
   return routes

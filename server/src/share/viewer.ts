@@ -15,6 +15,7 @@ type ViewerInput = {
   slug: string
   project: Project
   baseUrl: string
+  remixedFrom?: { slug: string; title: string }
 }
 
 const BASE_STYLE = `
@@ -33,6 +34,8 @@ const BASE_STYLE = `
   .grid dd { margin: 4px 0 0; font-size: 16px; }
   .features { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
   .features span { border: 1px solid #25406b; border-radius: 999px; padding: 4px 12px; font-size: 13px; color: #bcd2ff; }
+  .viewer-lineage { color: #93a4c4; margin: -12px 0 24px; }
+  .viewer-lineage a { color: #6fd3ff; text-decoration: none; }
   .cta { margin-top: 32px; }
   .cta a { color: #6fd3ff; text-decoration: none; border: 1px solid #25406b; border-radius: 8px; padding: 10px 18px; }
 `
@@ -74,6 +77,13 @@ export function renderViewerHtml(input: ViewerInput): string {
   <p class="kicker">Shared from Virtual Silicon Lab</p>
   <h1>${safeTitle}</h1>
   <p class="owner">Published by ${escapeHtml(ownerDisplayName)}</p>
+  ${
+    input.remixedFrom
+      ? `<p class="viewer-lineage">Remixed from <a href="${escapeHtml(baseUrl)}/gallery/${escapeHtml(
+          input.remixedFrom.slug,
+        )}">${escapeHtml(input.remixedFrom.title)}</a></p>`
+      : ''
+  }
   <img class="poster" src="${escapeHtml(posterUrl)}" alt="${safeTitle} poster">
   <section class="spec">
     <h2>${escapeHtml(spec.brand)} ${escapeHtml(spec.series)}</h2>

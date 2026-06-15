@@ -33,7 +33,8 @@ const chip: PublishedChip = {
 
 function fakeAuthApi(overrides: Partial<AuthApi> = {}): AuthApi {
   return {
-    me: vi.fn().mockResolvedValue(user),
+    me: vi.fn().mockResolvedValue({ user, isAdmin: false }),
+    serverConfig: vi.fn().mockResolvedValue({ signupsOpen: true }),
     signup: vi.fn(),
     login: vi.fn(),
     logout: vi.fn(),

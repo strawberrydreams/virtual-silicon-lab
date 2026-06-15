@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { CURRENT_SCHEMA_VERSION } from './project'
+import { CURRENT_SCHEMA_VERSION, type RemixOrigin } from './project'
 import { createProject } from './projectFactory'
 import { importRemixedProject } from './remixImport'
 
@@ -45,5 +45,22 @@ describe('importRemixedProject', () => {
 
   it('throws on a corrupt snapshot', () => {
     expect(() => importRemixedProject({ not: 'a project' }, 'new-id', 5_000)).toThrow()
+  })
+
+  it('sets remixedFrom when an origin is provided', () => {
+    const snapshot = createProject('Ada Chip', 'source-id', 1_000)
+    const origin: RemixOrigin = { chipId: 'c1', slug: 's1', title: 'Parent' }
+
+    const remix = importRemixedProject(snapshot, 'new-id', 5_000, origin)
+
+    expect(remix.remixedFrom).toEqual(origin)
+  })
+
+  it('leaves remixedFrom undefined when no origin is provided', () => {
+    const snapshot = createProject('Ada Chip', 'source-id', 1_000)
+
+    const remix = importRemixedProject(snapshot, 'new-id', 5_000)
+
+    expect(remix.remixedFrom).toBeUndefined()
   })
 })

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { CURRENT_SCHEMA_VERSION } from './project'
 import { createProject } from './projectFactory'
 
 describe('createProject', () => {
@@ -6,7 +7,7 @@ describe('createProject', () => {
     const project = createProject('Dream Chip', 'project-1', 100)
 
     expect(project).toMatchObject({
-      schemaVersion: 4,
+      schemaVersion: CURRENT_SCHEMA_VERSION,
       id: 'project-1',
       name: 'Dream Chip',
       createdAt: 100,

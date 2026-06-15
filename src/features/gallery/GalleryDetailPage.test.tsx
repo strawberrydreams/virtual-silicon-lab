@@ -3,8 +3,11 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { describe, expect, it, vi } from 'vitest'
 import { createProject } from '../../domain/projectFactory'
-import type { GalleryApi, GalleryChipDetail } from './galleryApi'
+import type { AuthApi } from '../account/authApi'
+import { AuthStoreProvider } from '../../stores/authStoreContext'
+import type { ChipLineage, GalleryApi, GalleryChipDetail } from './galleryApi'
 import { ServerUnreachableError } from './galleryApi'
+import type { ReactionsApi } from './reactionsApi'
 import { GalleryDetailPage } from './GalleryDetailPage'
 
 const project = {
@@ -31,6 +34,9 @@ const detail: GalleryChipDetail = {
   version: 2,
   updatedAt: 2_000,
   publishedAt: 2_000,
+  likeCount: 0,
+  commentCount: 0,
+  likedByMe: false,
   project,
 }
 
@@ -38,21 +44,51 @@ function fakeApi(overrides: Partial<GalleryApi> = {}): GalleryApi {
   return {
     list: vi.fn(),
     get: vi.fn().mockResolvedValue(detail),
+    getLineage: vi.fn().mockResolvedValue({ ancestors: [], children: [], childCount: 0 }),
     ...overrides,
+  }
+}
+
+function fakeAuthApi(): AuthApi {
+  return {
+    me: vi.fn().mockResolvedValue(null),
+    serverConfig: vi.fn().mockResolvedValue({ signupsOpen: true }),
+    signup: vi.fn(),
+    login: vi.fn(),
+    logout: vi.fn(),
+    updateDisplayName: vi.fn(),
+    changePassword: vi.fn(),
+    deleteAccount: vi.fn(),
+  }
+}
+
+function fakeReactions(): ReactionsApi {
+  return {
+    like: vi.fn(),
+    unlike: vi.fn(),
+    listComments: vi.fn().mockResolvedValue([]),
+    createComment: vi.fn(),
+    deleteComment: vi.fn(),
+    reportChip: vi.fn(),
   }
 }
 
 function renderDetail(
   api: GalleryApi,
   slug = 'ada-chip-deadbeef',
-  onRemix?: (project: GalleryChipDetail['project']) => void,
+  onRemix?: (project: GalleryChipDetail['project'], origin: { chipId: string; slug: string; title: string }) => void,
 ) {
   return render(
-    <MemoryRouter initialEntries={[`/gallery/${slug}`]}>
-      <Routes>
-        <Route path="/gallery/:slug" element={<GalleryDetailPage api={api} onRemix={onRemix} />} />
-      </Routes>
-    </MemoryRouter>,
+    <AuthStoreProvider api={fakeAuthApi()}>
+      <MemoryRouter initialEntries={[`/gallery/${slug}`]}>
+        <Routes>
+          <Route
+            path="/gallery/:slug"
+            element={<GalleryDetailPage api={api} reactions={fakeReactions()} onRemix={onRemix} />}
+          />
+        </Routes>
+      </MemoryRouter>
+    </AuthStoreProvider>,
   )
 }
 
@@ -82,13 +118,36 @@ describe('GalleryDetailPage', () => {
     expect(screen.getByText(/local editing is unaffected/i)).toBeInTheDocument()
   })
 
-  it('remixes the loaded chip snapshot into local projects', async () => {
+  it('passes the loaded chip origin when remixing into local projects', async () => {
     const onRemix = vi.fn()
     renderDetail(fakeApi(), 'ada-chip-deadbeef', onRemix)
 
     await userEvent.click(await screen.findByRole('button', { name: /remix into my projects/i }))
 
-    expect(onRemix).toHaveBeenCalledWith(detail.project)
+    expect(onRemix).toHaveBeenCalledWith(detail.project, {
+      chipId: detail.id,
+      slug: detail.slug,
+      title: detail.title,
+    })
+  })
+
+  it('renders ancestor and child lineage nodes when present', async () => {
+    const lineage: ChipLineage = {
+      ancestors: [{ slug: 'parent', title: 'Parent Chip', ownerDisplayName: 'Ada', posterImageUrl: '/p.png' }],
+      children: [{ slug: 'kid', title: 'Kid Chip', ownerDisplayName: 'Grace', posterImageUrl: '/k.png' }],
+      childCount: 1,
+    }
+    renderDetail(fakeApi({ getLineage: vi.fn().mockResolvedValue(lineage) }))
+
+    expect(await screen.findByText('Parent Chip')).toBeInTheDocument()
+    expect(screen.getByText('Kid Chip')).toBeInTheDocument()
+    expect(screen.getByText('1 remix of this chip')).toBeInTheDocument()
+  })
+
+  it('shows a private-ancestor placeholder for hidden lineage nodes', async () => {
+    renderDetail(fakeApi({ getLineage: vi.fn().mockResolvedValue({ ancestors: [{ hidden: true }], children: [], childCount: 0 }) }))
+
+    expect(await screen.findByText(/private chip/i)).toBeInTheDocument()
   })
 
   it('does not show the remix button while loading or offline', async () => {

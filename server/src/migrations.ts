@@ -57,4 +57,94 @@ export const migrations: Migration[] = [
       `)
     },
   },
+  {
+    id: '004_moderation',
+    up: (db) => {
+      db.exec(`
+        ALTER TABLE published_chips ADD COLUMN moderation_status TEXT NOT NULL DEFAULT 'visible';
+        ALTER TABLE published_chips ADD COLUMN hidden_at INTEGER;
+        ALTER TABLE published_chips ADD COLUMN hidden_by TEXT;
+        ALTER TABLE published_chips ADD COLUMN hidden_reason TEXT;
+        CREATE TABLE reports (
+          id TEXT PRIMARY KEY,
+          published_chip_id TEXT NOT NULL REFERENCES published_chips(id) ON DELETE CASCADE,
+          reporter_user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+          reason TEXT,
+          status TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'resolved', 'dismissed')),
+          created_at INTEGER NOT NULL,
+          resolved_at INTEGER,
+          resolved_by TEXT REFERENCES users(id) ON DELETE SET NULL
+        );
+        CREATE INDEX idx_reports_status ON reports(status, created_at DESC);
+        CREATE INDEX idx_reports_chip ON reports(published_chip_id);
+      `)
+    },
+  },
+  {
+    id: '005_reactions',
+    up: (db) => {
+      db.exec(`
+        CREATE TABLE likes (
+          published_chip_id TEXT NOT NULL REFERENCES published_chips(id) ON DELETE CASCADE,
+          user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          created_at INTEGER NOT NULL,
+          PRIMARY KEY (published_chip_id, user_id)
+        );
+        CREATE INDEX idx_likes_user ON likes(user_id);
+        CREATE TABLE comments (
+          id TEXT PRIMARY KEY,
+          published_chip_id TEXT NOT NULL REFERENCES published_chips(id) ON DELETE CASCADE,
+          author_user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          body TEXT NOT NULL,
+          created_at INTEGER NOT NULL
+        );
+        CREATE INDEX idx_comments_chip ON comments(published_chip_id, created_at);
+      `)
+    },
+  },
+  {
+    id: '006_contests',
+    up: (db) => {
+      db.exec(`
+        CREATE TABLE contests (
+          id TEXT PRIMARY KEY,
+          title TEXT NOT NULL,
+          theme TEXT NOT NULL,
+          status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'submission', 'voting', 'results')),
+          created_by TEXT REFERENCES users(id) ON DELETE SET NULL,
+          created_at INTEGER NOT NULL,
+          updated_at INTEGER NOT NULL
+        );
+        CREATE INDEX idx_contests_status ON contests(status, created_at DESC);
+        CREATE TABLE contest_entries (
+          id TEXT PRIMARY KEY,
+          contest_id TEXT NOT NULL REFERENCES contests(id) ON DELETE CASCADE,
+          published_chip_id TEXT NOT NULL REFERENCES published_chips(id) ON DELETE CASCADE,
+          owner_user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          created_at INTEGER NOT NULL,
+          UNIQUE (contest_id, owner_user_id),
+          UNIQUE (contest_id, published_chip_id)
+        );
+        CREATE INDEX idx_contest_entries_contest ON contest_entries(contest_id);
+        CREATE TABLE contest_votes (
+          contest_id TEXT NOT NULL REFERENCES contests(id) ON DELETE CASCADE,
+          voter_user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          entry_id TEXT NOT NULL REFERENCES contest_entries(id) ON DELETE CASCADE,
+          created_at INTEGER NOT NULL,
+          PRIMARY KEY (contest_id, voter_user_id)
+        );
+        CREATE INDEX idx_contest_votes_entry ON contest_votes(entry_id);
+      `)
+    },
+  },
+  {
+    id: '007_remix_lineage',
+    up: (db) => {
+      db.exec(`
+        ALTER TABLE published_chips
+          ADD COLUMN remixed_from_chip_id TEXT REFERENCES published_chips(id) ON DELETE SET NULL;
+        CREATE INDEX idx_published_chips_remixed_from ON published_chips(remixed_from_chip_id);
+      `)
+    },
+  },
 ]

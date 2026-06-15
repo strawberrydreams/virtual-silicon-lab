@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import type { Context } from 'hono'
 import { deleteCookie, getSignedCookie, setSignedCookie } from 'hono/cookie'
 import type { AppDeps } from '../app'
+import { isAdminEmail } from '../moderation/adminAuth'
 import {
   changePassword,
   createAccount,
@@ -23,9 +24,16 @@ import {
 
 const SESSION_COOKIE = 'vsl_session'
 
-type ErrorStatus = 400 | 401 | 409
+type ErrorStatus = 400 | 401 | 403 | 409
 
-export function accountRoutes({ db, sessionSecret, now = Date.now, secureCookies = false }: AppDeps) {
+export function accountRoutes({
+  db,
+  sessionSecret,
+  now = Date.now,
+  secureCookies = false,
+  signupsOpen = true,
+  adminEmails = [],
+}: AppDeps) {
   const routes = new Hono()
 
   function fail(c: Context, status: ErrorStatus, code: string, message: string) {
@@ -53,6 +61,9 @@ export function accountRoutes({ db, sessionSecret, now = Date.now, secureCookies
     return user === null ? null : { token, user }
   }
   routes.post('/auth/signup', async (c) => {
+    if (!signupsOpen) {
+      return fail(c, 403, 'SIGNUPS_CLOSED', 'New sign-ups are currently closed.')
+    }
     const input = validateSignupInput(await c.req.json().catch(() => null))
     if (!input.ok) return fail(c, 400, 'INVALID_INPUT', input.message)
     const user = await createAccount(db, input.value, now)
@@ -84,7 +95,7 @@ export function accountRoutes({ db, sessionSecret, now = Date.now, secureCookies
   routes.get('/me', async (c) => {
     const session = await readSession(c)
     if (session === null) return fail(c, 401, 'UNAUTHORIZED', 'Sign in required.')
-    return c.json({ user: session.user })
+    return c.json({ user: session.user, isAdmin: isAdminEmail(session.user.email, adminEmails) })
   })
 
   routes.patch('/me', async (c) => {

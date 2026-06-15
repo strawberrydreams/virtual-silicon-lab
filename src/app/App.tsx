@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, Navigate, Route, Routes, useNavigate, useParams } from 'react-router-dom'
-import type { Project } from '../domain/project'
+import type { Project, RemixOrigin } from '../domain/project'
 import { AccountPage } from '../features/account/AccountPage'
+import { AdminPage } from '../features/admin/AdminPage'
+import { ContestDetailPage } from '../features/contests/ContestDetailPage'
+import { ContestsPage } from '../features/contests/ContestsPage'
 import { EditorPage } from '../features/editor/EditorPage'
 import { GalleryDetailPage } from '../features/gallery/GalleryDetailPage'
 import { GalleryPage } from '../features/gallery/GalleryPage'
@@ -112,13 +115,27 @@ function GalleryDetailRoute() {
     [setPageTheme],
   )
   const onRemix = useCallback(
-    async (project: Project) => {
-      const remix = await store.remixImport(project)
+    async (project: Project, origin: RemixOrigin) => {
+      const remix = await store.remixImport(project, origin)
       navigate(`/editor/${remix.id}`)
     },
     [store, navigate],
   )
   return <GalleryDetailPage onProjectLoaded={onProjectLoaded} onRemix={onRemix} />
+}
+
+function ContestDetailRoute() {
+  const { id } = useParams()
+  const auth = useAuthStore()
+  if (id === undefined) return <Navigate to="/contests" replace />
+  return (
+    <ContestDetailPage
+      contestId={id}
+      isAuthenticated={auth.status === 'authenticated'}
+      isAdmin={auth.isAdmin}
+      currentUserId={auth.user?.id ?? null}
+    />
+  )
 }
 
 export function App() {
@@ -141,8 +158,11 @@ export function App() {
               <Route path="/dashboard" element={<DashboardRoute />} />
               <Route path="/editor/:projectId" element={<EditorRoute />} />
               <Route path="/account" element={<AccountPage />} />
+              <Route path="/admin" element={<AdminPage />} />
               <Route path="/gallery" element={<GalleryPage />} />
               <Route path="/gallery/:slug" element={<GalleryDetailRoute />} />
+              <Route path="/contests" element={<ContestsPage />} />
+              <Route path="/contests/:id" element={<ContestDetailRoute />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </div>
@@ -170,7 +190,9 @@ function SiteHeader({
           <Link to="/">Lab</Link>
           <Link to="/dashboard">Projects</Link>
           <Link to="/gallery">Gallery</Link>
+          <Link to="/contests">Contests</Link>
           <AccountNavLink />
+          <AdminNavLink />
         </nav>
         <ThemeSwitcher current={themeName} onChange={onThemeChange} />
       </div>
@@ -183,6 +205,12 @@ function AccountNavLink() {
   const label =
     auth.status === 'authenticated' && auth.user !== null ? auth.user.displayName : 'Account'
   return <Link to="/account">{label}</Link>
+}
+
+function AdminNavLink() {
+  const auth = useAuthStore()
+  if (!auth.isAdmin) return null
+  return <Link to="/admin">Admin</Link>
 }
 
 function SiteFooter() {

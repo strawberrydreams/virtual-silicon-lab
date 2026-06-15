@@ -1,4 +1,4 @@
-export const CURRENT_SCHEMA_VERSION = 4 as const
+export const CURRENT_SCHEMA_VERSION = 5 as const
 
 export type DieShape = 'rect' | 'square' | 'circle' | 'hexagon'
 export type StyleTheme = 'neon' | 'retro' | 'military' | 'keynote' | 'mono'
@@ -119,6 +119,12 @@ export type StudioState = {
   stickers: StudioSticker[]
 }
 
+export type RemixOrigin = {
+  chipId: string
+  slug: string
+  title: string
+}
+
 export type Project = {
   schemaVersion: typeof CURRENT_SCHEMA_VERSION
   id: string
@@ -131,4 +137,5 @@ export type Project = {
   theme: StyleTheme
   spec: FakeSpec
   studio: StudioState
+  remixedFrom?: RemixOrigin
 }

@@ -91,6 +91,33 @@ describe('renderViewerHtml', () => {
     expect(html).not.toContain('<script>alert(1)</script>')
     expect(html).toContain('&lt;script&gt;alert(1)&lt;/script&gt;')
   })
+
+  it('renders a Remixed from link when a visible parent is provided', () => {
+    const html = renderViewerHtml({
+      title: 'Child Chip',
+      ownerDisplayName: 'Ada',
+      slug: 'child-slug',
+      project,
+      baseUrl: 'https://chips.example.com',
+      remixedFrom: { slug: 'parent-slug', title: 'Parent Title' },
+    })
+
+    expect(html).toContain('Remixed from')
+    expect(html).toContain('href="https://chips.example.com/gallery/parent-slug"')
+    expect(html).toContain('Parent Title')
+  })
+
+  it('omits the Remixed from line when no parent is provided', () => {
+    const html = renderViewerHtml({
+      title: 'Ada Chip',
+      ownerDisplayName: 'Ada',
+      slug: 'ada-chip-deadbeef',
+      project,
+      baseUrl: 'https://chips.example.com',
+    })
+
+    expect(html).not.toContain('Remixed from')
+  })
 })
 
 describe('renderNotFoundHtml', () => {

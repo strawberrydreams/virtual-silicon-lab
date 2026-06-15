@@ -57,6 +57,8 @@ v3 서버는 Hono + SQLite 공유 레이어입니다. 에디터 프로젝트 저
 - `VSL_UPLOAD_DIR`: publish PNG 파일 저장 위치. 기본은 `${VSL_DATA_DIR}/uploads`
 - `VSL_UPLOAD_MAX_BYTES`: die/poster PNG 각각의 decoded byte 제한. 기본 8 MiB
 - `VSL_RATE_LIMIT_WINDOW_MS`, `VSL_RATE_LIMIT_MAX`: mutating `/api/*` rate limit. 기본 60초/120회
+- `VSL_SIGNUPS_OPEN`: 신규 가입 허용 여부 (`true`/`false`). **기본 `false`** (비공개 베타). 실제 공개 오픈은 이 값을 `true`로 켜는 운영 결정입니다. `false`여도 기존 계정 로그인·갤러리·공유는 정상 동작합니다.
+- `VSL_ADMIN_EMAILS`: 콤마 구분 관리자 이메일 목록. 해당 이메일로 로그인한 계정이 `/admin` 모더레이션(신고 검토, 칩 숨김/삭제) 권한을 가집니다. 예: `a@x.com,b@y.com`
 
 로컬 production smoke:
 

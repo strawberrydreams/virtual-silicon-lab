@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it, vi } from 'vitest'
 import type { GalleryApi, GalleryChipSummary } from './galleryApi'
@@ -15,12 +16,14 @@ const chip: GalleryChipSummary = {
   version: 1,
   updatedAt: 2_000,
   publishedAt: 2_000,
+  likeCount: 0,
 }
 
 function fakeApi(overrides: Partial<GalleryApi> = {}): GalleryApi {
   return {
     list: vi.fn().mockResolvedValue([chip]),
     get: vi.fn(),
+    getLineage: vi.fn(),
     ...overrides,
   }
 }
@@ -55,5 +58,16 @@ describe('GalleryPage', () => {
 
     expect(await screen.findByText(/share server is offline/i)).toBeInTheDocument()
     expect(screen.getByText(/local editing is unaffected/i)).toBeInTheDocument()
+  })
+
+  it('refetches with the chosen sort when a segment is clicked', async () => {
+    const list = vi.fn().mockResolvedValue([chip])
+    renderPage(fakeApi({ list }))
+
+    expect(await screen.findByRole('heading', { name: 'Public Gallery' })).toBeInTheDocument()
+    expect(list).toHaveBeenCalledWith('trending')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Top' }))
+    expect(list).toHaveBeenCalledWith('top')
   })
 })

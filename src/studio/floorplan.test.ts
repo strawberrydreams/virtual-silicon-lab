@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import type { Project } from '../domain/project'
+import { CURRENT_SCHEMA_VERSION, type Project } from '../domain/project'
 import { buildFillerCells, usableDieRegion } from './floorplan'
 
 function makeProject(overrides: Partial<Project> = {}): Project {
   const base: Project = {
-    schemaVersion: 4,
+    schemaVersion: CURRENT_SCHEMA_VERSION,
     id: 'p1',
     name: 'Test',
     createdAt: 0,
