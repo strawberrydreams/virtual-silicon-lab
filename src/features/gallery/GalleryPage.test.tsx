@@ -15,6 +15,7 @@ const chip: GalleryChipSummary = {
   version: 1,
   updatedAt: 2_000,
   publishedAt: 2_000,
+  likeCount: 0,
 }
 
 function fakeApi(overrides: Partial<GalleryApi> = {}): GalleryApi {

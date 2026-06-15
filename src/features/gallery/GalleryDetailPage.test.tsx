@@ -31,6 +31,9 @@ const detail: GalleryChipDetail = {
   version: 2,
   updatedAt: 2_000,
   publishedAt: 2_000,
+  likeCount: 0,
+  commentCount: 0,
+  likedByMe: false,
   project,
 }
 

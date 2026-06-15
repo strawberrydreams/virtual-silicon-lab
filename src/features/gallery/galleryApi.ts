@@ -10,9 +10,12 @@ export type GalleryChipSummary = {
   version: number
   updatedAt: number
   publishedAt: number
+  likeCount: number
 }
 
 export type GalleryChipDetail = GalleryChipSummary & {
+  commentCount: number
+  likedByMe: boolean
   project: Project
 }
 
