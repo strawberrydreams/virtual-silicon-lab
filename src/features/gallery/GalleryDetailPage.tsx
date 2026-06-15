@@ -1,22 +1,37 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import type { Project } from '../../domain/project'
+import { useAuthStore } from '../../stores/authStoreContext'
 import {
   liveGalleryApi,
   ServerUnreachableError,
   type GalleryApi,
   type GalleryChipDetail,
 } from './galleryApi'
+import { liveReactionsApi, type GalleryComment, type ReactionsApi } from './reactionsApi'
 
 type Props = {
   api?: GalleryApi
+  reactions?: ReactionsApi
   onProjectLoaded?: (project: Project) => void
   onRemix?: (project: Project) => void
 }
 
-export function GalleryDetailPage({ api = liveGalleryApi, onProjectLoaded, onRemix }: Props) {
+export function GalleryDetailPage({
+  api = liveGalleryApi,
+  reactions = liveReactionsApi,
+  onProjectLoaded,
+  onRemix,
+}: Props) {
   const { slug = '' } = useParams()
   const [chip, setChip] = useState<GalleryChipDetail | 'loading' | 'missing' | 'offline' | 'error'>('loading')
+  const auth = useAuthStore()
+  const isLoggedIn = auth.status === 'authenticated'
+  const [likeState, setLikeState] = useState<{ likeCount: number; likedByMe: boolean } | null>(null)
+  const [reported, setReported] = useState(false)
+  const [actionError, setActionError] = useState<string | null>(null)
+  const [comments, setComments] = useState<GalleryComment[]>([])
+  const [draft, setDraft] = useState('')
 
   useEffect(() => {
     let active = true
@@ -29,6 +44,7 @@ export function GalleryDetailPage({ api = liveGalleryApi, onProjectLoaded, onRem
           setChip('missing')
         } else {
           setChip(nextChip)
+          setLikeState({ likeCount: nextChip.likeCount, likedByMe: nextChip.likedByMe })
           onProjectLoaded?.(nextChip.project)
         }
       })
@@ -40,6 +56,27 @@ export function GalleryDetailPage({ api = liveGalleryApi, onProjectLoaded, onRem
       active = false
     }
   }, [api, onProjectLoaded, slug])
+
+  const chipId = typeof chip === 'object' ? chip.id : null
+  useEffect(() => {
+    if (chipId === null) return
+    let active = true
+    reactions
+      .listComments(chipId)
+      .then((list) => {
+        if (active) setComments(list)
+      })
+      .catch(() => {
+        // comments are non-critical; leave the list empty on failure
+      })
+    return () => {
+      active = false
+    }
+  }, [chipId, reactions])
+
+  function refreshComments(id: string) {
+    reactions.listComments(id).then(setComments).catch(() => undefined)
+  }
 
   if (chip === 'loading') {
     return (
@@ -96,6 +133,36 @@ export function GalleryDetailPage({ api = liveGalleryApi, onProjectLoaded, onRem
           <button type="button" className="v2-inline-action" onClick={() => onRemix?.(chip.project)}>
             Remix into my projects
           </button>
+          {likeState !== null && (
+            <div className="gallery-detail__reactions">
+              <button
+                type="button"
+                className="v2-inline-action"
+                disabled={!isLoggedIn}
+                onClick={() => {
+                  const op = likeState.likedByMe ? reactions.unlike(chip.id) : reactions.like(chip.id)
+                  op.then(setLikeState).catch((e) => setActionError(e instanceof Error ? e.message : 'Action failed.'))
+                }}
+              >
+                {likeState.likedByMe ? '♥' : '♡'} {likeState.likeCount}
+              </button>
+              <button
+                type="button"
+                className="v2-inline-action"
+                disabled={!isLoggedIn || reported}
+                onClick={() => {
+                  reactions
+                    .reportChip(chip.id, 'Reported from gallery')
+                    .then(() => setReported(true))
+                    .catch((e) => setActionError(e instanceof Error ? e.message : 'Action failed.'))
+                }}
+              >
+                {reported ? 'Reported' : 'Report'}
+              </button>
+              {!isLoggedIn && <span className="gallery-detail__hint">Sign in to react.</span>}
+              {actionError !== null && <span role="alert">{actionError}</span>}
+            </div>
+          )}
         </div>
         <img alt={`${chip.title} poster`} className="gallery-detail__poster" src={chip.posterImageUrl} />
       </section>
@@ -127,6 +194,59 @@ export function GalleryDetailPage({ api = liveGalleryApi, onProjectLoaded, onRem
             <span key={feature}>{feature}</span>
           ))}
         </div>
+      </section>
+
+      <section className="gallery-comments" aria-label="Comments">
+        <p className="v2-kicker">Comments ({comments.length})</p>
+        <ul className="gallery-comments__list">
+          {comments.map((comment) => (
+            <li key={comment.id}>
+              <strong>{comment.authorDisplayName}</strong> {comment.body}
+              {(auth.user?.id === comment.authorUserId || auth.isAdmin) && (
+                <button
+                  type="button"
+                  className="v2-inline-action"
+                  onClick={() => {
+                    reactions
+                      .deleteComment(chip.id, comment.id)
+                      .then(() => refreshComments(chip.id))
+                      .catch((e) => setActionError(e instanceof Error ? e.message : 'Action failed.'))
+                  }}
+                >
+                  Delete
+                </button>
+              )}
+            </li>
+          ))}
+          {comments.length === 0 && <li className="gallery-comments__empty">No comments yet.</li>}
+        </ul>
+        {isLoggedIn ? (
+          <form
+            className="gallery-comments__form"
+            onSubmit={(e) => {
+              e.preventDefault()
+              const body = draft.trim()
+              if (body === '') return
+              reactions
+                .createComment(chip.id, body)
+                .then(() => {
+                  setDraft('')
+                  refreshComments(chip.id)
+                })
+                .catch((err) => setActionError(err instanceof Error ? err.message : 'Action failed.'))
+            }}
+          >
+            <textarea
+              aria-label="Add a comment"
+              value={draft}
+              maxLength={1000}
+              onChange={(e) => setDraft(e.target.value)}
+            />
+            <button type="submit" className="v2-inline-action">Post comment</button>
+          </form>
+        ) : (
+          <p className="gallery-detail__hint">Sign in to comment.</p>
+        )}
       </section>
     </main>
   )

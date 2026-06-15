@@ -3,8 +3,11 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { describe, expect, it, vi } from 'vitest'
 import { createProject } from '../../domain/projectFactory'
+import type { AuthApi } from '../account/authApi'
+import { AuthStoreProvider } from '../../stores/authStoreContext'
 import type { GalleryApi, GalleryChipDetail } from './galleryApi'
 import { ServerUnreachableError } from './galleryApi'
+import type { ReactionsApi } from './reactionsApi'
 import { GalleryDetailPage } from './GalleryDetailPage'
 
 const project = {
@@ -45,17 +48,46 @@ function fakeApi(overrides: Partial<GalleryApi> = {}): GalleryApi {
   }
 }
 
+function fakeAuthApi(): AuthApi {
+  return {
+    me: vi.fn().mockResolvedValue(null),
+    serverConfig: vi.fn().mockResolvedValue({ signupsOpen: true }),
+    signup: vi.fn(),
+    login: vi.fn(),
+    logout: vi.fn(),
+    updateDisplayName: vi.fn(),
+    changePassword: vi.fn(),
+    deleteAccount: vi.fn(),
+  }
+}
+
+function fakeReactions(): ReactionsApi {
+  return {
+    like: vi.fn(),
+    unlike: vi.fn(),
+    listComments: vi.fn().mockResolvedValue([]),
+    createComment: vi.fn(),
+    deleteComment: vi.fn(),
+    reportChip: vi.fn(),
+  }
+}
+
 function renderDetail(
   api: GalleryApi,
   slug = 'ada-chip-deadbeef',
   onRemix?: (project: GalleryChipDetail['project']) => void,
 ) {
   return render(
-    <MemoryRouter initialEntries={[`/gallery/${slug}`]}>
-      <Routes>
-        <Route path="/gallery/:slug" element={<GalleryDetailPage api={api} onRemix={onRemix} />} />
-      </Routes>
-    </MemoryRouter>,
+    <AuthStoreProvider api={fakeAuthApi()}>
+      <MemoryRouter initialEntries={[`/gallery/${slug}`]}>
+        <Routes>
+          <Route
+            path="/gallery/:slug"
+            element={<GalleryDetailPage api={api} reactions={fakeReactions()} onRemix={onRemix} />}
+          />
+        </Routes>
+      </MemoryRouter>
+    </AuthStoreProvider>,
   )
 }
 
