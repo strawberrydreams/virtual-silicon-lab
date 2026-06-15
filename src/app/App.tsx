@@ -3,6 +3,8 @@ import { Link, Navigate, Route, Routes, useNavigate, useParams } from 'react-rou
 import type { Project } from '../domain/project'
 import { AccountPage } from '../features/account/AccountPage'
 import { AdminPage } from '../features/admin/AdminPage'
+import { ContestDetailPage } from '../features/contests/ContestDetailPage'
+import { ContestsPage } from '../features/contests/ContestsPage'
 import { EditorPage } from '../features/editor/EditorPage'
 import { GalleryDetailPage } from '../features/gallery/GalleryDetailPage'
 import { GalleryPage } from '../features/gallery/GalleryPage'
@@ -122,6 +124,20 @@ function GalleryDetailRoute() {
   return <GalleryDetailPage onProjectLoaded={onProjectLoaded} onRemix={onRemix} />
 }
 
+function ContestDetailRoute() {
+  const { id } = useParams()
+  const auth = useAuthStore()
+  if (id === undefined) return <Navigate to="/contests" replace />
+  return (
+    <ContestDetailPage
+      contestId={id}
+      isAuthenticated={auth.status === 'authenticated'}
+      isAdmin={auth.isAdmin}
+      currentUserId={auth.user?.id ?? null}
+    />
+  )
+}
+
 export function App() {
   const [themeName, setTheme] = usePageTheme()
   const pageTheme = resolvePageTheme(themeName)
@@ -145,6 +161,8 @@ export function App() {
               <Route path="/admin" element={<AdminPage />} />
               <Route path="/gallery" element={<GalleryPage />} />
               <Route path="/gallery/:slug" element={<GalleryDetailRoute />} />
+              <Route path="/contests" element={<ContestsPage />} />
+              <Route path="/contests/:id" element={<ContestDetailRoute />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </div>
@@ -172,6 +190,7 @@ function SiteHeader({
           <Link to="/">Lab</Link>
           <Link to="/dashboard">Projects</Link>
           <Link to="/gallery">Gallery</Link>
+          <Link to="/contests">Contests</Link>
           <AccountNavLink />
           <AdminNavLink />
         </nav>

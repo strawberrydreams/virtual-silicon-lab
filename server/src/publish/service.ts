@@ -30,6 +30,14 @@ export type PublicGalleryChip = PublishedChip & {
   commentCount: number
 }
 
+export type OwnerChipSummary = {
+  id: string
+  slug: string
+  title: string
+  posterImagePath: string | null
+  posterImageDataUrl: string
+}
+
 type PublishedChipRow = {
   id: string
   owner_user_id: string
@@ -274,6 +282,30 @@ export function listPublicPublishedChips(
     )
     .all({ cutoff, limit }) as PublicGalleryChipRow[]
   return rows.map(toPublicGalleryChip)
+}
+
+export function listOwnerPublicChips(db: Database.Database, ownerUserId: string): OwnerChipSummary[] {
+  const rows = db
+    .prepare(
+      `SELECT id, slug, title, poster_image_path, poster_image_data_url
+       FROM published_chips
+       WHERE owner_user_id = ? AND is_public = 1 AND moderation_status = 'visible'
+       ORDER BY updated_at DESC`,
+    )
+    .all(ownerUserId) as Array<{
+    id: string
+    slug: string
+    title: string
+    poster_image_path: string | null
+    poster_image_data_url: string
+  }>
+  return rows.map((row) => ({
+    id: row.id,
+    slug: row.slug,
+    title: row.title,
+    posterImagePath: row.poster_image_path,
+    posterImageDataUrl: row.poster_image_data_url,
+  }))
 }
 
 export function getPublicPublishedChipBySlug(

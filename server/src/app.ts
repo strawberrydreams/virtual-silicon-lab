@@ -2,6 +2,7 @@ import type Database from 'better-sqlite3'
 import { Hono } from 'hono'
 import { CURRENT_SCHEMA_VERSION } from '@domain/project'
 import { accountRoutes } from './accounts/routes'
+import { contestRoutes } from './contests/routes'
 import type { PublishedImageStore } from './images/fileImageStore'
 import { moderationRoutes } from './moderation/routes'
 import { publishRoutes } from './publish/routes'
@@ -67,6 +68,7 @@ export function createApp(deps: AppDeps) {
   app.route('/api', publishRoutes(deps))
   app.route('/api', moderationRoutes(deps))
   app.route('/api', reactionsRoutes(deps))
+  app.route('/api', contestRoutes(deps))
   app.route('/', shareRoutes(deps))
 
   return app

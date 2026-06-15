@@ -7,6 +7,7 @@ import {
   deletePublishedChip,
   getPublicPublishedChipBySlug,
   getPublishedChipForOwnerProject,
+  listOwnerPublicChips,
   listPublicPublishedChips,
   setPublishedChipVisibility,
   upsertPublishedChip,
@@ -102,6 +103,20 @@ export function publishRoutes({
     const chip = upsertPublishedChip(db, user.id, input.value, now, imageStore)
     const baseUrl = resolvePublicBaseUrl(c.req.url, publicBaseUrl)
     return c.json({ chip: serializePublishedChip(chip, baseUrl) }, existing === null ? 201 : 200)
+  })
+
+  routes.get('/published-chips/mine', async (c) => {
+    const user = await readUser(c)
+    if (user === null) return fail(c, 401, 'UNAUTHORIZED', 'Sign in required.')
+    const baseUrl = resolvePublicBaseUrl(c.req.url, publicBaseUrl)
+    return c.json({
+      chips: listOwnerPublicChips(db, user.id).map((chip) => ({
+        id: chip.id,
+        slug: chip.slug,
+        title: chip.title,
+        posterImageUrl: resolveImageUrl(baseUrl, chip.posterImagePath, chip.posterImageDataUrl),
+      })),
+    })
   })
 
   routes.get('/published-chips/source/:sourceProjectId', async (c) => {

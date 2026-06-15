@@ -207,3 +207,84 @@ export function getMyVote(db: Database.Database, contestId: string, voterUserId:
     .get(contestId, voterUserId) as { entry_id: string } | undefined
   return row === undefined ? null : row.entry_id
 }
+
+export type ContestEntry = {
+  entryId: string
+  contestId: string
+  publishedChipId: string
+  ownerUserId: string
+  createdAt: number
+}
+
+export function chipEligibleForUser(db: Database.Database, chipId: string, userId: string): boolean {
+  const row = db
+    .prepare(
+      "SELECT 1 FROM published_chips WHERE id = ? AND owner_user_id = ? AND is_public = 1 AND moderation_status = 'visible'",
+    )
+    .get(chipId, userId)
+  return row !== undefined
+}
+
+export function createEntry(
+  db: Database.Database,
+  input: { contestId: string; publishedChipId: string; ownerUserId: string },
+  now: () => number,
+): ContestEntry | 'duplicate' {
+  const id = randomUUID()
+  const ts = now()
+  try {
+    db.prepare(
+      'INSERT INTO contest_entries (id, contest_id, published_chip_id, owner_user_id, created_at) VALUES (?, ?, ?, ?, ?)',
+    ).run(id, input.contestId, input.publishedChipId, input.ownerUserId, ts)
+  } catch (error) {
+    if (error instanceof Error && /UNIQUE constraint/.test(error.message)) return 'duplicate'
+    throw error
+  }
+  return {
+    entryId: id,
+    contestId: input.contestId,
+    publishedChipId: input.publishedChipId,
+    ownerUserId: input.ownerUserId,
+    createdAt: ts,
+  }
+}
+
+export function getEntryMeta(
+  db: Database.Database,
+  entryId: string,
+): { id: string; contestId: string; ownerUserId: string } | null {
+  const row = db
+    .prepare('SELECT id, contest_id, owner_user_id FROM contest_entries WHERE id = ?')
+    .get(entryId) as { id: string; contest_id: string; owner_user_id: string } | undefined
+  return row === undefined ? null : { id: row.id, contestId: row.contest_id, ownerUserId: row.owner_user_id }
+}
+
+export function withdrawEntry(db: Database.Database, entryId: string): boolean {
+  return db.prepare('DELETE FROM contest_entries WHERE id = ?').run(entryId).changes > 0
+}
+
+export function entryOwner(
+  db: Database.Database,
+  entryId: string,
+): { contestId: string; ownerUserId: string } | null {
+  const row = db
+    .prepare('SELECT contest_id, owner_user_id FROM contest_entries WHERE id = ?')
+    .get(entryId) as { contest_id: string; owner_user_id: string } | undefined
+  return row === undefined ? null : { contestId: row.contest_id, ownerUserId: row.owner_user_id }
+}
+
+export function castVote(
+  db: Database.Database,
+  input: { contestId: string; entryId: string; voterUserId: string },
+  now: () => number,
+): void {
+  db.prepare(
+    `INSERT INTO contest_votes (contest_id, voter_user_id, entry_id, created_at) VALUES (?, ?, ?, ?)
+     ON CONFLICT (contest_id, voter_user_id) DO UPDATE SET entry_id = excluded.entry_id, created_at = excluded.created_at`,
+  ).run(input.contestId, input.voterUserId, input.entryId, now())
+}
+
+export function retractVote(db: Database.Database, contestId: string, voterUserId: string): boolean {
+  return db.prepare('DELETE FROM contest_votes WHERE contest_id = ? AND voter_user_id = ?').run(contestId, voterUserId)
+    .changes > 0
+}

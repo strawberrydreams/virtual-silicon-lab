@@ -990,3 +990,36 @@ v3 서버 위에 공개 오픈 전 안전장치를 얹었다. 브레인스토밍
 - **검증.** RED: `npm test --workspace server -- contestsService`가 `../src/contests/service` 없음으로 실패. GREEN:
   `npm test --workspace server -- contestsService` 통과(1 file / 5 tests). Task 2의 commit 단계도 위와 같은 이유로
   실행하지 않았다.
+
+## V4-M3 콘테스트 완료 (2026-06-15)
+
+M3의 남은 작업을 완료해 공개 contest lifecycle을 서버/클라이언트에 연결했다. 중간 milestone commit은 하지 않고,
+사용자 요청에 따라 기존 M2+M3 foundation을 먼저 커밋한 뒤 남은 M3 작업은 통합 follow-up으로 정리했다.
+
+- **4단계 수동 lifecycle.** `draft`/`submission`/`voting`/`results`는 admin이 직접 전환한다. 스케줄러/날짜 필드는
+  넣지 않았다. 공개 list/detail은 draft를 숨기고, 잘못된 phase의 entry/vote 요청은 `409 WRONG_PHASE`로 응답한다.
+- **서버 모듈/라우트.** `server/src/contests/routes.ts`를 `/api`에 mount했다. Admin contest CRUD는
+  `/api/admin/contests`에서 처리하되 moderation sub-app의 `/admin/*` middleware와 겹치지 않도록 각 handler가 inline
+  `readAdmin` guard를 사용한다. Public endpoints는 `/api/contests`, `/api/contests/:id`; user endpoints는
+  `/api/contests/:id/entries`, `/api/contests/:id/vote`.
+- **Entry/vote 규칙.** Entry는 `submission` phase에서만 가능하고, 본인의 public+visible published chip만 허용한다.
+  DB UNIQUE로 contest당 유저 1개 entry와 chip 중복 제출을 막는다. Vote는 `voting` phase에서만 가능하고
+  contest당 유저 1표를 `ON CONFLICT` replace로 갱신한다. Self-vote는 `403 SELF_VOTE`, retract는 `DELETE vote`.
+- **Read-side results.** 결과는 materialized table 없이 `contest_votes` 집계로 계산한다. Detail entries는
+  `vote_count DESC, created_at ASC`로 정렬하고 rank를 부여하며, client는 `results` phase에서 top-3 podium을 렌더한다.
+- **Entry picker source.** `GET /api/published-chips/mine`을 추가해 현재 유저의 public+visible published chips만 반환한다.
+  응답은 client가 바로 사용할 수 있도록 `posterImageUrl`로 직렬화한다.
+- **클라이언트.** `src/features/contests/contestsApi.ts`, `ContestsPage`, `ContestDetailPage`를 추가하고 App nav/routes에
+  `/contests`와 `/contests/:id`를 연결했다. Detail page는 submission entry picker, withdraw, voting vote/unvote,
+  own-entry 표시, results podium을 phase별로 렌더한다. AdminPage에는 contest create/status/delete panel을 추가했다.
+  별도 admin-list endpoint가 없으므로 새 draft는 create 응답 id를 로컬 state에 append해 즉시 전환 가능하게 했다.
+- **검증.** RED→GREEN으로 service entries/votes, contest routes, `/published-chips/mine`, `contestsApi`,
+  `ContestDetailPage` tests를 추가했다. 전체 `npm test` 통과: client 72 files / 352 tests, server 36 files / 173 tests.
+  `npm run build` 통과(기존 Vite >500 kB chunk 경고만), `npm run typecheck --workspace server` 통과.
+- **브라우저 QA.** 임시 DB/업로드 디렉터리로 server+Vite를 띄워 admin signup→contest create→submission 전환→public
+  contests 노출→A/B 유저 entry→voting 전환→B가 A entry에 vote→results podium(A #1, B #2)을 확인했다. Header의
+  Contests nav, admin panel controls, entry picker, own-entry "Your entry", `Voted` pressed state가 확인됐다. Local-first
+  회귀로 `/`에서 Start Blank 후 editor 진입도 확인했다. 브라우저 console warn/error 0.
+- **알려진 기존 이슈.** Admin으로 sign out 후 일반 유저 signup 시 header의 Admin 링크가 남는 auth store reset 문제가 보였다.
+  M0 때 기록된 `isAdmin` 세팅/리셋 계열의 기존 auth 상태 문제이며, 이번 M3 contest backend authorization은 서버 guard가
+  별도로 강제한다. M3 범위에서는 수정하지 않았다.
