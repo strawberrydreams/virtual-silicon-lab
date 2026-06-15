@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import type {
   Project,
   StudioSpray,
@@ -77,11 +77,15 @@ function StickerFields({
 }) {
   const [text, setText] = useState(sticker.text)
   const [rotation, setRotation] = useState(String(sticker.rotation))
-
-  useEffect(() => {
+  // Re-sync the editable fields when the selected sticker changes from outside
+  // (selection switch or undo/redo), derived during render rather than in an effect.
+  const stickerKey = `${sticker.id}:${sticker.text}:${sticker.rotation}`
+  const [syncedKey, setSyncedKey] = useState(stickerKey)
+  if (syncedKey !== stickerKey) {
+    setSyncedKey(stickerKey)
     setText(sticker.text)
     setRotation(String(sticker.rotation))
-  }, [sticker.id, sticker.text, sticker.rotation])
+  }
 
   return (
     <div className="studio-item-inspector__fields">
@@ -167,11 +171,15 @@ function SprayFields({
 }) {
   const [radius, setRadius] = useState(String(spray.radius))
   const [intensity, setIntensity] = useState(String(spray.intensity))
-
-  useEffect(() => {
+  // Re-sync the editable fields when the selected spray changes from outside
+  // (selection switch or undo/redo), derived during render rather than in an effect.
+  const sprayKey = `${spray.id}:${spray.radius}:${spray.intensity}`
+  const [syncedKey, setSyncedKey] = useState(sprayKey)
+  if (syncedKey !== sprayKey) {
+    setSyncedKey(sprayKey)
     setRadius(String(spray.radius))
     setIntensity(String(spray.intensity))
-  }, [spray.id, spray.radius, spray.intensity])
+  }
 
   return (
     <div className="studio-item-inspector__fields">

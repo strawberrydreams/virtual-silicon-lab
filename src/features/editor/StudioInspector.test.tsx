@@ -122,6 +122,53 @@ describe('StudioInspector', () => {
     expect(screen.getByLabelText('Spray y')).toHaveValue(240)
   })
 
+  it('re-syncs sticker fields when the selected sticker changes from outside', () => {
+    const base = {
+      ...createProject('p', 'p1', 0),
+      studio: {
+        ...createProject('p', 'p1', 0).studio,
+        stickers: [
+          {
+            id: 'sticker-1',
+            kind: 'badge' as const,
+            x: 120,
+            y: 160,
+            text: 'STAR',
+            color: '#f9f4ff',
+            rotation: -8,
+          },
+        ],
+      },
+    }
+    const { rerender } = render(
+      <StudioInspector
+        project={base}
+        selectedStudioItem={{ kind: 'sticker', id: 'sticker-1' }}
+        onUpdateSticker={vi.fn()}
+        onUpdateSpray={vi.fn()}
+      />,
+    )
+    expect(screen.getByLabelText('Sticker text')).toHaveValue('STAR')
+
+    const updated = {
+      ...base,
+      studio: {
+        ...base.studio,
+        stickers: [{ ...base.studio.stickers[0], text: 'NOVA', rotation: 20 }],
+      },
+    }
+    rerender(
+      <StudioInspector
+        project={updated}
+        selectedStudioItem={{ kind: 'sticker', id: 'sticker-1' }}
+        onUpdateSticker={vi.fn()}
+        onUpdateSpray={vi.fn()}
+      />,
+    )
+    expect(screen.getByLabelText('Sticker text')).toHaveValue('NOVA')
+    expect(screen.getByLabelText('Sticker rotation')).toHaveValue(20)
+  })
+
   it('shows an empty selection state', () => {
     render(
       <StudioInspector

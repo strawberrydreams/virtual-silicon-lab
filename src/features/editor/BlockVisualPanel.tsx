@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import type { Block } from '../../domain/project'
 
 type Props = {
@@ -12,10 +12,14 @@ const labelClass = 'block text-[11px] uppercase tracking-wider text-cyan-400'
 
 export function BlockVisualPanel({ block, onChange }: Props) {
   const [imageUrl, setImageUrl] = useState(block?.imageDataUrl ?? '')
-
-  useEffect(() => {
+  // Reset the editable field when the selected tile (or its stored image) changes
+  // from outside, derived during render rather than in an effect.
+  const blockKey = `${block?.id ?? ''}:${block?.imageDataUrl ?? ''}`
+  const [syncedKey, setSyncedKey] = useState(blockKey)
+  if (syncedKey !== blockKey) {
+    setSyncedKey(blockKey)
     setImageUrl(block?.imageDataUrl ?? '')
-  }, [block?.id, block?.imageDataUrl])
+  }
 
   return (
     <section className="block-visual-panel" aria-label="Selected tile visual controls">
