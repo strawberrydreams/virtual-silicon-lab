@@ -56,17 +56,26 @@ function EditorRoute() {
   const [project, setProject] = useState<Project | 'loading' | 'missing'>('loading')
   const autoThemedProjectId = useRef<string | null>(null)
 
+  // Reset to the loading state when the route's project id changes, derived during
+  // render so the effect only owns the async load. `store` is the reactive store
+  // state (a new ref on every autosave), so the fetch keys on the stable `store.get`
+  // method to avoid re-fetching whenever the project list changes.
+  const [loadedId, setLoadedId] = useState(projectId)
+  if (loadedId !== projectId) {
+    setLoadedId(projectId)
+    setProject('loading')
+  }
+
+  const loadProject = store.get
   useEffect(() => {
     let active = true
-    setProject('loading')
-    store
-      .get(projectId)
+    loadProject(projectId)
       .then((found) => active && setProject(found ?? 'missing'))
       .catch(() => active && setProject('missing'))
     return () => {
       active = false
     }
-  }, [projectId])
+  }, [projectId, loadProject])
 
   useEffect(() => {
     if (project === 'loading' || project === 'missing') return
