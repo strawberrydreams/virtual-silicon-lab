@@ -68,7 +68,8 @@ export function ProjectDashboard({
             <h1>Virtual Silicon Lab</h1>
             <p>
               <span>{projects.length}</span>{' '}
-              {projects.length === 1 ? 'Local Project' : 'Local Projects'} / {presets.length} Presets
+              {projects.length === 1 ? 'Local Project' : 'Local Projects'} / {presets.length}{' '}
+              Presets
             </p>
           </div>
           <div className="v2-action-row">
@@ -90,7 +91,8 @@ export function ProjectDashboard({
               <h2>Remix a preset</h2>
             </div>
             <p>
-              Every remix becomes an independent local project. Change the theme, layout, and blocks freely.
+              Every remix becomes an independent local project. Change the theme, layout, and blocks
+              freely.
             </p>
           </div>
           <div className="v2-preset-grid">
@@ -108,7 +110,8 @@ export function ProjectDashboard({
             <div className="v2-empty-state">
               <h2>No local projects yet</h2>
               <p>
-                Start from a curated preset above or create a blank chip layout. Projects are saved locally in this browser.
+                Start from a curated preset above or create a blank chip layout. Projects are saved
+                locally in this browser.
               </p>
               <button className="v2-button" onClick={startProject}>
                 Start Blank Project
@@ -123,13 +126,32 @@ export function ProjectDashboard({
                     blocks={project.blocks.map((block) => block.type)}
                     label={`${project.name} render preview`}
                   />
-                  <p className="v2-meta">{project.die.shape} / {chipFinishLabel(project.theme)}</p>
+                  <p className="v2-meta">
+                    {project.die.shape} / {chipFinishLabel(project.theme)}
+                  </p>
                   <h2>{project.name}</h2>
-                  <p>{project.blocks.length} blocks / {project.decorations.length} decorations</p>
+                  <p>
+                    {project.blocks.length} blocks / {project.decorations.length} decorations
+                  </p>
                   <div>
-                    <button aria-label={`Open ${project.name}`} onClick={() => navigate(`/editor/${project.id}`)}>Open</button>
-                    <button aria-label={`Duplicate ${project.name}`} onClick={() => duplicate(project)}>Duplicate</button>
-                    <button aria-label={`Delete ${project.name}`} onClick={() => confirmRemove(project)}>Delete</button>
+                    <button
+                      aria-label={`Open ${project.name}`}
+                      onClick={() => navigate(`/editor/${project.id}`)}
+                    >
+                      Open
+                    </button>
+                    <button
+                      aria-label={`Duplicate ${project.name}`}
+                      onClick={() => duplicate(project)}
+                    >
+                      Duplicate
+                    </button>
+                    <button
+                      aria-label={`Delete ${project.name}`}
+                      onClick={() => confirmRemove(project)}
+                    >
+                      Delete
+                    </button>
                   </div>
                 </article>
               ))}

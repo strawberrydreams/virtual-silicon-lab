@@ -30,14 +30,20 @@ export function PublishPanel({ project, api = livePublishApi, captureImages }: P
   const [published, setPublished] = useState<PublishedChip | null>(null)
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
-
-  useEffect(() => {
-    let active = true
+  // Reset the publish UI (and prime the loading flag) when the project or auth
+  // status changes, derived during render so the effect only owns the async load.
+  const fetchKey = `${project.id}:${auth.status}`
+  const [loadedKey, setLoadedKey] = useState(fetchKey)
+  if (loadedKey !== fetchKey) {
+    setLoadedKey(fetchKey)
     setPublished(null)
     setMessage(null)
-    if (auth.status !== 'authenticated') return
+    setLoading(auth.status === 'authenticated')
+  }
 
-    setLoading(true)
+  useEffect(() => {
+    if (auth.status !== 'authenticated') return
+    let active = true
     api
       .getForProject(project.id)
       .then((chip) => {
@@ -45,7 +51,11 @@ export function PublishPanel({ project, api = livePublishApi, captureImages }: P
       })
       .catch((error) => {
         if (!active) return
-        setMessage(error instanceof ServerUnreachableError ? 'Share server is unreachable. Local editing is unaffected.' : error.message)
+        setMessage(
+          error instanceof ServerUnreachableError
+            ? 'Share server is unreachable. Local editing is unaffected.'
+            : error.message,
+        )
       })
       .finally(() => {
         if (active) setLoading(false)
@@ -59,7 +69,9 @@ export function PublishPanel({ project, api = livePublishApi, captureImages }: P
   function readImages(): CapturedImages {
     if (captureImages !== undefined) return captureImages()
     const dieImageDataUrl = dieStageRef.current?.toDataURL({ pixelRatio: DIE_EXPORT_PIXEL_RATIO })
-    const posterImageDataUrl = posterStageRef.current?.toDataURL({ pixelRatio: POSTER_EXPORT.pixelRatio })
+    const posterImageDataUrl = posterStageRef.current?.toDataURL({
+      pixelRatio: POSTER_EXPORT.pixelRatio,
+    })
     if (!dieImageDataUrl || !posterImageDataUrl) throw new Error('Export stages are not ready.')
     return { dieImageDataUrl, posterImageDataUrl }
   }
@@ -128,7 +140,10 @@ export function PublishPanel({ project, api = livePublishApi, captureImages }: P
 
   if (auth.status === 'unknown') {
     return (
-      <section aria-label="Publish controls" className="editor-inspector-card editor-inspector-card--stack">
+      <section
+        aria-label="Publish controls"
+        className="editor-inspector-card editor-inspector-card--stack"
+      >
         <p className="editor-kicker">Share Core</p>
         <h2>Publish</h2>
         <p className="text-sm text-[var(--v2-muted)]">Checking share account...</p>
@@ -138,17 +153,25 @@ export function PublishPanel({ project, api = livePublishApi, captureImages }: P
 
   if (auth.status === 'offline') {
     return (
-      <section aria-label="Publish controls" className="editor-inspector-card editor-inspector-card--stack">
+      <section
+        aria-label="Publish controls"
+        className="editor-inspector-card editor-inspector-card--stack"
+      >
         <p className="editor-kicker">Share Core</p>
         <h2>Publish</h2>
-        <p className="text-sm text-[var(--v2-muted)]">Share server is offline. Local editing is unaffected.</p>
+        <p className="text-sm text-[var(--v2-muted)]">
+          Share server is offline. Local editing is unaffected.
+        </p>
       </section>
     )
   }
 
   if (auth.status === 'anonymous') {
     return (
-      <section aria-label="Publish controls" className="editor-inspector-card editor-inspector-card--stack">
+      <section
+        aria-label="Publish controls"
+        className="editor-inspector-card editor-inspector-card--stack"
+      >
         <p className="editor-kicker">Share Core</p>
         <h2>Publish</h2>
         <p className="text-sm text-[var(--v2-muted)]">Sign in to publish this chip.</p>
@@ -157,7 +180,10 @@ export function PublishPanel({ project, api = livePublishApi, captureImages }: P
   }
 
   return (
-    <section aria-label="Publish controls" className="editor-inspector-card editor-inspector-card--stack">
+    <section
+      aria-label="Publish controls"
+      className="editor-inspector-card editor-inspector-card--stack"
+    >
       <div>
         <p className="editor-kicker">Share Core</p>
         <h2>Publish</h2>
@@ -165,7 +191,8 @@ export function PublishPanel({ project, api = livePublishApi, captureImages }: P
       <div className="grid gap-2 text-sm text-[var(--v2-muted)]">
         {published ? (
           <p>
-            Published v{published.version} · {published.isPublic ? 'Public' : 'Private'} · /s/{published.slug}
+            Published v{published.version} · {published.isPublic ? 'Public' : 'Private'} · /s/
+            {published.slug}
           </p>
         ) : (
           <p>Not published yet.</p>
@@ -186,7 +213,12 @@ export function PublishPanel({ project, api = livePublishApi, captureImages }: P
         </button>
         {published ? (
           <>
-            <button type="button" className={buttonClass} onClick={toggleVisibility} disabled={loading}>
+            <button
+              type="button"
+              className={buttonClass}
+              onClick={toggleVisibility}
+              disabled={loading}
+            >
               {published.isPublic ? 'Make Private' : 'Make Public'}
             </button>
             <button type="button" className={buttonClass} onClick={unpublish} disabled={loading}>
@@ -196,7 +228,10 @@ export function PublishPanel({ project, api = livePublishApi, captureImages }: P
         ) : null}
       </div>
       {captureImages === undefined ? (
-        <div className="pointer-events-none absolute left-[-10000px] top-[-10000px]" aria-hidden="true">
+        <div
+          className="pointer-events-none absolute left-[-10000px] top-[-10000px]"
+          aria-hidden="true"
+        >
           <DieExportStage ref={dieStageRef} project={project} />
           <PosterExportStage ref={posterStageRef} project={project} />
         </div>

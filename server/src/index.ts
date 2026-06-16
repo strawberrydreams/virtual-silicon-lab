@@ -9,7 +9,9 @@ import { migrations } from './migrations'
 
 const defaultDataDir = join(fileURLToPath(new URL('..', import.meta.url)), 'data')
 const dataDir = process.env.VSL_DATA_DIR ?? defaultDataDir
-const imageStore = createFileImageStore({ rootDir: process.env.VSL_UPLOAD_DIR ?? join(dataDir, 'uploads') })
+const imageStore = createFileImageStore({
+  rootDir: process.env.VSL_UPLOAD_DIR ?? join(dataDir, 'uploads'),
+})
 const db = openDatabase(join(dataDir, 'vsl.sqlite'))
 const applied = runMigrations(db, migrations)
 if (applied.length > 0) {

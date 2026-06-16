@@ -10,7 +10,11 @@ export type BlockStyle = {
   shadowOpacity: number
 }
 
-export function resolveBlockStyle(block: Block, tokens: ThemeTokens, isSelected: boolean): BlockStyle {
+export function resolveBlockStyle(
+  block: Block,
+  tokens: ThemeTokens,
+  isSelected: boolean,
+): BlockStyle {
   const isFantasy = block.category === 'fantasy'
   const glowing = block.glow ?? false
   const baseBlur = isFantasy ? tokens.glow.shadowBlur : tokens.glow.shadowBlur * 0.5
@@ -32,17 +36,36 @@ export type DecorationStyle = {
   blend?: GlobalCompositeOperation
 }
 
-export function resolveDecorationStyle(decoration: Decoration, tokens: ThemeTokens): DecorationStyle {
+export function resolveDecorationStyle(
+  decoration: Decoration,
+  tokens: ThemeTokens,
+): DecorationStyle {
   switch (decoration.kind) {
     case 'neonLine': {
       const color = decoration.color || tokens.accents[0]
-      return { color, strokeWidth: 2.5, shadowColor: color, shadowBlur: tokens.glow.shadowBlur, blend: 'lighter' }
+      return {
+        color,
+        strokeWidth: 2.5,
+        shadowColor: color,
+        shadowBlur: tokens.glow.shadowBlur,
+        blend: 'lighter',
+      }
     }
     case 'warningMark':
       return { color: '#f4a000', strokeWidth: 2, shadowColor: '#f4a000', shadowBlur: 8 }
     case 'label':
-      return { color: tokens.text, strokeWidth: 0, shadowColor: tokens.glow.shadowColor, shadowBlur: 0 }
+      return {
+        color: tokens.text,
+        strokeWidth: 0,
+        shadowColor: tokens.glow.shadowColor,
+        shadowBlur: 0,
+      }
     case 'sciFiObject':
-      return { color: tokens.accents[0], strokeWidth: 1, shadowColor: tokens.accents[0], shadowBlur: tokens.glow.shadowBlur * 0.5 }
+      return {
+        color: tokens.accents[0],
+        strokeWidth: 1,
+        shadowColor: tokens.accents[0],
+        shadowBlur: tokens.glow.shadowBlur * 0.5,
+      }
   }
 }

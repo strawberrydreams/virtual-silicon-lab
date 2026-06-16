@@ -87,18 +87,16 @@ export function updateContest(
   patch: { title?: string; theme?: string; status?: ContestStatus },
   now: () => number,
 ): Contest | null {
-  const existing = db.prepare('SELECT * FROM contests WHERE id = ?').get(id) as ContestRow | undefined
+  const existing = db.prepare('SELECT * FROM contests WHERE id = ?').get(id) as
+    | ContestRow
+    | undefined
   if (existing === undefined) return null
   const title = patch.title ?? existing.title
   const theme = patch.theme ?? existing.theme
   const status = patch.status ?? existing.status
-  db.prepare('UPDATE contests SET title = ?, theme = ?, status = ?, updated_at = ? WHERE id = ?').run(
-    title,
-    theme,
-    status,
-    now(),
-    id,
-  )
+  db.prepare(
+    'UPDATE contests SET title = ?, theme = ?, status = ?, updated_at = ? WHERE id = ?',
+  ).run(title, theme, status, now(), id)
   return toContest(db.prepare('SELECT * FROM contests WHERE id = ?').get(id) as ContestRow)
 }
 
@@ -107,7 +105,9 @@ export function deleteContest(db: Database.Database, id: string): boolean {
 }
 
 export function getContestStatus(db: Database.Database, id: string): ContestStatus | null {
-  const row = db.prepare('SELECT status FROM contests WHERE id = ?').get(id) as { status: ContestStatus } | undefined
+  const row = db.prepare('SELECT status FROM contests WHERE id = ?').get(id) as
+    | { status: ContestStatus }
+    | undefined
   return row === undefined ? null : row.status
 }
 
@@ -141,12 +141,43 @@ export function listPublicContests(db: Database.Database): ContestSummary[] {
   }))
 }
 
+export function listAdminContests(db: Database.Database): ContestSummary[] {
+  const rows = db
+    .prepare(
+      `SELECT c.id, c.title, c.theme, c.status, c.created_at,
+              (SELECT COUNT(*) FROM contest_entries e WHERE e.contest_id = c.id) AS entry_count,
+              (SELECT COUNT(*) FROM contest_votes v WHERE v.contest_id = c.id) AS vote_count
+       FROM contests c
+       ORDER BY c.created_at DESC`,
+    )
+    .all() as Array<{
+    id: string
+    title: string
+    theme: string
+    status: ContestStatus
+    created_at: number
+    entry_count: number
+    vote_count: number
+  }>
+  return rows.map((row) => ({
+    id: row.id,
+    title: row.title,
+    theme: row.theme,
+    status: row.status,
+    entryCount: row.entry_count,
+    voteCount: row.vote_count,
+    createdAt: row.created_at,
+  }))
+}
+
 export function getContestDetail(
   db: Database.Database,
   contestId: string,
   viewerUserId: string | null,
 ): ContestDetail | null {
-  const contest = db.prepare('SELECT * FROM contests WHERE id = ?').get(contestId) as ContestRow | undefined
+  const contest = db.prepare('SELECT * FROM contests WHERE id = ?').get(contestId) as
+    | ContestRow
+    | undefined
   if (contest === undefined || contest.status === 'draft') return null
 
   const entryRows = db
@@ -159,6 +190,7 @@ export function getContestDetail(
        JOIN published_chips p ON p.id = e.published_chip_id
        JOIN users u ON u.id = e.owner_user_id
        WHERE e.contest_id = ?
+         AND p.is_public = 1 AND p.moderation_status = 'visible'
        ORDER BY vote_count DESC, e.created_at ASC`,
     )
     .all(contestId) as Array<{
@@ -186,7 +218,10 @@ export function getContestDetail(
     rank: index + 1,
   }))
 
-  const myEntryId = viewerUserId === null ? null : (entryRows.find((row) => row.owner_user_id === viewerUserId)?.entry_id ?? null)
+  const myEntryId =
+    viewerUserId === null
+      ? null
+      : (entryRows.find((row) => row.owner_user_id === viewerUserId)?.entry_id ?? null)
   const myVoteEntryId = viewerUserId === null ? null : getMyVote(db, contestId, viewerUserId)
 
   return {
@@ -201,7 +236,11 @@ export function getContestDetail(
   }
 }
 
-export function getMyVote(db: Database.Database, contestId: string, voterUserId: string): string | null {
+export function getMyVote(
+  db: Database.Database,
+  contestId: string,
+  voterUserId: string,
+): string | null {
   const row = db
     .prepare('SELECT entry_id FROM contest_votes WHERE contest_id = ? AND voter_user_id = ?')
     .get(contestId, voterUserId) as { entry_id: string } | undefined
@@ -216,7 +255,11 @@ export type ContestEntry = {
   createdAt: number
 }
 
-export function chipEligibleForUser(db: Database.Database, chipId: string, userId: string): boolean {
+export function chipEligibleForUser(
+  db: Database.Database,
+  chipId: string,
+  userId: string,
+): boolean {
   const row = db
     .prepare(
       "SELECT 1 FROM published_chips WHERE id = ? AND owner_user_id = ? AND is_public = 1 AND moderation_status = 'visible'",
@@ -256,7 +299,9 @@ export function getEntryMeta(
   const row = db
     .prepare('SELECT id, contest_id, owner_user_id FROM contest_entries WHERE id = ?')
     .get(entryId) as { id: string; contest_id: string; owner_user_id: string } | undefined
-  return row === undefined ? null : { id: row.id, contestId: row.contest_id, ownerUserId: row.owner_user_id }
+  return row === undefined
+    ? null
+    : { id: row.id, contestId: row.contest_id, ownerUserId: row.owner_user_id }
 }
 
 export function withdrawEntry(db: Database.Database, entryId: string): boolean {
@@ -268,7 +313,12 @@ export function entryOwner(
   entryId: string,
 ): { contestId: string; ownerUserId: string } | null {
   const row = db
-    .prepare('SELECT contest_id, owner_user_id FROM contest_entries WHERE id = ?')
+    .prepare(
+      `SELECT e.contest_id, e.owner_user_id
+       FROM contest_entries e
+       JOIN published_chips p ON p.id = e.published_chip_id
+       WHERE e.id = ? AND p.is_public = 1 AND p.moderation_status = 'visible'`,
+    )
     .get(entryId) as { contest_id: string; owner_user_id: string } | undefined
   return row === undefined ? null : { contestId: row.contest_id, ownerUserId: row.owner_user_id }
 }
@@ -284,7 +334,14 @@ export function castVote(
   ).run(input.contestId, input.voterUserId, input.entryId, now())
 }
 
-export function retractVote(db: Database.Database, contestId: string, voterUserId: string): boolean {
-  return db.prepare('DELETE FROM contest_votes WHERE contest_id = ? AND voter_user_id = ?').run(contestId, voterUserId)
-    .changes > 0
+export function retractVote(
+  db: Database.Database,
+  contestId: string,
+  voterUserId: string,
+): boolean {
+  return (
+    db
+      .prepare('DELETE FROM contest_votes WHERE contest_id = ? AND voter_user_id = ?')
+      .run(contestId, voterUserId).changes > 0
+  )
 }

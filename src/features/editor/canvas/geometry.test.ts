@@ -18,10 +18,7 @@ describe('snapToGrid', () => {
 describe('clampBlockToRect', () => {
   it('keeps a block inside the die bounds', () => {
     expect(
-      clampBlockToRect(
-        { x: 940, y: -10, w: 120, h: 80 },
-        { width: 960, height: 640 },
-      ),
+      clampBlockToRect({ x: 940, y: -10, w: 120, h: 80 }, { width: 960, height: 640 }),
     ).toEqual({ x: 840, y: 0, w: 120, h: 80 })
   })
 
@@ -68,17 +65,29 @@ function rotatedCorners(block: { x: number; y: number; w: number; h: number; rot
 
 describe('clampBlockToRadial', () => {
   it('leaves a block that already fits unchanged', () => {
-    const result = clampBlockToRadial({ x: 270, y: 270, w: 60, h: 60 }, { width: 600, height: 600 }, 300)
+    const result = clampBlockToRadial(
+      { x: 270, y: 270, w: 60, h: 60 },
+      { width: 600, height: 600 },
+      300,
+    )
     expect(result).toEqual({ x: 270, y: 270, w: 60, h: 60 })
   })
 
   it('pulls an out-of-bounds block inside the radius', () => {
-    const result = clampBlockToRadial({ x: 560, y: 280, w: 80, h: 80 }, { width: 600, height: 600 }, 300)
+    const result = clampBlockToRadial(
+      { x: 560, y: 280, w: 80, h: 80 },
+      { width: 600, height: 600 },
+      300,
+    )
     expect(farthestCornerDistance(result, { x: 300, y: 300 })).toBeLessThanOrEqual(300 + 1e-6)
   })
 
   it('shrinks and centers a block larger than the radius', () => {
-    const result = clampBlockToRadial({ x: 0, y: 0, w: 1000, h: 1000 }, { width: 600, height: 600 }, 300)
+    const result = clampBlockToRadial(
+      { x: 0, y: 0, w: 1000, h: 1000 },
+      { width: 600, height: 600 },
+      300,
+    )
     expect(result.w).toBeLessThan(1000)
     expect(farthestCornerDistance(result, { x: 300, y: 300 })).toBeLessThanOrEqual(300 + 1e-6)
   })

@@ -21,7 +21,9 @@ describe('resolveMaterialRecipe', () => {
   })
 
   it('keeps high-glow themes brighter than restrained themes', () => {
-    expect(resolveMaterialRecipe('neon').glassGlow.blur).toBeGreaterThan(resolveMaterialRecipe('mono').glassGlow.blur)
+    expect(resolveMaterialRecipe('neon').glassGlow.blur).toBeGreaterThan(
+      resolveMaterialRecipe('mono').glassGlow.blur,
+    )
     expect(resolveMaterialRecipe('keynote').package.shadowBlur).toBeGreaterThan(
       resolveMaterialRecipe('military').package.shadowBlur,
     )

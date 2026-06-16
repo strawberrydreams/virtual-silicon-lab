@@ -1,9 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import type { FakeSpec } from '../../domain/project'
 import { SPEC_EXAMPLES } from './specExamples'
 
 function featureLines(value: string) {
-  return value.split('\n').map((line) => line.trim()).filter(Boolean)
+  return value
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
 }
 
 function coreCountFromInput(value: string) {
@@ -26,11 +29,16 @@ export function FakeSpecForm({ spec, onChange }: Props) {
   // typing; `onChange` always receives the normalized array. Re-sync when the
   // features change from outside (an example button or undo/redo).
   const [featuresText, setFeaturesText] = useState(() => spec.features.join('\n'))
-  useEffect(() => {
+  // Re-sync the raw textarea text when spec.features changes from outside (an
+  // example button or undo/redo) without clobbering in-progress typing. Tracking
+  // the last-synced array lets us reset during render rather than in an effect.
+  const [syncedFeatures, setSyncedFeatures] = useState(spec.features)
+  if (syncedFeatures !== spec.features) {
+    setSyncedFeatures(spec.features)
     if (featureLines(featuresText).join('\n') !== spec.features.join('\n')) {
       setFeaturesText(spec.features.join('\n'))
     }
-  }, [spec.features]) // eslint-disable-line react-hooks/exhaustive-deps
+  }
 
   function emit(patch: Partial<FakeSpec>) {
     onChange({ ...spec, ...patch })
@@ -55,11 +63,19 @@ export function FakeSpecForm({ spec, onChange }: Props) {
 
       <label className={labelClass}>
         Brand
-        <input className={fieldClass} value={spec.brand} onChange={(event) => emit({ brand: event.target.value })} />
+        <input
+          className={fieldClass}
+          value={spec.brand}
+          onChange={(event) => emit({ brand: event.target.value })}
+        />
       </label>
       <label className={labelClass}>
         Series
-        <input className={fieldClass} value={spec.series} onChange={(event) => emit({ series: event.target.value })} />
+        <input
+          className={fieldClass}
+          value={spec.series}
+          onChange={(event) => emit({ series: event.target.value })}
+        />
       </label>
       <label className={labelClass}>
         Generation
@@ -71,7 +87,11 @@ export function FakeSpecForm({ spec, onChange }: Props) {
       </label>
       <label className={labelClass}>
         Process
-        <input className={fieldClass} value={spec.process} onChange={(event) => emit({ process: event.target.value })} />
+        <input
+          className={fieldClass}
+          value={spec.process}
+          onChange={(event) => emit({ process: event.target.value })}
+        />
       </label>
       <label className={labelClass}>
         Cores

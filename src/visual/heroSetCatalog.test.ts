@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { clampBlockToDie } from '../features/editor/canvas/geometry'
-import { HERO_SET_CATALOG, createHeroSetProject, isHeroSetId, resolveHeroSetForProject } from './heroSetCatalog'
+import {
+  HERO_SET_CATALOG,
+  createHeroSetProject,
+  isHeroSetId,
+  resolveHeroSetForProject,
+} from './heroSetCatalog'
 
 describe('hero set catalog', () => {
   it('defines the ten v2 hero chip and poster targets', () => {
@@ -83,6 +88,8 @@ describe('hero set catalog', () => {
 
   it('does not resolve ordinary non-hero projects as hero sets', () => {
     const project = createHeroSetProject('aurora-m5', 'aurora-project', 100)
-    expect(resolveHeroSetForProject({ ...project, die: { ...project.die, background: 'custom' } })).toBeUndefined()
+    expect(
+      resolveHeroSetForProject({ ...project, die: { ...project.die, background: 'custom' } }),
+    ).toBeUndefined()
   })
 })

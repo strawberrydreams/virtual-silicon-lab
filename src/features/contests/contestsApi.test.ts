@@ -2,7 +2,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { liveContestsApi } from './contestsApi'
 
 function jsonResponse(status: number, body: unknown): Response {
-  return new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } })
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { 'content-type': 'application/json' },
+  })
 }
 
 afterEach(() => vi.unstubAllGlobals())
@@ -16,8 +19,18 @@ describe('liveContestsApi', () => {
     expect(fetchMock).toHaveBeenCalledWith('/api/contests', { method: 'GET' })
   })
 
+  it('lists admin contests including drafts', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(200, { contests: [{ id: 'draft' }] }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    expect(await liveContestsApi.listAdmin()).toEqual([{ id: 'draft' }])
+    expect(fetchMock).toHaveBeenCalledWith('/api/admin/contests', { method: 'GET' })
+  })
+
   it('gets a contest detail', async () => {
-    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(200, { contest: { id: 'c1', entries: [] } }))
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(jsonResponse(200, { contest: { id: 'c1', entries: [] } }))
     vi.stubGlobal('fetch', fetchMock)
 
     expect(await liveContestsApi.get('c1')).toEqual({ id: 'c1', entries: [] })
@@ -55,7 +68,9 @@ describe('liveContestsApi', () => {
   it('throws the server error message on failure', async () => {
     const fetchMock = vi
       .fn()
-      .mockResolvedValue(jsonResponse(409, { error: { code: 'WRONG_PHASE', message: 'Voting is not open.' } }))
+      .mockResolvedValue(
+        jsonResponse(409, { error: { code: 'WRONG_PHASE', message: 'Voting is not open.' } }),
+      )
     vi.stubGlobal('fetch', fetchMock)
 
     await expect(liveContestsApi.vote('c1', 'e1')).rejects.toThrow('Voting is not open.')

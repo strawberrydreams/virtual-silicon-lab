@@ -1,7 +1,17 @@
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_PAGE_THEME, PAGE_THEME_NAMES, pageThemes, resolvePageTheme } from './pageThemes'
 
-const TOKEN_GROUPS = ['background', 'surface', 'border', 'text', 'accent', 'glow', 'focus', 'canvas', 'hero'] as const
+const TOKEN_GROUPS = [
+  'background',
+  'surface',
+  'border',
+  'text',
+  'accent',
+  'glow',
+  'focus',
+  'canvas',
+  'hero',
+] as const
 
 describe('pageThemes', () => {
   it('defaults to the laboratory page theme', () => {
@@ -24,7 +34,11 @@ describe('pageThemes', () => {
   })
 
   it('keeps page themes visually distinct', () => {
-    expect(pageThemes.laboratory.cssVariables['--v2-bg']).not.toBe(pageThemes.anime.cssVariables['--v2-bg'])
-    expect(pageThemes.anime.cssVariables['--v2-accent']).not.toBe(pageThemes.space.cssVariables['--v2-accent'])
+    expect(pageThemes.laboratory.cssVariables['--v2-bg']).not.toBe(
+      pageThemes.anime.cssVariables['--v2-bg'],
+    )
+    expect(pageThemes.anime.cssVariables['--v2-accent']).not.toBe(
+      pageThemes.space.cssVariables['--v2-accent'],
+    )
   })
 })

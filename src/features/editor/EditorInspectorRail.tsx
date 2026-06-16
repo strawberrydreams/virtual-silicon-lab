@@ -27,7 +27,10 @@ type Props = {
   layerVisibility: ChipLayerVisibility
   onSetTileSettings: (patch: Partial<StudioTileSettings>) => void
   onSetColorPaint: (target: StudioColorTarget, paint: StudioColorPaint) => void
-  onUpdateBlockVisual: (id: string, patch: Partial<Pick<Block, 'colorOverride' | 'imageDataUrl'>>) => void
+  onUpdateBlockVisual: (
+    id: string,
+    patch: Partial<Pick<Block, 'colorOverride' | 'imageDataUrl'>>,
+  ) => void
   onUpdateSticker: (
     id: string,
     patch: Partial<Pick<StudioSticker, 'kind' | 'text' | 'color' | 'rotation'>>,
@@ -54,20 +57,35 @@ export function EditorInspectorRail({
   onToggleLayerVisibility,
 }: Props) {
   return (
-    <aside aria-label="Inspector and export rail" className="editor-side-rail editor-inspector-rail">
+    <aside
+      aria-label="Inspector and export rail"
+      className="editor-side-rail editor-inspector-rail"
+    >
       <GeneratedSpecPanel project={project} />
       <SelectedTilePanel block={selectedBlock} project={project} />
-      <section aria-label="Appearance controls" className="editor-inspector-card editor-inspector-card--stack">
+      <section
+        aria-label="Appearance controls"
+        className="editor-inspector-card editor-inspector-card--stack"
+      >
         <div>
           <p className="editor-kicker">Appearance</p>
           <h2>Appearance</h2>
         </div>
-        <TileSettingsPanel tileSettings={project.studio.tileSettings} onChange={onSetTileSettings} />
-        <ColorSettingsPanel colorSettings={project.studio.colorSettings} onChange={onSetColorPaint} />
+        <TileSettingsPanel
+          tileSettings={project.studio.tileSettings}
+          onChange={onSetTileSettings}
+        />
+        <ColorSettingsPanel
+          colorSettings={project.studio.colorSettings}
+          onChange={onSetColorPaint}
+        />
         <BlockVisualPanel block={selectedBlock} onChange={onUpdateBlockVisual} />
       </section>
       <LayerVisibilityPanel visibility={layerVisibility} onToggle={onToggleLayerVisibility} />
-      <section aria-label="Advanced editor controls" className="editor-inspector-card editor-inspector-card--stack">
+      <section
+        aria-label="Advanced editor controls"
+        className="editor-inspector-card editor-inspector-card--stack"
+      >
         <div>
           <p className="editor-kicker">Advanced</p>
           <h2>Advanced Controls</h2>

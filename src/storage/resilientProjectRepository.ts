@@ -9,21 +9,43 @@ export function createResilientProjectRepository(
   // recovered primary and return data the fallback already superseded.
   let primaryFailed = false
 
-  async function run<T>(operation: () => Promise<T>, fallbackOperation: () => Promise<T>): Promise<T> {
+  async function run<T>(
+    operation: () => Promise<T>,
+    fallbackOperation: () => Promise<T>,
+  ): Promise<T> {
     if (primaryFailed) return fallbackOperation()
     try {
       return await operation()
     } catch (error) {
       primaryFailed = true
-      console.warn('[storage] primary repository failed; using local fallback for this session', error)
+      console.warn(
+        '[storage] primary repository failed; using local fallback for this session',
+        error,
+      )
       return fallbackOperation()
     }
   }
 
   return {
-    list: () => run(() => primary.list(), () => fallback.list()),
-    get: (id) => run(() => primary.get(id), () => fallback.get(id)),
-    save: (project) => run(() => primary.save(project), () => fallback.save(project)),
-    remove: (id) => run(() => primary.remove(id), () => fallback.remove(id)),
+    list: () =>
+      run(
+        () => primary.list(),
+        () => fallback.list(),
+      ),
+    get: (id) =>
+      run(
+        () => primary.get(id),
+        () => fallback.get(id),
+      ),
+    save: (project) =>
+      run(
+        () => primary.save(project),
+        () => fallback.save(project),
+      ),
+    remove: (id) =>
+      run(
+        () => primary.remove(id),
+        () => fallback.remove(id),
+      ),
   }
 }

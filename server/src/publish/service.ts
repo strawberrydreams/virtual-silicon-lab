@@ -145,7 +145,7 @@ export function upsertPublishedChip(
     const version = existing === undefined ? 1 : existing.version + 1
     const timestamp = now()
     const projectJson = JSON.stringify(input.project)
-    const publishedAt = input.isPublic ? timestamp : existing?.published_at ?? 0
+    const publishedAt = input.isPublic ? timestamp : (existing?.published_at ?? 0)
     const remixedFromChipId = resolveRemixParentId(db, input.project.remixedFrom?.chipId)
     // Republishing overwrites both images at a new version; clear the prior
     // version's files first so superseded PNGs are not orphaned on disk.
@@ -299,7 +299,10 @@ export function listPublicPublishedChips(
   return rows.map(toPublicGalleryChip)
 }
 
-export function listOwnerPublicChips(db: Database.Database, ownerUserId: string): OwnerChipSummary[] {
+export function listOwnerPublicChips(
+  db: Database.Database,
+  ownerUserId: string,
+): OwnerChipSummary[] {
   const rows = db
     .prepare(
       `SELECT id, slug, title, poster_image_path, poster_image_data_url

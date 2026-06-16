@@ -22,7 +22,10 @@ export function SelectedTilePanel({ block, project }: Props) {
   const componentSpec = block === null ? null : deriveComponentSpec(block, project)
   const labelParts = block === null ? null : splitTileLabel(block.label, block.type)
   return (
-    <section aria-label="Selected tile summary" className="editor-inspector-card selected-tile-panel">
+    <section
+      aria-label="Selected tile summary"
+      className="editor-inspector-card selected-tile-panel"
+    >
       <div className="selected-tile-panel__header">
         <div>
           <p className="editor-kicker">Selected tile</p>
@@ -39,7 +42,9 @@ export function SelectedTilePanel({ block, project }: Props) {
         <div className="selected-tile-panel__body">
           <div className="selected-tile-panel__info">
             <h3 className="selected-tile-panel__name">{labelParts?.title}</h3>
-            {labelParts?.sub ? <p className="selected-tile-panel__subname">{labelParts.sub}</p> : null}
+            {labelParts?.sub ? (
+              <p className="selected-tile-panel__subname">{labelParts.sub}</p>
+            ) : null}
             <p className="selected-tile-panel__category">
               {block.category === 'real' ? 'Hardware tile' : 'Speculative tile'}
             </p>
@@ -50,7 +55,9 @@ export function SelectedTilePanel({ block, project }: Props) {
               </div>
               <div className="selected-tile-panel__metric">
                 <span>Size</span>
-                <strong>{Math.round(block.w)} x {Math.round(block.h)}</strong>
+                <strong>
+                  {Math.round(block.w)} x {Math.round(block.h)}
+                </strong>
               </div>
               <div className="selected-tile-panel__metric">
                 <span>Utilization</span>

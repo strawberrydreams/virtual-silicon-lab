@@ -5,7 +5,12 @@ import { upsertPublishedChip } from '../src/publish/service'
 
 const png = 'data:image/png;base64,AAAA'
 
-function insertUser(db: ReturnType<typeof createTestApp>['db'], id: string, email: string, displayName: string) {
+function insertUser(
+  db: ReturnType<typeof createTestApp>['db'],
+  id: string,
+  email: string,
+  displayName: string,
+) {
   db.prepare(
     'INSERT INTO users (id, email, display_name, password_hash, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)',
   ).run(id, email, displayName, 'hash', 1, 1)
@@ -14,20 +19,30 @@ function insertUser(db: ReturnType<typeof createTestApp>['db'], id: string, emai
 function fixture() {
   const { app, db } = createTestApp()
   insertUser(db, 'u1', 'ada@example.com', 'Ada')
-  const publicChip = upsertPublishedChip(db, 'u1', {
-    project: { ...createProject('Ada Public', 'project-public', 1_000) },
-    title: 'Ada <Public>',
-    dieImageDataUrl: png,
-    posterImageDataUrl: png,
-    isPublic: true,
-  }, () => 2_000)
-  const privateChip = upsertPublishedChip(db, 'u1', {
-    project: createProject('Ada Private', 'project-private', 1_000),
-    title: 'Ada Private',
-    dieImageDataUrl: png,
-    posterImageDataUrl: png,
-    isPublic: false,
-  }, () => 3_000)
+  const publicChip = upsertPublishedChip(
+    db,
+    'u1',
+    {
+      project: { ...createProject('Ada Public', 'project-public', 1_000) },
+      title: 'Ada <Public>',
+      dieImageDataUrl: png,
+      posterImageDataUrl: png,
+      isPublic: true,
+    },
+    () => 2_000,
+  )
+  const privateChip = upsertPublishedChip(
+    db,
+    'u1',
+    {
+      project: createProject('Ada Private', 'project-private', 1_000),
+      title: 'Ada Private',
+      dieImageDataUrl: png,
+      posterImageDataUrl: png,
+      isPublic: false,
+    },
+    () => 3_000,
+  )
   return { app, publicChip, privateChip }
 }
 
@@ -66,23 +81,33 @@ describe('share viewer routes', () => {
     const { app, db } = createTestApp()
     insertUser(db, 'u1', 'ada@example.com', 'Ada')
     insertUser(db, 'u2', 'grace@example.com', 'Grace')
-    const parent = upsertPublishedChip(db, 'u1', {
-      project: createProject('Parent Chip', 'parent-project', 1_000),
-      title: 'Parent Chip',
-      dieImageDataUrl: png,
-      posterImageDataUrl: png,
-      isPublic: true,
-    }, () => 2_000)
-    const child = upsertPublishedChip(db, 'u2', {
-      project: {
-        ...createProject('Child Chip', 'child-project', 1_000),
-        remixedFrom: { chipId: parent.id, slug: parent.slug, title: parent.title },
+    const parent = upsertPublishedChip(
+      db,
+      'u1',
+      {
+        project: createProject('Parent Chip', 'parent-project', 1_000),
+        title: 'Parent Chip',
+        dieImageDataUrl: png,
+        posterImageDataUrl: png,
+        isPublic: true,
       },
-      title: 'Child Chip',
-      dieImageDataUrl: png,
-      posterImageDataUrl: png,
-      isPublic: true,
-    }, () => 3_000)
+      () => 2_000,
+    )
+    const child = upsertPublishedChip(
+      db,
+      'u2',
+      {
+        project: {
+          ...createProject('Child Chip', 'child-project', 1_000),
+          remixedFrom: { chipId: parent.id, slug: parent.slug, title: parent.title },
+        },
+        title: 'Child Chip',
+        dieImageDataUrl: png,
+        posterImageDataUrl: png,
+        isPublic: true,
+      },
+      () => 3_000,
+    )
 
     const html = await (await app.request(`/s/${child.slug}`)).text()
 

@@ -4,8 +4,22 @@ import type { BlockType } from '../../domain/project'
 import { TileGlyph } from './icons'
 
 const TYPES: BlockType[] = [
-  'CPU', 'GPU', 'DSP', 'SRAM', 'Cache', 'DAC', 'ADC', 'PLL', 'IO', 'USB',
-  'EmotionEngine', 'DreamSynth', 'QuantumMemory', 'ConsciousnessProcessor', 'RealityDistortionUnit', 'TimeCore',
+  'CPU',
+  'GPU',
+  'DSP',
+  'SRAM',
+  'Cache',
+  'DAC',
+  'ADC',
+  'PLL',
+  'IO',
+  'USB',
+  'EmotionEngine',
+  'DreamSynth',
+  'QuantumMemory',
+  'ConsciousnessProcessor',
+  'RealityDistortionUnit',
+  'TimeCore',
 ]
 
 describe('TileGlyph', () => {

@@ -55,7 +55,12 @@ export const liveModerationApi: ModerationApi = {
     return ((await res.json()) as { chips: ModerationChip[] }).chips
   },
   async hideChip(id, reason) {
-    await ok(await fetch(`/api/admin/published-chips/${id}/hide`, jsonInit('POST', { reason: reason ?? null })))
+    await ok(
+      await fetch(
+        `/api/admin/published-chips/${id}/hide`,
+        jsonInit('POST', { reason: reason ?? null }),
+      ),
+    )
   },
   async unhideChip(id) {
     await ok(await fetch(`/api/admin/published-chips/${id}/unhide`, jsonInit('POST', {})))

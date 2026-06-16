@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import type {
   Project,
   StudioSpray,
@@ -38,7 +38,12 @@ const fieldClass =
   'mt-1 w-full rounded border border-cyan-900 bg-[#050d12] px-2 py-1 text-sm text-cyan-100 outline-none focus:border-cyan-500'
 const labelClass = 'block text-[11px] uppercase tracking-wider text-cyan-400'
 
-export function StudioInspector({ project, selectedStudioItem, onUpdateSticker, onUpdateSpray }: Props) {
+export function StudioInspector({
+  project,
+  selectedStudioItem,
+  onUpdateSticker,
+  onUpdateSpray,
+}: Props) {
   const sticker =
     selectedStudioItem?.kind === 'sticker'
       ? project.studio.stickers.find((item) => item.id === selectedStudioItem.id)
@@ -72,11 +77,15 @@ function StickerFields({
 }) {
   const [text, setText] = useState(sticker.text)
   const [rotation, setRotation] = useState(String(sticker.rotation))
-
-  useEffect(() => {
+  // Re-sync the editable fields when the selected sticker changes from outside
+  // (selection switch or undo/redo), derived during render rather than in an effect.
+  const stickerKey = `${sticker.id}:${sticker.text}:${sticker.rotation}`
+  const [syncedKey, setSyncedKey] = useState(stickerKey)
+  if (syncedKey !== stickerKey) {
+    setSyncedKey(stickerKey)
     setText(sticker.text)
     setRotation(String(sticker.rotation))
-  }, [sticker.id, sticker.text, sticker.rotation])
+  }
 
   return (
     <div className="studio-item-inspector__fields">
@@ -95,11 +104,23 @@ function StickerFields({
       <div className="studio-item-inspector__pair">
         <label className={labelClass}>
           Sticker x
-          <input aria-label="Sticker x" className={fieldClass} type="number" value={sticker.x} readOnly />
+          <input
+            aria-label="Sticker x"
+            className={fieldClass}
+            type="number"
+            value={sticker.x}
+            readOnly
+          />
         </label>
         <label className={labelClass}>
           Sticker y
-          <input aria-label="Sticker y" className={fieldClass} type="number" value={sticker.y} readOnly />
+          <input
+            aria-label="Sticker y"
+            className={fieldClass}
+            type="number"
+            value={sticker.y}
+            readOnly
+          />
         </label>
       </div>
       <label className={labelClass}>
@@ -150,22 +171,38 @@ function SprayFields({
 }) {
   const [radius, setRadius] = useState(String(spray.radius))
   const [intensity, setIntensity] = useState(String(spray.intensity))
-
-  useEffect(() => {
+  // Re-sync the editable fields when the selected spray changes from outside
+  // (selection switch or undo/redo), derived during render rather than in an effect.
+  const sprayKey = `${spray.id}:${spray.radius}:${spray.intensity}`
+  const [syncedKey, setSyncedKey] = useState(sprayKey)
+  if (syncedKey !== sprayKey) {
+    setSyncedKey(sprayKey)
     setRadius(String(spray.radius))
     setIntensity(String(spray.intensity))
-  }, [spray.id, spray.radius, spray.intensity])
+  }
 
   return (
     <div className="studio-item-inspector__fields">
       <div className="studio-item-inspector__pair">
         <label className={labelClass}>
           Spray x
-          <input aria-label="Spray x" className={fieldClass} type="number" value={spray.x} readOnly />
+          <input
+            aria-label="Spray x"
+            className={fieldClass}
+            type="number"
+            value={spray.x}
+            readOnly
+          />
         </label>
         <label className={labelClass}>
           Spray y
-          <input aria-label="Spray y" className={fieldClass} type="number" value={spray.y} readOnly />
+          <input
+            aria-label="Spray y"
+            className={fieldClass}
+            type="number"
+            value={spray.y}
+            readOnly
+          />
         </label>
       </div>
       <label className={labelClass}>

@@ -8,7 +8,11 @@ import { stepZoom, zoomAtPointer } from './viewport'
 import { resolveTheme, type ThemeTokens } from '../../../themes/themeTokens'
 import { editorStageFrameSize, editorStageSize } from './artworkLayout'
 import { BlockArtwork, ChipArtwork, StudioSprayArtwork, StudioStickerArtwork } from './ChipArtwork'
-import type { SelectedStudioItem, SprayTransform, StickerTransform } from '../../../stores/editorStore'
+import type {
+  SelectedStudioItem,
+  SprayTransform,
+  StickerTransform,
+} from '../../../stores/editorStore'
 import { reflowBlocksGlobally } from '../../../studio/globalReflow'
 import { rafThrottle } from '../../../lib/rafThrottle'
 import { resolveTileDetail } from '../../../visual/tileDetail'
@@ -65,7 +69,9 @@ export function ChipStage({
   useEffect(() => {
     const transformer = transformerRef.current
     if (transformer === null) return
-    const studioKey = selectedStudioItem ? `${selectedStudioItem.kind}:${selectedStudioItem.id}` : null
+    const studioKey = selectedStudioItem
+      ? `${selectedStudioItem.kind}:${selectedStudioItem.id}`
+      : null
     const node = selectedBlockId
       ? blockRefs.current.get(selectedBlockId)
       : studioKey
@@ -73,13 +79,22 @@ export function ChipStage({
         : undefined
     transformer.nodes(node ? [node] : [])
     transformer.getLayer()?.batchDraw()
-  }, [selectedBlockId, selectedStudioItem, project.blocks, project.studio.stickers, project.studio.sprays])
+  }, [
+    selectedBlockId,
+    selectedStudioItem,
+    project.blocks,
+    project.studio.stickers,
+    project.studio.sprays,
+  ])
 
   const displayProject = previewBlocks === null ? project : { ...project, blocks: previewBlocks }
   // Stickers are fixed-size (rotate only); sprays scale to a radius (no rotation);
   // blocks support both — so the shared Transformer adapts to what is selected.
   const transformerKind = selectedStudioItem?.kind ?? (selectedBlockId ? 'block' : null)
-  const tileDetail = useMemo(() => resolveTileDetail(project.studio.tileSettings), [project.studio.tileSettings])
+  const tileDetail = useMemo(
+    () => resolveTileDetail(project.studio.tileSettings),
+    [project.studio.tileSettings],
+  )
 
   // The render props are memoized so the memoized ChipArtwork can skip
   // re-rendering its multi-thousand-node tree on zoom/pan state changes.
@@ -155,7 +170,15 @@ export function ChipStage({
         }}
       />
     ),
-    [project, selectedBlockId, tileDetail, layerVisibility, onSelectBlock, onTransformBlock, scheduleReflowPreview],
+    [
+      project,
+      selectedBlockId,
+      tileDetail,
+      layerVisibility,
+      onSelectBlock,
+      onTransformBlock,
+      scheduleReflowPreview,
+    ],
   )
 
   const renderStudioSpray = useCallback(
@@ -250,9 +273,14 @@ export function ChipStage({
   return (
     <div
       className="chip-stage-frame"
-      style={{ background: stageBackground || tokens.background[tokens.background.length - 1].color }}
+      style={{
+        background: stageBackground || tokens.background[tokens.background.length - 1].color,
+      }}
     >
-      <div className="chip-stage-frame__chrome" style={{ width: frameSize.width, minHeight: frameSize.height }}>
+      <div
+        className="chip-stage-frame__chrome"
+        style={{ width: frameSize.width, minHeight: frameSize.height }}
+      >
         <div className="chip-stage-frame__readout" aria-hidden="true">
           <span>scale {scale.toFixed(2)}x</span>
           <span>x {Math.round(position.x)}</span>

@@ -48,9 +48,7 @@ export function renderViewerHtml(input: ViewerInput): string {
   const description = spec.description !== '' ? spec.description : `${spec.brand} ${spec.series}`
   const safeTitle = escapeHtml(title)
   const safeDescription = escapeHtml(description)
-  const features = spec.features
-    .map((feature) => `<span>${escapeHtml(feature)}</span>`)
-    .join('')
+  const features = spec.features.map((feature) => `<span>${escapeHtml(feature)}</span>`).join('')
 
   return `<!doctype html>
 <html lang="en">

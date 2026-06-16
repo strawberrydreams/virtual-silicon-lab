@@ -81,10 +81,7 @@ export function createProjectStore(
       const saved = { ...project, updatedAt: now() }
       await repository.save(saved)
       set({
-        projects: [
-          saved,
-          ...get().projects.filter((candidate) => candidate.id !== saved.id),
-        ],
+        projects: [saved, ...get().projects.filter((candidate) => candidate.id !== saved.id)],
       })
       return saved
     },

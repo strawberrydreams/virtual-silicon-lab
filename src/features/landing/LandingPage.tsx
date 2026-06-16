@@ -35,30 +35,19 @@ export function LandingPage({ projectsCount, presets, createProject, remixPreset
       <section className="v2-landing__hero">
         <div className="v2-landing__copy">
           <p className="v2-kicker">Concept Fabrication Terminal</p>
-          <h1 className="v2-landing__title">
-            Virtual Silicon Lab
-          </h1>
+          <h1 className="v2-landing__title">Virtual Silicon Lab</h1>
           <p className="v2-landing__body">
-            Build surreal semiconductor die shots, remix fictional processors, and export keynote-grade chip
-            posters from local projects.
+            Build surreal semiconductor die shots, remix fictional processors, and export
+            keynote-grade chip posters from local projects.
           </p>
           <div className="v2-action-row">
-            <button
-              className="v2-button v2-button--primary"
-              onClick={startBlank}
-            >
+            <button className="v2-button v2-button--primary" onClick={startBlank}>
               Start Blank
             </button>
-            <button
-              className="v2-button"
-              onClick={() => startPreset('aurora-m5')}
-            >
+            <button className="v2-button" onClick={() => startPreset('aurora-m5')}>
               Start Hero Preset
             </button>
-            <Link
-              className="v2-button v2-button--muted"
-              to="/dashboard"
-            >
+            <Link className="v2-button v2-button--muted" to="/dashboard">
               Open Projects ({projectsCount})
             </Link>
           </div>
@@ -97,16 +86,16 @@ export function LandingPage({ projectsCount, presets, createProject, remixPreset
               key={preset.id}
               style={{ boxShadow: `0 0 ${index === 0 ? 54 : 28}px ${preset.accent}33` }}
             >
-              <div className="v2-mini-chip-frame" style={{ boxShadow: `inset 0 0 36px ${preset.accent}22` }}>
+              <div
+                className="v2-mini-chip-frame"
+                style={{ boxShadow: `inset 0 0 36px ${preset.accent}22` }}
+              >
                 <div
                   className={`v2-mini-chip ${SHAPE_CLASSES[preset.dieShape]}`}
                   style={{ boxShadow: `0 0 26px ${preset.accent}44` }}
                 >
                   {preset.previewBlocks.slice(0, 4).map((block) => (
-                    <span
-                      className="v2-mini-chip__tile"
-                      key={block}
-                    >
+                    <span className="v2-mini-chip__tile" key={block}>
                       {block}
                     </span>
                   ))}
@@ -116,9 +105,7 @@ export function LandingPage({ projectsCount, presets, createProject, remixPreset
                 <p className="v2-meta">
                   {preset.dieShape} / {preset.theme}
                 </p>
-                <h3 className="v2-featured-card__title">
-                  {preset.name}
-                </h3>
+                <h3 className="v2-featured-card__title">{preset.name}</h3>
                 <p className="v2-featured-card__tagline">{preset.tagline}</p>
                 <button
                   className="v2-inline-action"

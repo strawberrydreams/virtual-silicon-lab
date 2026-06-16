@@ -12,7 +12,15 @@ describe('StudioInspector', () => {
       studio: {
         ...createProject('p', 'p1', 0).studio,
         stickers: [
-          { id: 'sticker-1', kind: 'badge' as const, x: 120, y: 160, text: 'STAR', color: '#f9f4ff', rotation: -8 },
+          {
+            id: 'sticker-1',
+            kind: 'badge' as const,
+            x: 120,
+            y: 160,
+            text: 'STAR',
+            color: '#f9f4ff',
+            rotation: -8,
+          },
         ],
       },
     }
@@ -44,7 +52,15 @@ describe('StudioInspector', () => {
       studio: {
         ...createProject('p', 'p1', 0).studio,
         stickers: [
-          { id: 'sticker-1', kind: 'badge' as const, x: 120, y: 160, text: 'STAR', color: '#f9f4ff', rotation: -8 },
+          {
+            id: 'sticker-1',
+            kind: 'badge' as const,
+            x: 120,
+            y: 160,
+            text: 'STAR',
+            color: '#f9f4ff',
+            rotation: -8,
+          },
         ],
       },
     }
@@ -69,7 +85,17 @@ describe('StudioInspector', () => {
       ...createProject('p', 'p1', 0),
       studio: {
         ...createProject('p', 'p1', 0).studio,
-        sprays: [{ id: 'spray-1', x: 240, y: 240, radius: 120, color: '#ff70dc', intensity: 0.72, blend: 'screen' as const }],
+        sprays: [
+          {
+            id: 'spray-1',
+            x: 240,
+            y: 240,
+            radius: 120,
+            color: '#ff70dc',
+            intensity: 0.72,
+            blend: 'screen' as const,
+          },
+        ],
       },
     }
 
@@ -94,6 +120,53 @@ describe('StudioInspector', () => {
     expect(onUpdateSpray).toHaveBeenCalledWith('spray-1', { intensity: 0.4 })
     expect(screen.getByLabelText('Spray x')).toHaveValue(240)
     expect(screen.getByLabelText('Spray y')).toHaveValue(240)
+  })
+
+  it('re-syncs sticker fields when the selected sticker changes from outside', () => {
+    const base = {
+      ...createProject('p', 'p1', 0),
+      studio: {
+        ...createProject('p', 'p1', 0).studio,
+        stickers: [
+          {
+            id: 'sticker-1',
+            kind: 'badge' as const,
+            x: 120,
+            y: 160,
+            text: 'STAR',
+            color: '#f9f4ff',
+            rotation: -8,
+          },
+        ],
+      },
+    }
+    const { rerender } = render(
+      <StudioInspector
+        project={base}
+        selectedStudioItem={{ kind: 'sticker', id: 'sticker-1' }}
+        onUpdateSticker={vi.fn()}
+        onUpdateSpray={vi.fn()}
+      />,
+    )
+    expect(screen.getByLabelText('Sticker text')).toHaveValue('STAR')
+
+    const updated = {
+      ...base,
+      studio: {
+        ...base.studio,
+        stickers: [{ ...base.studio.stickers[0], text: 'NOVA', rotation: 20 }],
+      },
+    }
+    rerender(
+      <StudioInspector
+        project={updated}
+        selectedStudioItem={{ kind: 'sticker', id: 'sticker-1' }}
+        onUpdateSticker={vi.fn()}
+        onUpdateSpray={vi.fn()}
+      />,
+    )
+    expect(screen.getByLabelText('Sticker text')).toHaveValue('NOVA')
+    expect(screen.getByLabelText('Sticker rotation')).toHaveValue(20)
   })
 
   it('shows an empty selection state', () => {

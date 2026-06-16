@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createProject } from '../../domain/projectFactory'
-import { PublishApiError, ServerUnreachableError, livePublishApi } from './publishApi'
+import { ServerUnreachableError, livePublishApi } from './publishApi'
 
 const chip = {
   id: 'pub1',
@@ -39,7 +39,15 @@ describe('livePublishApi', () => {
   })
 
   it('loads an existing publish record and returns null on 404', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(jsonResponse(200, { chip })).mockResolvedValueOnce(jsonResponse(404, { error: { code: 'NOT_FOUND', message: 'Nope.' } })))
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValueOnce(jsonResponse(200, { chip }))
+        .mockResolvedValueOnce(
+          jsonResponse(404, { error: { code: 'NOT_FOUND', message: 'Nope.' } }),
+        ),
+    )
 
     expect(await livePublishApi.getForProject('project-1')).toEqual(chip)
     expect(await livePublishApi.getForProject('missing')).toBeNull()
@@ -49,13 +57,15 @@ describe('livePublishApi', () => {
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse(201, { chip }))
     vi.stubGlobal('fetch', fetchMock)
 
-    expect(await livePublishApi.publish({
-      project: createProject('Ada Chip', 'project-1', 1_000),
-      title: 'Ada Chip',
-      dieImageDataUrl: 'data:image/png;base64,AAAA',
-      posterImageDataUrl: 'data:image/png;base64,BBBB',
-      isPublic: false,
-    })).toEqual(chip)
+    expect(
+      await livePublishApi.publish({
+        project: createProject('Ada Chip', 'project-1', 1_000),
+        title: 'Ada Chip',
+        dieImageDataUrl: 'data:image/png;base64,AAAA',
+        posterImageDataUrl: 'data:image/png;base64,BBBB',
+        isPublic: false,
+      }),
+    ).toEqual(chip)
     expect(fetchMock).toHaveBeenCalledWith(
       '/api/published-chips',
       expect.objectContaining({ method: 'POST', headers: { 'content-type': 'application/json' } }),
@@ -65,7 +75,11 @@ describe('livePublishApi', () => {
   it('maps server error bodies to PublishApiError', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn().mockResolvedValue(jsonResponse(400, { error: { code: 'INVALID_INPUT', message: 'Bad snapshot.' } })),
+      vi
+        .fn()
+        .mockResolvedValue(
+          jsonResponse(400, { error: { code: 'INVALID_INPUT', message: 'Bad snapshot.' } }),
+        ),
     )
 
     await expect(livePublishApi.setVisibility('project-1', true)).rejects.toMatchObject({
@@ -77,7 +91,9 @@ describe('livePublishApi', () => {
 
   it.each([502, 503, 504])('treats %i as an unreachable share server', async (status) => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('Bad Gateway', { status })))
-    await expect(livePublishApi.getForProject('project-1')).rejects.toThrowError(ServerUnreachableError)
+    await expect(livePublishApi.getForProject('project-1')).rejects.toThrowError(
+      ServerUnreachableError,
+    )
   })
 
   it('unpublishes with DELETE', async () => {
@@ -85,6 +101,8 @@ describe('livePublishApi', () => {
     vi.stubGlobal('fetch', fetchMock)
 
     await expect(livePublishApi.unpublish('project-1')).resolves.toBeUndefined()
-    expect(fetchMock).toHaveBeenCalledWith('/api/published-chips/source/project-1', { method: 'DELETE' })
+    expect(fetchMock).toHaveBeenCalledWith('/api/published-chips/source/project-1', {
+      method: 'DELETE',
+    })
   })
 })

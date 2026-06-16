@@ -43,7 +43,9 @@ describe('publish routes', () => {
     })
 
     expect(res.status).toBe(201)
-    const body = (await res.json()) as { chip: { sourceProjectId: string; version: number; isPublic: boolean; slug: string } }
+    const body = (await res.json()) as {
+      chip: { sourceProjectId: string; version: number; isPublic: boolean; slug: string }
+    }
     expect(body.chip).toMatchObject({ sourceProjectId: 'project-1', version: 1, isPublic: false })
     expect(body.chip.slug).toMatch(/^ada-chip-[a-f0-9]{8}$/)
     expect(db.prepare('SELECT COUNT(*) AS n FROM published_chips').get()).toEqual({ n: 1 })
@@ -95,7 +97,9 @@ describe('publish routes', () => {
     })
 
     expect(res.status).toBe(200)
-    expect(await res.json()).toMatchObject({ chip: { sourceProjectId: 'project-1', isPublic: true, version: 1 } })
+    expect(await res.json()).toMatchObject({
+      chip: { sourceProjectId: 'project-1', isPublic: true, version: 1 },
+    })
   })
 
   it('returns a public-only absolute shareUrl', async () => {
@@ -105,7 +109,9 @@ describe('publish routes', () => {
       ...jsonRequest('POST', { ...publishPayload(), isPublic: true }),
       headers: { 'content-type': 'application/json', cookie },
     })
-    const publicChip = ((await publicRes.json()) as { chip: { slug: string; shareUrl: string | null } }).chip
+    const publicChip = (
+      (await publicRes.json()) as { chip: { slug: string; shareUrl: string | null } }
+    ).chip
     expect(publicChip.shareUrl).toBe(`http://localhost/s/${publicChip.slug}`)
 
     const privateRes = await app.request('/api/published-chips/source/project-1', {
@@ -149,12 +155,18 @@ describe('publish routes', () => {
       const body = (await publish.json()) as {
         chip: { dieImageUrl: string; posterImageUrl: string; slug: string }
       }
-      expect(body.chip.dieImageUrl).toMatch(/^http:\/\/localhost\/uploads\/published\/.+\/v1-die\.png$/)
-      expect(body.chip.posterImageUrl).toMatch(/^http:\/\/localhost\/uploads\/published\/.+\/v1-poster\.png$/)
+      expect(body.chip.dieImageUrl).toMatch(
+        /^http:\/\/localhost\/uploads\/published\/.+\/v1-die\.png$/,
+      )
+      expect(body.chip.posterImageUrl).toMatch(
+        /^http:\/\/localhost\/uploads\/published\/.+\/v1-poster\.png$/,
+      )
 
-      const row = db.prepare(
-        'SELECT die_image_data_url, poster_image_data_url, die_image_path, poster_image_path FROM published_chips',
-      ).get() as {
+      const row = db
+        .prepare(
+          'SELECT die_image_data_url, poster_image_data_url, die_image_path, poster_image_path FROM published_chips',
+        )
+        .get() as {
         die_image_data_url: string
         poster_image_data_url: string
         die_image_path: string
@@ -186,10 +198,16 @@ describe('GET /api/published-chips/mine', () => {
     const { app, db } = createTestApp(() => 1_000, { signupsOpen: true, adminEmails: [] })
     const signup = await app.request(
       '/api/auth/signup',
-      jsonRequest('POST', { email: 'me@test.com', displayName: 'Me', password: 'hunter22hunter22' }),
+      jsonRequest('POST', {
+        email: 'me@test.com',
+        displayName: 'Me',
+        password: 'hunter22hunter22',
+      }),
     )
     const cookie = sessionCookie(signup)
-    const me = db.prepare('SELECT id FROM users WHERE email = ?').get('me@test.com') as { id: string }
+    const me = db.prepare('SELECT id FROM users WHERE email = ?').get('me@test.com') as {
+      id: string
+    }
     const insert = (id: string, isPublic: number, status: string) =>
       db
         .prepare(
@@ -201,7 +219,9 @@ describe('GET /api/published-chips/mine', () => {
     insert('priv', 0, 'visible')
     insert('hidden', 1, 'hidden')
 
-    const mine = (await (await app.request('/api/published-chips/mine', { headers: { cookie } })).json()) as {
+    const mine = (await (
+      await app.request('/api/published-chips/mine', { headers: { cookie } })
+    ).json()) as {
       chips: { id: string }[]
     }
 

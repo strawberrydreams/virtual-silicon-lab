@@ -93,8 +93,28 @@ describe('buildChipLayers', () => {
       ...base,
       die: { shape: 'rect', width: 600, height: 400, background: 'rotate-trace' },
       blocks: [
-        { id: 'a', type: 'CPU', category: 'real', x: 40, y: 40, w: 80, h: 40, rotation: 0, zIndex: 0 },
-        { id: 'b', type: 'GPU', category: 'real', x: 100, y: 100, w: 80, h: 40, rotation: 90, zIndex: 1 },
+        {
+          id: 'a',
+          type: 'CPU',
+          category: 'real',
+          x: 40,
+          y: 40,
+          w: 80,
+          h: 40,
+          rotation: 0,
+          zIndex: 0,
+        },
+        {
+          id: 'b',
+          type: 'GPU',
+          category: 'real',
+          x: 100,
+          y: 100,
+          w: 80,
+          h: 40,
+          rotation: 90,
+          zIndex: 1,
+        },
       ],
     }
 
@@ -153,7 +173,10 @@ describe('buildChipLayers', () => {
 
   it('keeps pad cells and power rails inside a circular die outline', () => {
     const base = sampleProject()
-    const project: Project = { ...base, die: { shape: 'circle', width: 760, height: 760, background: 'circle-fabric' } }
+    const project: Project = {
+      ...base,
+      die: { shape: 'circle', width: 760, height: 760, background: 'circle-fabric' },
+    }
     const cx = 380
     const cy = 380
     const r = 380
@@ -170,7 +193,8 @@ describe('buildChipLayers', () => {
           [cell.x, cell.y + cell.h],
           [cell.x + cell.w, cell.y + cell.h],
         ]
-        for (const [x, y] of corners) expect(Math.hypot(x - cx, y - cy)).toBeLessThanOrEqual(r + 0.001)
+        for (const [x, y] of corners)
+          expect(Math.hypot(x - cx, y - cy)).toBeLessThanOrEqual(r + 0.001)
       }
     }
     const rails = layers.fabricDetails.filter((detail) => detail.kind === 'powerRail')
@@ -185,7 +209,10 @@ describe('buildChipLayers', () => {
 
   it('keeps power rails inside a hexagonal die incircle', () => {
     const base = sampleProject()
-    const project: Project = { ...base, die: { shape: 'hexagon', width: 760, height: 760, background: 'hex-fabric' } }
+    const project: Project = {
+      ...base,
+      die: { shape: 'hexagon', width: 760, height: 760, background: 'hex-fabric' },
+    }
     const r = 380 * (Math.sqrt(3) / 2)
 
     const layers = buildChipLayers(project)

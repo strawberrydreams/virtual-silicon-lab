@@ -1,4 +1,8 @@
-import { type BlockBlueprint, type DecorationBlueprint, materializeDecoration } from '../domain/blueprint'
+import {
+  type BlockBlueprint,
+  type DecorationBlueprint,
+  materializeDecoration,
+} from '../domain/blueprint'
 import { createDefaultStudioState } from '../domain/studioDefaults'
 import {
   CURRENT_SCHEMA_VERSION,
@@ -43,7 +47,14 @@ export type HeroSetDefinition = {
   spec: FakeSpec
 }
 
-function real(type: BlockType, x: number, y: number, w: number, h: number, label?: string): BlockBlueprint {
+function real(
+  type: BlockType,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  label?: string,
+): BlockBlueprint {
   return { type, category: 'real', x, y, w, h, rotation: 0, glow: false, label }
 }
 
@@ -169,9 +180,7 @@ export const HERO_SET_CATALOG: readonly HeroSetDefinition[] = [
       fantasy('RealityDistortionUnit', 264, 540, 204, 192, '#a855f7', 'SECURITY\nENCLAVE'),
       real('IO', 482, 540, 250, 192, 'I/O COMPLEX'),
     ],
-    decorations: [
-      { kind: 'label', x: 28, y: 12, text: 'N1 GREEN HORIZON' },
-    ],
+    decorations: [{ kind: 'label', x: 28, y: 12, text: 'N1 GREEN HORIZON' }],
     spec: {
       brand: 'NOVA',
       series: 'N1',
@@ -180,7 +189,8 @@ export const HERO_SET_CATALOG: readonly HeroSetDefinition[] = [
       cores: 192,
       bandwidth: '7.8 PB/s',
       features: ['8-Core CPU Cluster', 'AI NPU Engine', '16MB L3 Cache'],
-      description: 'A staged AI product reveal floorplan: compute, memory, and I/O laid out as a readable SoC.',
+      description:
+        'A staged AI product reveal floorplan: compute, memory, and I/O laid out as a readable SoC.',
     },
   },
   {
@@ -469,7 +479,11 @@ export function createHeroSetProject(heroSetId: HeroSetId, id: string, now: numb
     createdAt: now,
     updatedAt: now,
     die: { ...hero.die },
-    blocks: hero.blocks.map((block, index) => ({ ...block, id: `${id}-block-${index}`, zIndex: index })),
+    blocks: hero.blocks.map((block, index) => ({
+      ...block,
+      id: `${id}-block-${index}`,
+      zIndex: index,
+    })),
     decorations: hero.decorations.map((decoration, index) =>
       materializeDecoration(decoration, `${id}-decoration-${index}`, index),
     ),

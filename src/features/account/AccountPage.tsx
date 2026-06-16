@@ -34,8 +34,8 @@ export function AccountPage() {
         <section className={`${panelClass} mt-8`}>
           <h2 className="text-sm uppercase tracking-[0.18em]">Share server is offline</h2>
           <p className="mt-3 text-sm text-[var(--v2-muted)]">
-            Accounts and publishing are unavailable right now. Local editing, autosave, and
-            exports are unaffected.
+            Accounts and publishing are unavailable right now. Local editing, autosave, and exports
+            are unaffected.
           </p>
         </section>
       )}

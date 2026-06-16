@@ -42,6 +42,7 @@ function detail(overrides: Partial<ContestDetail> = {}): ContestDetail {
 function fakeApi(overrides: Partial<ContestsApi> = {}): ContestsApi {
   return {
     list: vi.fn(),
+    listAdmin: vi.fn(),
     get: vi.fn().mockResolvedValue(detail()),
     enter: vi.fn(),
     withdraw: vi.fn(),
@@ -58,7 +59,27 @@ function fakeApi(overrides: Partial<ContestsApi> = {}): ContestsApi {
 function renderPage(api: ContestsApi) {
   return render(
     <MemoryRouter initialEntries={['/contests/c1']}>
-      <ContestDetailPage contestId="c1" api={api} isAuthenticated={false} isAdmin={false} currentUserId={null} />
+      <ContestDetailPage
+        contestId="c1"
+        api={api}
+        isAuthenticated={false}
+        isAdmin={false}
+        currentUserId={null}
+      />
+    </MemoryRouter>,
+  )
+}
+
+function renderDetail(api: ContestsApi, contestId: string) {
+  return render(
+    <MemoryRouter initialEntries={[`/contests/${contestId}`]}>
+      <ContestDetailPage
+        contestId={contestId}
+        api={api}
+        isAuthenticated={false}
+        isAdmin={false}
+        currentUserId={null}
+      />
     </MemoryRouter>,
   )
 }
@@ -79,5 +100,31 @@ describe('ContestDetailPage', () => {
     await screen.findByRole('heading', { name: 'Neon Week' })
 
     expect(screen.queryByTestId('contest-podium')).not.toBeInTheDocument()
+  })
+
+  it('resets to loading instead of showing stale detail when the contest id changes', async () => {
+    const get = vi.fn((id: string) => {
+      if (id === 'c1') return Promise.resolve(detail({ id: 'c1', title: 'First Contest' }))
+      return new Promise<ContestDetail>(() => undefined)
+    })
+    const api = fakeApi({ get })
+    const { rerender } = renderDetail(api, 'c1')
+
+    expect(await screen.findByRole('heading', { name: 'First Contest' })).toBeInTheDocument()
+
+    rerender(
+      <MemoryRouter initialEntries={['/contests/c2']}>
+        <ContestDetailPage
+          contestId="c2"
+          api={api}
+          isAuthenticated={false}
+          isAdmin={false}
+          currentUserId={null}
+        />
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByText('Loading contest...')).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'First Contest' })).not.toBeInTheDocument()
   })
 })

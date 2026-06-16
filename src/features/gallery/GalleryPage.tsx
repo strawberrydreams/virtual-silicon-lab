@@ -20,11 +20,19 @@ const SORT_OPTIONS: { value: GallerySort; label: string }[] = [
 
 export function GalleryPage({ api = liveGalleryApi }: Props) {
   const [sort, setSort] = useState<GallerySort>('trending')
-  const [chips, setChips] = useState<GalleryChipSummary[] | 'loading' | 'offline' | 'error'>('loading')
+  const [chips, setChips] = useState<GalleryChipSummary[] | 'loading' | 'offline' | 'error'>(
+    'loading',
+  )
+  // Reset to loading when the sort changes, derived during render so the effect
+  // only owns the async fetch.
+  const [loadedSort, setLoadedSort] = useState(sort)
+  if (loadedSort !== sort) {
+    setLoadedSort(sort)
+    setChips('loading')
+  }
 
   useEffect(() => {
     let active = true
-    setChips('loading')
     api
       .list(sort)
       .then((nextChips) => {
@@ -68,7 +76,9 @@ export function GalleryPage({ api = liveGalleryApi }: Props) {
       {chips === 'offline' ? (
         <p className="gallery-page__state">Share server is offline. Local editing is unaffected.</p>
       ) : null}
-      {chips === 'error' ? <p className="gallery-page__state">Gallery could not be loaded.</p> : null}
+      {chips === 'error' ? (
+        <p className="gallery-page__state">Gallery could not be loaded.</p>
+      ) : null}
       {Array.isArray(chips) && chips.length === 0 ? (
         <p className="gallery-page__state">No public chips yet.</p>
       ) : null}
@@ -76,7 +86,11 @@ export function GalleryPage({ api = liveGalleryApi }: Props) {
         <section className="gallery-grid" aria-label="Public chips">
           {chips.map((chip) => (
             <article className="gallery-card" key={chip.id}>
-              <img alt={`${chip.title} poster`} className="gallery-card__poster" src={chip.posterImageUrl} />
+              <img
+                alt={`${chip.title} poster`}
+                className="gallery-card__poster"
+                src={chip.posterImageUrl}
+              />
               <div className="gallery-card__body">
                 <p className="v2-meta">{chip.ownerDisplayName}</p>
                 <h2>{chip.title}</h2>

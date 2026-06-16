@@ -32,7 +32,9 @@ describe('createFileImageStore', () => {
     })
 
     expect(path).toBe('/uploads/published/chip-1/v2-poster.png')
-    expect(readFileSync(join(rootDir, 'published/chip-1/v2-poster.png')).byteLength).toBeGreaterThan(0)
+    expect(
+      readFileSync(join(rootDir, 'published/chip-1/v2-poster.png')).byteLength,
+    ).toBeGreaterThan(0)
     expect(store.readPublishedImage(path)?.byteLength).toBeGreaterThan(0)
     expect(store.readPublishedImage('/uploads/../secret.png')).toBeNull()
   })

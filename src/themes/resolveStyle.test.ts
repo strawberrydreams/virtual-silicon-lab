@@ -24,11 +24,15 @@ function block(overrides: Partial<Block> = {}): Block {
 describe('resolveBlockStyle', () => {
   it('uses theme block fill by category', () => {
     expect(resolveBlockStyle(block(), tokens, false).fill).toBe(tokens.blockFill.real)
-    expect(resolveBlockStyle(block({ category: 'fantasy' }), tokens, false).fill).toBe(tokens.blockFill.fantasy)
+    expect(resolveBlockStyle(block({ category: 'fantasy' }), tokens, false).fill).toBe(
+      tokens.blockFill.fantasy,
+    )
   })
 
   it('lets colorOverride win over the theme fill', () => {
-    expect(resolveBlockStyle(block({ colorOverride: '#123456' }), tokens, false).fill).toBe('#123456')
+    expect(resolveBlockStyle(block({ colorOverride: '#123456' }), tokens, false).fill).toBe(
+      '#123456',
+    )
   })
 
   it('applies the select stroke when selected', () => {
@@ -47,14 +51,24 @@ describe('resolveBlockStyle', () => {
   })
 
   it('uses colorOverride for the glow color when present', () => {
-    const styled = resolveBlockStyle(block({ category: 'fantasy', colorOverride: '#ff2bd6' }), tokens, false)
+    const styled = resolveBlockStyle(
+      block({ category: 'fantasy', colorOverride: '#ff2bd6' }),
+      tokens,
+      false,
+    )
     expect(styled.shadowColor).toBe('#ff2bd6')
   })
 })
 
 describe('resolveDecorationStyle', () => {
   it('falls back to the signature accent for an uncolored neon line and uses additive blend', () => {
-    const decoration: Decoration = { id: 'd', kind: 'neonLine', points: [0, 0, 10, 10], color: '', zIndex: 0 }
+    const decoration: Decoration = {
+      id: 'd',
+      kind: 'neonLine',
+      points: [0, 0, 10, 10],
+      color: '',
+      zIndex: 0,
+    }
     const style = resolveDecorationStyle(decoration, tokens)
     expect(style.color).toBe(tokens.accents[0])
     expect(style.blend).toBe('lighter')

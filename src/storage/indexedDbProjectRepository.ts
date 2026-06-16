@@ -26,7 +26,13 @@ export function createIndexedDbProjectRepository(
     },
     async get(id) {
       const value = await (await database).get('projects', id)
-      return value === undefined ? undefined : migrateProject(value)
+      if (value === undefined) return undefined
+      try {
+        return migrateProject(value)
+      } catch (error) {
+        console.warn('[storage] skipping unreadable project record', error)
+        return undefined
+      }
     },
     async save(project) {
       await (await database).put('projects', project, project.id)

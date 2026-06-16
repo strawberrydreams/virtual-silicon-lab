@@ -1,6 +1,13 @@
 import type { Block, BlockType, Project } from '../domain/project'
 
-export type ComponentSpecFamily = 'general' | 'parallel' | 'memory' | 'signal' | 'interface' | 'clock' | 'converter'
+export type ComponentSpecFamily =
+  | 'general'
+  | 'parallel'
+  | 'memory'
+  | 'signal'
+  | 'interface'
+  | 'clock'
+  | 'converter'
 
 export type ComponentSpecRow = {
   label: string
@@ -16,7 +23,13 @@ export type ComponentSpec = {
 
 const MEMORY_TYPES = new Set<BlockType>(['SRAM', 'Cache', 'QuantumMemory'])
 const PARALLEL_TYPES = new Set<BlockType>(['GPU', 'ConsciousnessProcessor', 'DreamSynth'])
-const INTERFACE_TYPES = new Set<BlockType>(['IO', 'USB', 'RealityDistortionUnit', 'EmotionEngine', 'TimeCore'])
+const INTERFACE_TYPES = new Set<BlockType>([
+  'IO',
+  'USB',
+  'RealityDistortionUnit',
+  'EmotionEngine',
+  'TimeCore',
+])
 
 export function deriveComponentSpec(block: Block, project: Project): ComponentSpec {
   if (PARALLEL_TYPES.has(block.type)) return parallelSpec(block, project)
@@ -41,7 +54,8 @@ function parallelSpec(block: Block, project: Project): ComponentSpec {
   return {
     family: 'parallel',
     title: 'Parallel compute',
-    subtitle: block.category === 'fantasy' ? 'Matrix fabric estimate' : 'Graphics and matrix fabric',
+    subtitle:
+      block.category === 'fantasy' ? 'Matrix fabric estimate' : 'Graphics and matrix fabric',
     rows: [
       { label: 'Shaders', value: `${shaders.toLocaleString()} cores` },
       { label: 'FP32', value: `${fp32} TFLOPS` },

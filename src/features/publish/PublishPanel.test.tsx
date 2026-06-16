@@ -58,7 +58,11 @@ function fakePublishApi(overrides: Partial<PublishApi> = {}): PublishApi {
 function renderPanel(authApi: AuthApi, publishApi: PublishApi) {
   return render(
     <AuthStoreProvider api={authApi}>
-      <PublishPanel project={project} api={publishApi} captureImages={vi.fn().mockReturnValue(images)} />
+      <PublishPanel
+        project={project}
+        api={publishApi}
+        captureImages={vi.fn().mockReturnValue(images)}
+      />
     </AuthStoreProvider>,
   )
 }
@@ -116,7 +120,9 @@ describe('PublishPanel', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'Unpublish' }))
     expect(api.unpublish).toHaveBeenCalledWith('project-1')
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Publish Snapshot' })).toBeInTheDocument())
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Publish Snapshot' })).toBeInTheDocument(),
+    )
   })
 
   it('shows the share link with a copy button for a public chip', async () => {

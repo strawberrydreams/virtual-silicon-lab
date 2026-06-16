@@ -18,6 +18,7 @@ export function materializeDecoration(
   id: string,
   zIndex: number,
 ): Decoration {
-  if (blueprint.kind === 'neonLine') return { ...blueprint, points: [...blueprint.points], id, zIndex }
+  if (blueprint.kind === 'neonLine')
+    return { ...blueprint, points: [...blueprint.points], id, zIndex }
   return { ...blueprint, id, zIndex }
 }

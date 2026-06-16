@@ -41,7 +41,10 @@ describe('LandingPage', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Start from AURORA M5' }))
 
     expect(remixPreset).toHaveBeenCalledWith('aurora-m5')
-    expect(screen.getByRole('link', { name: 'Open Projects (2)' })).toHaveAttribute('href', '/dashboard')
+    expect(screen.getByRole('link', { name: 'Open Projects (2)' })).toHaveAttribute(
+      'href',
+      '/dashboard',
+    )
   })
 
   it('shows a first-viewport chip product signal', () => {

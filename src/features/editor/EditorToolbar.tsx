@@ -61,8 +61,15 @@ export function EditorToolbar({
 }: Props) {
   return (
     <div className="editor-toolbar" aria-label="Editor command toolbar">
-      <section aria-label="Shape and finish controls" className="editor-toolbar__row editor-toolbar__row--tabs">
-        <div aria-label="Die shape controls" className="editor-tool-group editor-tool-group--tabs" role="group">
+      <section
+        aria-label="Shape and finish controls"
+        className="editor-toolbar__row editor-toolbar__row--tabs"
+      >
+        <div
+          aria-label="Die shape controls"
+          className="editor-tool-group editor-tool-group--tabs"
+          role="group"
+        >
           {SHAPES.map(({ shape, label }) => (
             <button
               key={shape}
@@ -74,7 +81,11 @@ export function EditorToolbar({
             </button>
           ))}
         </div>
-        <div aria-label="Chip theme controls" className="editor-tool-group editor-tool-group--finish" role="group">
+        <div
+          aria-label="Chip theme controls"
+          className="editor-tool-group editor-tool-group--finish"
+          role="group"
+        >
           {THEME_OPTIONS.map(({ theme: option, label }) => (
             <button
               key={option}
@@ -89,22 +100,33 @@ export function EditorToolbar({
           ))}
         </div>
       </section>
-      <section aria-label="Editor operation strip" className="editor-toolbar__row editor-toolbar__row--operations">
+      <section
+        aria-label="Editor operation strip"
+        className="editor-toolbar__row editor-toolbar__row--operations"
+      >
         <div aria-label="Canvas interaction tools" className="editor-tool-group" role="group">
           <button className={activeButtonClass} type="button">
-            <span className="editor-tool-button__icon" aria-hidden="true"><SelectIcon /></span>
+            <span className="editor-tool-button__icon" aria-hidden="true">
+              <SelectIcon />
+            </span>
             Select
           </button>
           <button className={buttonClass} type="button" disabled>
-            <span className="editor-tool-button__icon" aria-hidden="true"><MoveIcon /></span>
+            <span className="editor-tool-button__icon" aria-hidden="true">
+              <MoveIcon />
+            </span>
             Move
           </button>
           <button className={buttonClass} type="button" disabled>
-            <span className="editor-tool-button__icon" aria-hidden="true"><RotateIcon /></span>
+            <span className="editor-tool-button__icon" aria-hidden="true">
+              <RotateIcon />
+            </span>
             Rotate
           </button>
           <button className={buttonClass} type="button" disabled>
-            <span className="editor-tool-button__icon" aria-hidden="true"><ResizeIcon /></span>
+            <span className="editor-tool-button__icon" aria-hidden="true">
+              <ResizeIcon />
+            </span>
             Resize
           </button>
         </div>
@@ -140,11 +162,15 @@ export function EditorToolbar({
         </div>
         <div aria-label="History controls" className="editor-tool-group" role="group">
           <button className={buttonClass} disabled={!canUndo} onClick={onUndo}>
-            <span className="editor-tool-button__icon" aria-hidden="true"><UndoIcon /></span>
+            <span className="editor-tool-button__icon" aria-hidden="true">
+              <UndoIcon />
+            </span>
             Undo
           </button>
           <button className={buttonClass} disabled={!canRedo} onClick={onRedo}>
-            <span className="editor-tool-button__icon" aria-hidden="true"><RedoIcon /></span>
+            <span className="editor-tool-button__icon" aria-hidden="true">
+              <RedoIcon />
+            </span>
             Redo
           </button>
         </div>

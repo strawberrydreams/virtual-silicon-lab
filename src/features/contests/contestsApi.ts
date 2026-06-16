@@ -41,6 +41,7 @@ export type MyChip = {
 
 export type ContestsApi = {
   list: () => Promise<ContestSummary[]>
+  listAdmin: () => Promise<ContestSummary[]>
   get: (id: string) => Promise<ContestDetail>
   enter: (contestId: string, publishedChipId: string) => Promise<void>
   withdraw: (contestId: string, entryId: string) => Promise<void>
@@ -69,12 +70,18 @@ export const liveContestsApi: ContestsApi = {
     const res = await ok(await fetch('/api/contests', { method: 'GET' }))
     return ((await res.json()) as { contests: ContestSummary[] }).contests
   },
+  async listAdmin() {
+    const res = await ok(await fetch('/api/admin/contests', { method: 'GET' }))
+    return ((await res.json()) as { contests: ContestSummary[] }).contests
+  },
   async get(id) {
     const res = await ok(await fetch(`/api/contests/${id}`, { method: 'GET' }))
     return ((await res.json()) as { contest: ContestDetail }).contest
   },
   async enter(contestId, publishedChipId) {
-    await ok(await fetch(`/api/contests/${contestId}/entries`, jsonInit('POST', { publishedChipId })))
+    await ok(
+      await fetch(`/api/contests/${contestId}/entries`, jsonInit('POST', { publishedChipId })),
+    )
   },
   async withdraw(contestId, entryId) {
     await ok(await fetch(`/api/contests/${contestId}/entries/${entryId}`, { method: 'DELETE' }))

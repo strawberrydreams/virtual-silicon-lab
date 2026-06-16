@@ -12,7 +12,9 @@ describe('resolvePublicBaseUrl', () => {
   })
 
   it('falls back to the request origin when no base is configured', () => {
-    expect(resolvePublicBaseUrl('http://127.0.0.1:8787/s/abc', undefined)).toBe('http://127.0.0.1:8787')
+    expect(resolvePublicBaseUrl('http://127.0.0.1:8787/s/abc', undefined)).toBe(
+      'http://127.0.0.1:8787',
+    )
     expect(resolvePublicBaseUrl('http://127.0.0.1:8787/s/abc', '')).toBe('http://127.0.0.1:8787')
   })
 })

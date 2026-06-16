@@ -1,4 +1,5 @@
 import 'fake-indexeddb/auto'
+import { openDB } from 'idb'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createProject } from '../domain/projectFactory'
 import { createIndexedDbProjectRepository } from './indexedDbProjectRepository'
@@ -20,6 +21,21 @@ describe('project repositories', () => {
     expect(await repository.list()).toEqual([])
   })
 
+  it('returns undefined for a corrupt IndexedDB record requested by id', async () => {
+    const databaseName = `test-corrupt-get-${crypto.randomUUID()}`
+    const database = await openDB(databaseName, 1, {
+      upgrade(db) {
+        db.createObjectStore('projects')
+      },
+    })
+    await database.put('projects', { schemaVersion: 1, id: 'half-written' }, 'half-written')
+    database.close()
+
+    const repository = createIndexedDbProjectRepository(databaseName)
+
+    await expect(repository.get('half-written')).resolves.toBeUndefined()
+  })
+
   it('uses localStorage when the primary repository fails', async () => {
     const fallback = createLocalStorageProjectRepository('test-projects')
     const repository = createResilientProjectRepository(
@@ -36,6 +52,20 @@ describe('project repositories', () => {
     await repository.save(project)
 
     expect(await repository.get('project-2')).toEqual(project)
+  })
+
+  it('returns an empty list when the localStorage blob is not valid JSON', async () => {
+    const repository = createLocalStorageProjectRepository('test-corrupt-json')
+    localStorage.setItem('test-corrupt-json', '{ this is not json')
+
+    expect(await repository.list()).toEqual([])
+  })
+
+  it('returns an empty list when the localStorage blob is valid JSON but not an array', async () => {
+    const repository = createLocalStorageProjectRepository('test-nonarray')
+    localStorage.setItem('test-nonarray', 'null')
+
+    expect(await repository.list()).toEqual([])
   })
 
   it('sticks to the fallback after a primary failure and never reads stale primary data', async () => {

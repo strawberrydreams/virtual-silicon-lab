@@ -29,7 +29,9 @@ describe('ProjectDashboard', () => {
   })
 
   it('creates a blank project from the dashboard', async () => {
-    const createProjectCommand = vi.fn().mockResolvedValue(createProject('Dream Chip', 'project-1', 100))
+    const createProjectCommand = vi
+      .fn()
+      .mockResolvedValue(createProject('Dream Chip', 'project-1', 100))
     render(
       <MemoryRouter>
         <ProjectDashboard

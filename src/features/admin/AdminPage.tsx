@@ -29,7 +29,10 @@ export function AdminPage({
   const [error, setError] = useState<string | null>(null)
 
   const reloadContests = useCallback(() => {
-    contestsApi.list().then(setContests).catch(() => setContests([]))
+    contestsApi
+      .listAdmin()
+      .then(setContests)
+      .catch(() => setContests([]))
   }, [contestsApi])
 
   const refresh = useCallback(async () => {
@@ -53,6 +56,7 @@ export function AdminPage({
   )
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- imperative load of moderation data on mount / when admin status resolves; refresh() only setStates after awaiting the server
     if (auth.isAdmin) void refresh()
   }, [auth.isAdmin, refresh])
 
@@ -63,7 +67,15 @@ export function AdminPage({
     try {
       const created = await contestsApi.create({ title, theme })
       setContests((current) => [
-        { id: created.id, title, theme, status: 'draft', entryCount: 0, voteCount: 0, createdAt: Date.now() },
+        {
+          id: created.id,
+          title,
+          theme,
+          status: 'draft',
+          entryCount: 0,
+          voteCount: 0,
+          createdAt: Date.now(),
+        },
         ...current,
       ])
       setNewTitle('')
@@ -78,7 +90,9 @@ export function AdminPage({
     async (id: string, status: ContestStatus) => {
       try {
         await contestsApi.setStatus(id, status)
-        setContests((current) => current.map((contest) => (contest.id === id ? { ...contest, status } : contest)))
+        setContests((current) =>
+          current.map((contest) => (contest.id === id ? { ...contest, status } : contest)),
+        )
         if (status !== 'draft') reloadContests()
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Failed to update contest.')
@@ -141,7 +155,9 @@ export function AdminPage({
                 <select
                   aria-label={`Status for ${contest.title}`}
                   value={contest.status}
-                  onChange={(event) => void setContestStatus(contest.id, event.target.value as ContestStatus)}
+                  onChange={(event) =>
+                    void setContestStatus(contest.id, event.target.value as ContestStatus)
+                  }
                 >
                   <option value="draft">draft</option>
                   <option value="submission">submission</option>

@@ -1,6 +1,10 @@
 import { useMemo } from 'react'
 import type { Project } from '../../domain/project'
-import { generateStudioSpec, type RealisticSiliconSpec, type StudioHealth } from '../../studio/generatedSpec'
+import {
+  generateStudioSpec,
+  type RealisticSiliconSpec,
+  type StudioHealth,
+} from '../../studio/generatedSpec'
 
 type Props = {
   project: Project
@@ -26,9 +30,19 @@ const siliconRows: { label: string; value: (silicon: RealisticSiliconSpec) => st
   { label: 'Node', value: (silicon) => `${silicon.processNodeNm} nm` },
   { label: 'Transistors', value: (silicon) => formatTransistors(silicon.transistorCountBillion) },
   { label: 'Die', value: (silicon) => `${silicon.dieAreaMm2} mm²` },
-  { label: 'CPU', value: (silicon) => `${silicon.cpuCores} core${silicon.cpuCores === 1 ? '' : 's'}` },
-  { label: 'GPU', value: (silicon) => (silicon.gpuCores === 0 ? 'none' : `${silicon.gpuCores.toLocaleString()} shader cores`) },
-  { label: 'AI', value: (silicon) => (silicon.aiTops === 0 ? 'none' : `${silicon.aiTops.toLocaleString()} TOPS`) },
+  {
+    label: 'CPU',
+    value: (silicon) => `${silicon.cpuCores} core${silicon.cpuCores === 1 ? '' : 's'}`,
+  },
+  {
+    label: 'GPU',
+    value: (silicon) =>
+      silicon.gpuCores === 0 ? 'none' : `${silicon.gpuCores.toLocaleString()} shader cores`,
+  },
+  {
+    label: 'AI',
+    value: (silicon) => (silicon.aiTops === 0 ? 'none' : `${silicon.aiTops.toLocaleString()} TOPS`),
+  },
   { label: 'Memory BW', value: (silicon) => `${silicon.memoryBandwidthGBs.toLocaleString()} GB/s` },
 ]
 
@@ -67,7 +81,9 @@ export function GeneratedSpecPanel({ project }: Props) {
           <p className="editor-kicker">Studio analysis</p>
           <h2>Generated Spec</h2>
         </div>
-        <span className={`generated-spec-panel__health generated-spec-panel__health--${spec.health}`}>
+        <span
+          className={`generated-spec-panel__health generated-spec-panel__health--${spec.health}`}
+        >
           {healthLabels[spec.health]}
         </span>
       </div>
@@ -88,7 +104,11 @@ export function GeneratedSpecPanel({ project }: Props) {
       <div className="generated-spec-panel__silicon" aria-label="Realistic silicon estimate">
         <div className="generated-spec-panel__silicon-head">
           <span className="editor-kicker">Silicon estimate</span>
-          <strong>{spec.silicon.peakClockGHz < 1 ? `${Math.round(spec.silicon.peakClockGHz * 1000)} MHz` : `${spec.silicon.peakClockGHz} GHz`}</strong>
+          <strong>
+            {spec.silicon.peakClockGHz < 1
+              ? `${Math.round(spec.silicon.peakClockGHz * 1000)} MHz`
+              : `${spec.silicon.peakClockGHz} GHz`}
+          </strong>
         </div>
         <div className="generated-spec-panel__silicon-grid">
           {siliconRows.map((row) => (

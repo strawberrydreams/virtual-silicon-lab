@@ -1,10 +1,18 @@
 import { describe, expect, it } from 'vitest'
 import type { Block } from '../../../domain/project'
-import { blocksByZIndex, editorStageFrameSize, editorStageSize, splitTileLabel } from './artworkLayout'
+import {
+  blocksByZIndex,
+  editorStageFrameSize,
+  editorStageSize,
+  splitTileLabel,
+} from './artworkLayout'
 
 describe('splitTileLabel', () => {
   it('splits a two-line label into upper-cased title and sub', () => {
-    expect(splitTileLabel('GPU Cluster\n12-core', 'GPU')).toEqual({ title: 'GPU CLUSTER', sub: '12-CORE' })
+    expect(splitTileLabel('GPU Cluster\n12-core', 'GPU')).toEqual({
+      title: 'GPU CLUSTER',
+      sub: '12-CORE',
+    })
   })
 
   it('returns an empty sub for a single-line label', () => {
@@ -18,25 +26,34 @@ describe('splitTileLabel', () => {
 
 describe('editorStageSize', () => {
   it('keeps the blank rectangular canvas at its established size', () => {
-    expect(editorStageSize({ shape: 'rect', width: 960, height: 640, background: 'grid-cyan' }))
-      .toEqual({ width: 960, height: 640 })
+    expect(
+      editorStageSize({ shape: 'rect', width: 960, height: 640, background: 'grid-cyan' }),
+    ).toEqual({ width: 960, height: 640 })
   })
 
   it('expands to show every pixel of a 720 square preset', () => {
-    expect(editorStageSize({ shape: 'square', width: 720, height: 720, background: 'keynote-graphite' }))
-      .toEqual({ width: 960, height: 720 })
+    expect(
+      editorStageSize({ shape: 'square', width: 720, height: 720, background: 'keynote-graphite' }),
+    ).toEqual({ width: 960, height: 720 })
   })
 })
 
 describe('editorStageFrameSize', () => {
   it('adds a stable analysis frame around the editor stage', () => {
-    expect(editorStageFrameSize({ shape: 'rect', width: 960, height: 640, background: 'grid-cyan' }))
-      .toEqual({ width: 1056, height: 736 })
+    expect(
+      editorStageFrameSize({ shape: 'rect', width: 960, height: 640, background: 'grid-cyan' }),
+    ).toEqual({ width: 1056, height: 736 })
   })
 
   it('tracks expanded stage sizes for tall die presets', () => {
-    expect(editorStageFrameSize({ shape: 'square', width: 720, height: 720, background: 'keynote-graphite' }))
-      .toEqual({ width: 1056, height: 816 })
+    expect(
+      editorStageFrameSize({
+        shape: 'square',
+        width: 720,
+        height: 720,
+        background: 'keynote-graphite',
+      }),
+    ).toEqual({ width: 1056, height: 816 })
   })
 })
 

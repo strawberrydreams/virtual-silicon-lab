@@ -45,13 +45,18 @@ describe('publish service', () => {
     const db = dbWithUsers()
     const project = createProject('Ada Chip', 'project-1', 1_000)
 
-    const published = upsertPublishedChip(db, 'u1', {
-      project,
-      title: 'Ada Chip',
-      dieImageDataUrl: pngA,
-      posterImageDataUrl: pngB,
-      isPublic: true,
-    }, () => 2_000)
+    const published = upsertPublishedChip(
+      db,
+      'u1',
+      {
+        project,
+        title: 'Ada Chip',
+        dieImageDataUrl: pngA,
+        posterImageDataUrl: pngB,
+        isPublic: true,
+      },
+      () => 2_000,
+    )
 
     expect(published).toMatchObject({
       ownerUserId: 'u1',
@@ -69,22 +74,32 @@ describe('publish service', () => {
   it('republishes by updating the existing record and incrementing the version', () => {
     const db = dbWithUsers()
     const project = createProject('Ada Chip', 'project-1', 1_000)
-    const first = upsertPublishedChip(db, 'u1', {
-      project,
-      title: 'Ada Chip',
-      dieImageDataUrl: pngA,
-      posterImageDataUrl: pngB,
-      isPublic: false,
-    }, () => 2_000)
+    const first = upsertPublishedChip(
+      db,
+      'u1',
+      {
+        project,
+        title: 'Ada Chip',
+        dieImageDataUrl: pngA,
+        posterImageDataUrl: pngB,
+        isPublic: false,
+      },
+      () => 2_000,
+    )
 
     const updatedProject = { ...project, name: 'Ada Chip Rev B', updatedAt: 3_000 }
-    const second = upsertPublishedChip(db, 'u1', {
-      project: updatedProject,
-      title: 'Ada Chip Rev B',
-      dieImageDataUrl: pngB,
-      posterImageDataUrl: pngA,
-      isPublic: true,
-    }, () => 3_000)
+    const second = upsertPublishedChip(
+      db,
+      'u1',
+      {
+        project: updatedProject,
+        title: 'Ada Chip Rev B',
+        dieImageDataUrl: pngB,
+        posterImageDataUrl: pngA,
+        isPublic: true,
+      },
+      () => 3_000,
+    )
 
     expect(second.id).toBe(first.id)
     expect(second.slug).toBe(first.slug)
@@ -104,7 +119,13 @@ describe('publish service', () => {
     const first = upsertPublishedChip(
       db,
       'u1',
-      { project, title: 'Ada Chip', dieImageDataUrl: pngA, posterImageDataUrl: pngB, isPublic: true },
+      {
+        project,
+        title: 'Ada Chip',
+        dieImageDataUrl: pngA,
+        posterImageDataUrl: pngB,
+        isPublic: true,
+      },
       () => 2_000,
       imageStore,
     )
@@ -115,7 +136,13 @@ describe('publish service', () => {
     const second = upsertPublishedChip(
       db,
       'u1',
-      { project, title: 'Ada Chip', dieImageDataUrl: pngB, posterImageDataUrl: pngA, isPublic: true },
+      {
+        project,
+        title: 'Ada Chip',
+        dieImageDataUrl: pngB,
+        posterImageDataUrl: pngA,
+        isPublic: true,
+      },
       () => 3_000,
       imageStore,
     )
@@ -133,13 +160,18 @@ describe('publish service', () => {
   it('toggles visibility without replacing the stored snapshot or images', () => {
     const db = dbWithUsers()
     const project = createProject('Ada Chip', 'project-1', 1_000)
-    upsertPublishedChip(db, 'u1', {
-      project,
-      title: 'Ada Chip',
-      dieImageDataUrl: pngA,
-      posterImageDataUrl: pngB,
-      isPublic: false,
-    }, () => 2_000)
+    upsertPublishedChip(
+      db,
+      'u1',
+      {
+        project,
+        title: 'Ada Chip',
+        dieImageDataUrl: pngA,
+        posterImageDataUrl: pngB,
+        isPublic: false,
+      },
+      () => 2_000,
+    )
 
     const changed = setPublishedChipVisibility(db, 'u1', 'project-1', true, () => 3_000)
 
@@ -155,13 +187,18 @@ describe('publish service', () => {
   it('scopes lookups and deletion to the owner and source project', () => {
     const db = dbWithUsers()
     const project = createProject('Ada Chip', 'project-1', 1_000)
-    upsertPublishedChip(db, 'u1', {
-      project,
-      title: 'Ada Chip',
-      dieImageDataUrl: pngA,
-      posterImageDataUrl: pngB,
-      isPublic: false,
-    }, () => 2_000)
+    upsertPublishedChip(
+      db,
+      'u1',
+      {
+        project,
+        title: 'Ada Chip',
+        dieImageDataUrl: pngA,
+        posterImageDataUrl: pngB,
+        isPublic: false,
+      },
+      () => 2_000,
+    )
 
     expect(getPublishedChipForOwnerProject(db, 'u2', 'project-1')).toBeNull()
     expect(deletePublishedChip(db, 'u2', 'project-1')).toBe(false)
@@ -171,25 +208,35 @@ describe('publish service', () => {
 
   it('records remixed_from_chip_id when the project remixedFrom chip id exists', () => {
     const db = dbWithUsers()
-    const parent = upsertPublishedChip(db, 'u1', {
-      project: createProject('Parent Chip', 'parent-project', 1_000),
-      title: 'Parent Chip',
-      dieImageDataUrl: pngA,
-      posterImageDataUrl: pngB,
-      isPublic: true,
-    }, () => 2_000)
+    const parent = upsertPublishedChip(
+      db,
+      'u1',
+      {
+        project: createProject('Parent Chip', 'parent-project', 1_000),
+        title: 'Parent Chip',
+        dieImageDataUrl: pngA,
+        posterImageDataUrl: pngB,
+        isPublic: true,
+      },
+      () => 2_000,
+    )
 
     const childProject = {
       ...createProject('Child Chip', 'child-project', 1_000),
       remixedFrom: { chipId: parent.id, slug: parent.slug, title: parent.title },
     }
-    const child = upsertPublishedChip(db, 'u2', {
-      project: childProject,
-      title: 'Child Chip',
-      dieImageDataUrl: pngB,
-      posterImageDataUrl: pngA,
-      isPublic: true,
-    }, () => 3_000)
+    const child = upsertPublishedChip(
+      db,
+      'u2',
+      {
+        project: childProject,
+        title: 'Child Chip',
+        dieImageDataUrl: pngB,
+        posterImageDataUrl: pngA,
+        isPublic: true,
+      },
+      () => 3_000,
+    )
 
     expect(child.remixedFromChipId).toBe(parent.id)
   })
@@ -201,20 +248,30 @@ describe('publish service', () => {
       remixedFrom: { chipId: 'missing', slug: 'missing-slug', title: 'Missing' },
     }
 
-    const orphan = upsertPublishedChip(db, 'u2', {
-      project: orphanProject,
-      title: 'Orphan Chip',
-      dieImageDataUrl: pngB,
-      posterImageDataUrl: pngA,
-      isPublic: true,
-    }, () => 3_000)
-    const plain = upsertPublishedChip(db, 'u1', {
-      project: createProject('Plain Chip', 'plain-project', 1_000),
-      title: 'Plain Chip',
-      dieImageDataUrl: pngA,
-      posterImageDataUrl: pngB,
-      isPublic: true,
-    }, () => 4_000)
+    const orphan = upsertPublishedChip(
+      db,
+      'u2',
+      {
+        project: orphanProject,
+        title: 'Orphan Chip',
+        dieImageDataUrl: pngB,
+        posterImageDataUrl: pngA,
+        isPublic: true,
+      },
+      () => 3_000,
+    )
+    const plain = upsertPublishedChip(
+      db,
+      'u1',
+      {
+        project: createProject('Plain Chip', 'plain-project', 1_000),
+        title: 'Plain Chip',
+        dieImageDataUrl: pngA,
+        posterImageDataUrl: pngB,
+        isPublic: true,
+      },
+      () => 4_000,
+    )
 
     expect(orphan.remixedFromChipId).toBeNull()
     expect(plain.remixedFromChipId).toBeNull()

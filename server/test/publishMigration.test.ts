@@ -18,7 +18,18 @@ describe('002_published_chips migration', () => {
       `INSERT INTO published_chips
        (id, owner_user_id, source_project_id, slug, title, project_json, die_image_data_url, poster_image_data_url, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    ).run('pub1', 'u1', 'project-1', 'ada-chip', 'Ada Chip', '{}', 'data:image/png;base64,AAA=', 'data:image/png;base64,BBB=', 10, 10)
+    ).run(
+      'pub1',
+      'u1',
+      'project-1',
+      'ada-chip',
+      'Ada Chip',
+      '{}',
+      'data:image/png;base64,AAA=',
+      'data:image/png;base64,BBB=',
+      10,
+      10,
+    )
 
     expect(
       db.prepare('SELECT source_project_id, is_public, version FROM published_chips').get(),
@@ -32,10 +43,32 @@ describe('002_published_chips migration', () => {
        (id, owner_user_id, source_project_id, slug, title, project_json, die_image_data_url, poster_image_data_url, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
-    insert.run('pub1', 'u1', 'project-1', 'ada-chip', 'Ada Chip', '{}', 'data:image/png;base64,AAA=', 'data:image/png;base64,BBB=', 10, 10)
+    insert.run(
+      'pub1',
+      'u1',
+      'project-1',
+      'ada-chip',
+      'Ada Chip',
+      '{}',
+      'data:image/png;base64,AAA=',
+      'data:image/png;base64,BBB=',
+      10,
+      10,
+    )
 
     expect(() =>
-      insert.run('pub2', 'u1', 'project-1', 'ada-chip-2', 'Ada Chip 2', '{}', 'data:image/png;base64,AAA=', 'data:image/png;base64,BBB=', 11, 11),
+      insert.run(
+        'pub2',
+        'u1',
+        'project-1',
+        'ada-chip-2',
+        'Ada Chip 2',
+        '{}',
+        'data:image/png;base64,AAA=',
+        'data:image/png;base64,BBB=',
+        11,
+        11,
+      ),
     ).toThrow(/UNIQUE/)
   })
 
@@ -49,10 +82,32 @@ describe('002_published_chips migration', () => {
        (id, owner_user_id, source_project_id, slug, title, project_json, die_image_data_url, poster_image_data_url, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
-    insert.run('pub1', 'u1', 'project-1', 'shared-slug', 'Ada Chip', '{}', 'data:image/png;base64,AAA=', 'data:image/png;base64,BBB=', 10, 10)
+    insert.run(
+      'pub1',
+      'u1',
+      'project-1',
+      'shared-slug',
+      'Ada Chip',
+      '{}',
+      'data:image/png;base64,AAA=',
+      'data:image/png;base64,BBB=',
+      10,
+      10,
+    )
 
     expect(() =>
-      insert.run('pub2', 'u2', 'project-2', 'shared-slug', 'Grace Chip', '{}', 'data:image/png;base64,AAA=', 'data:image/png;base64,BBB=', 11, 11),
+      insert.run(
+        'pub2',
+        'u2',
+        'project-2',
+        'shared-slug',
+        'Grace Chip',
+        '{}',
+        'data:image/png;base64,AAA=',
+        'data:image/png;base64,BBB=',
+        11,
+        11,
+      ),
     ).toThrow(/UNIQUE/)
   })
 
@@ -62,7 +117,18 @@ describe('002_published_chips migration', () => {
       `INSERT INTO published_chips
        (id, owner_user_id, source_project_id, slug, title, project_json, die_image_data_url, poster_image_data_url, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    ).run('pub1', 'u1', 'project-1', 'ada-chip', 'Ada Chip', '{}', 'data:image/png;base64,AAA=', 'data:image/png;base64,BBB=', 10, 10)
+    ).run(
+      'pub1',
+      'u1',
+      'project-1',
+      'ada-chip',
+      'Ada Chip',
+      '{}',
+      'data:image/png;base64,AAA=',
+      'data:image/png;base64,BBB=',
+      10,
+      10,
+    )
 
     db.prepare('DELETE FROM users WHERE id = ?').run('u1')
 
@@ -73,7 +139,9 @@ describe('002_published_chips migration', () => {
 describe('003_published_chip_image_paths migration', () => {
   it('adds nullable file-backed image path columns while preserving legacy data URL rows', () => {
     const db = migratedDb()
-    const columns = db.prepare('PRAGMA table_info(published_chips)').all() as Array<{ name: string }>
+    const columns = db.prepare('PRAGMA table_info(published_chips)').all() as Array<{
+      name: string
+    }>
 
     expect(columns.map((column) => column.name)).toContain('die_image_path')
     expect(columns.map((column) => column.name)).toContain('poster_image_path')
@@ -82,10 +150,23 @@ describe('003_published_chip_image_paths migration', () => {
       `INSERT INTO published_chips
        (id, owner_user_id, source_project_id, slug, title, project_json, die_image_data_url, poster_image_data_url, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    ).run('pub1', 'u1', 'project-1', 'ada-chip', 'Ada Chip', '{}', 'data:image/png;base64,AAA=', 'data:image/png;base64,BBB=', 10, 10)
+    ).run(
+      'pub1',
+      'u1',
+      'project-1',
+      'ada-chip',
+      'Ada Chip',
+      '{}',
+      'data:image/png;base64,AAA=',
+      'data:image/png;base64,BBB=',
+      10,
+      10,
+    )
 
     expect(
-      db.prepare('SELECT die_image_path, poster_image_path FROM published_chips WHERE id = ?').get('pub1'),
+      db
+        .prepare('SELECT die_image_path, poster_image_path FROM published_chips WHERE id = ?')
+        .get('pub1'),
     ).toEqual({ die_image_path: null, poster_image_path: null })
   })
 })

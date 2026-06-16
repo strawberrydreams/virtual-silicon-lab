@@ -15,6 +15,7 @@ import {
   getContestDetail,
   getContestStatus,
   getEntryMeta,
+  listAdminContests,
   listPublicContests,
   retractVote,
   updateContest,
@@ -56,7 +57,13 @@ function serializeDetail(detail: ContestDetail, baseUrl: string) {
   }
 }
 
-export function contestRoutes({ db, sessionSecret, now = Date.now, adminEmails = [], publicBaseUrl }: AppDeps) {
+export function contestRoutes({
+  db,
+  sessionSecret,
+  now = Date.now,
+  adminEmails = [],
+  publicBaseUrl,
+}: AppDeps) {
   const routes = new Hono()
 
   function fail(c: Context, status: ErrorStatus, code: string, message: string) {
@@ -75,6 +82,13 @@ export function contestRoutes({ db, sessionSecret, now = Date.now, adminEmails =
     if (!isAdminEmail(user.email, adminEmails)) return 'forbidden'
     return user
   }
+
+  routes.get('/admin/contests', async (c) => {
+    const admin = await readAdmin(c)
+    if (admin === 'unauthorized') return fail(c, 401, 'UNAUTHORIZED', 'Sign in required.')
+    if (admin === 'forbidden') return fail(c, 403, 'FORBIDDEN', 'Admin access required.')
+    return c.json({ contests: listAdminContests(db) })
+  })
 
   routes.post('/admin/contests', async (c) => {
     const admin = await readAdmin(c)
@@ -102,20 +116,35 @@ export function contestRoutes({ db, sessionSecret, now = Date.now, adminEmails =
     if (body?.title !== undefined) {
       const title = typeof body.title === 'string' ? body.title.trim() : ''
       if (title === '' || title.length > MAX_TITLE) {
-        return fail(c, 400, 'INVALID_INPUT', 'title must be a non-empty string within length limits.')
+        return fail(
+          c,
+          400,
+          'INVALID_INPUT',
+          'title must be a non-empty string within length limits.',
+        )
       }
       patch.title = title
     }
     if (body?.theme !== undefined) {
       const theme = typeof body.theme === 'string' ? body.theme.trim() : ''
       if (theme === '' || theme.length > MAX_THEME) {
-        return fail(c, 400, 'INVALID_INPUT', 'theme must be a non-empty string within length limits.')
+        return fail(
+          c,
+          400,
+          'INVALID_INPUT',
+          'theme must be a non-empty string within length limits.',
+        )
       }
       patch.theme = theme
     }
     if (body?.status !== undefined) {
       if (!VALID_STATUSES.includes(body.status as ContestStatus)) {
-        return fail(c, 400, 'INVALID_INPUT', 'status must be draft, submission, voting, or results.')
+        return fail(
+          c,
+          400,
+          'INVALID_INPUT',
+          'status must be draft, submission, voting, or results.',
+        )
       }
       patch.status = body.status as ContestStatus
     }
@@ -129,7 +158,8 @@ export function contestRoutes({ db, sessionSecret, now = Date.now, adminEmails =
     const admin = await readAdmin(c)
     if (admin === 'unauthorized') return fail(c, 401, 'UNAUTHORIZED', 'Sign in required.')
     if (admin === 'forbidden') return fail(c, 403, 'FORBIDDEN', 'Admin access required.')
-    if (!deleteContest(db, c.req.param('id'))) return fail(c, 404, 'NOT_FOUND', 'Contest not found.')
+    if (!deleteContest(db, c.req.param('id')))
+      return fail(c, 404, 'NOT_FOUND', 'Contest not found.')
     return c.body(null, 204)
   })
 
@@ -139,7 +169,9 @@ export function contestRoutes({ db, sessionSecret, now = Date.now, adminEmails =
     const user = await readUser(c)
     const detail = getContestDetail(db, c.req.param('id'), user?.id ?? null)
     if (detail === null) return fail(c, 404, 'NOT_FOUND', 'Contest not found.')
-    return c.json({ contest: serializeDetail(detail, resolvePublicBaseUrl(c.req.url, publicBaseUrl)) })
+    return c.json({
+      contest: serializeDetail(detail, resolvePublicBaseUrl(c.req.url, publicBaseUrl)),
+    })
   })
 
   routes.post('/contests/:id/entries', async (c) => {
@@ -158,7 +190,8 @@ export function contestRoutes({ db, sessionSecret, now = Date.now, adminEmails =
     }
 
     const entry = createEntry(db, { contestId, publishedChipId: chipId, ownerUserId: user.id }, now)
-    if (entry === 'duplicate') return fail(c, 409, 'ALREADY_ENTERED', 'You already entered this contest.')
+    if (entry === 'duplicate')
+      return fail(c, 409, 'ALREADY_ENTERED', 'You already entered this contest.')
     return c.json({ entry }, 201)
   })
 
@@ -167,7 +200,8 @@ export function contestRoutes({ db, sessionSecret, now = Date.now, adminEmails =
     if (user === null) return fail(c, 401, 'UNAUTHORIZED', 'Sign in required.')
 
     const meta = getEntryMeta(db, c.req.param('entryId'))
-    if (meta === null || meta.contestId !== c.req.param('id')) return fail(c, 404, 'NOT_FOUND', 'Entry not found.')
+    if (meta === null || meta.contestId !== c.req.param('id'))
+      return fail(c, 404, 'NOT_FOUND', 'Entry not found.')
 
     const isAdmin = isAdminEmail(user.email, adminEmails)
     if (meta.ownerUserId !== user.id && !isAdmin) {
@@ -193,8 +227,10 @@ export function contestRoutes({ db, sessionSecret, now = Date.now, adminEmails =
     const body = (await c.req.json().catch(() => null)) as Record<string, unknown> | null
     const entryId = typeof body?.entryId === 'string' ? body.entryId : ''
     const owner = entryId === '' ? null : entryOwner(db, entryId)
-    if (owner === null || owner.contestId !== contestId) return fail(c, 404, 'NOT_FOUND', 'Entry not found.')
-    if (owner.ownerUserId === user.id) return fail(c, 403, 'SELF_VOTE', 'You cannot vote for your own entry.')
+    if (owner === null || owner.contestId !== contestId)
+      return fail(c, 404, 'NOT_FOUND', 'Entry not found.')
+    if (owner.ownerUserId === user.id)
+      return fail(c, 403, 'SELF_VOTE', 'You cannot vote for your own entry.')
 
     castVote(db, { contestId, entryId, voterUserId: user.id }, now)
     return c.json({ myVoteEntryId: entryId })

@@ -137,6 +137,8 @@ describe('BlockPalette', () => {
 
     await user.click(screen.getByRole('button', { name: 'Layers' }))
     expect(screen.getByRole('heading', { name: 'Layer Controls' })).toBeInTheDocument()
-    expect(screen.getByText('Use the right inspector to toggle M1-M5 and label visibility.')).toBeInTheDocument()
+    expect(
+      screen.getByText('Use the right inspector to toggle M1-M5 and label visibility.'),
+    ).toBeInTheDocument()
   })
 })

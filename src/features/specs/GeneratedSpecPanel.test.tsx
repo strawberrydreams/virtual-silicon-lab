@@ -24,8 +24,28 @@ describe('GeneratedSpecPanel', () => {
       ],
       studio: {
         ...createProject('Generated Spec Chip', 'generated-spec', 100).studio,
-        stickers: [{ id: 'sticker-1', kind: 'badge', x: 40, y: 40, text: 'STAR', color: '#f9f4ff', rotation: -8 }],
-        sprays: [{ id: 'spray-1', x: 120, y: 120, radius: 120, color: '#ff70dc', intensity: 0.8, blend: 'screen' }],
+        stickers: [
+          {
+            id: 'sticker-1',
+            kind: 'badge',
+            x: 40,
+            y: 40,
+            text: 'STAR',
+            color: '#f9f4ff',
+            rotation: -8,
+          },
+        ],
+        sprays: [
+          {
+            id: 'spray-1',
+            x: 120,
+            y: 120,
+            radius: 120,
+            color: '#ff70dc',
+            intensity: 0.8,
+            blend: 'screen',
+          },
+        ],
       },
     }
 
@@ -44,6 +64,8 @@ describe('GeneratedSpecPanel', () => {
     expect(screen.getByText('Power estimate')).toBeInTheDocument()
     expect(screen.getByText(/ W$/)).toBeInTheDocument()
     expect(screen.getByText('Sticker-tuned signal layer')).toBeInTheDocument()
-    expect(screen.queryByText(/fake|impossible|N1X|Pentium|8086|Grace|Blackwell/i)).not.toBeInTheDocument()
+    expect(
+      screen.queryByText(/fake|impossible|N1X|Pentium|8086|Grace|Blackwell/i),
+    ).not.toBeInTheDocument()
   })
 })

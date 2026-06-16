@@ -27,6 +27,14 @@ export function ContestDetailPage({
   const [myChips, setMyChips] = useState<MyChip[]>([])
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
+  // Reset stale route data immediately when navigating between contest detail pages.
+  const [loadedContestId, setLoadedContestId] = useState(contestId)
+  if (loadedContestId !== contestId) {
+    setLoadedContestId(contestId)
+    setDetail('loading')
+    setBusy(false)
+    setMessage(null)
+  }
 
   const reload = useCallback(() => {
     api
@@ -41,11 +49,15 @@ export function ContestDetailPage({
 
   useEffect(() => {
     if (!isAuthenticated) return
-    api.listMyChips().then(setMyChips).catch(() => setMyChips([]))
+    api
+      .listMyChips()
+      .then(setMyChips)
+      .catch(() => setMyChips([]))
   }, [api, isAuthenticated])
 
   if (detail === 'loading') return <p className="contest-detail__state">Loading contest...</p>
-  if (detail === 'error') return <p className="contest-detail__state">This contest is unavailable.</p>
+  if (detail === 'error')
+    return <p className="contest-detail__state">This contest is unavailable.</p>
 
   async function run(action: () => Promise<void>) {
     setBusy(true)
@@ -65,17 +77,26 @@ export function ContestDetailPage({
   return (
     <main className="v2-page contest-detail">
       <section className="contest-detail__hero" aria-label="Contest detail">
-        <span className={`contest-card__badge contest-card__badge--${detail.status}`}>{STATUS_LABEL[detail.status]}</span>
+        <span className={`contest-card__badge contest-card__badge--${detail.status}`}>
+          {STATUS_LABEL[detail.status]}
+        </span>
         <h1>{detail.title}</h1>
         <p className="contest-detail__theme">{detail.theme}</p>
       </section>
 
-      {message !== null ? <p className="contest-detail__error" role="alert">{message}</p> : null}
+      {message !== null ? (
+        <p className="contest-detail__error" role="alert">
+          {message}
+        </p>
+      ) : null}
 
       {winners.length > 0 ? (
         <ol className="contest-podium" data-testid="contest-podium">
           {winners.map((entry) => (
-            <li className={`contest-podium__place contest-podium__place--${entry.rank}`} key={entry.entryId}>
+            <li
+              className={`contest-podium__place contest-podium__place--${entry.rank}`}
+              key={entry.entryId}
+            >
               <span className="contest-podium__rank">#{entry.rank}</span>
               <img alt={`${entry.title} poster`} src={entry.posterImageUrl} />
               <h2>{entry.title}</h2>
@@ -97,7 +118,11 @@ export function ContestDetailPage({
                 <li key={chip.id}>
                   <img alt={`${chip.title} poster`} src={chip.posterImageUrl} />
                   <span>{chip.title}</span>
-                  <button type="button" disabled={busy} onClick={() => void run(() => api.enter(contestId, chip.id))}>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => void run(() => api.enter(contestId, chip.id))}
+                  >
                     Enter
                   </button>
                 </li>
@@ -128,22 +153,32 @@ export function ContestDetailPage({
               <div>
                 <h2>{entry.title}</h2>
                 <p>{entry.ownerDisplayName}</p>
-                {detail.status === 'voting' || detail.status === 'results' ? <p>{entry.voteCount} votes</p> : null}
+                {detail.status === 'voting' || detail.status === 'results' ? (
+                  <p>{entry.voteCount} votes</p>
+                ) : null}
                 {detail.status === 'voting' && isAuthenticated && !isMine ? (
                   <button
                     type="button"
                     disabled={busy}
                     aria-pressed={votedForThis}
                     onClick={() =>
-                      void run(() => (votedForThis ? api.unvote(contestId) : api.vote(contestId, entry.entryId)))
+                      void run(() =>
+                        votedForThis ? api.unvote(contestId) : api.vote(contestId, entry.entryId),
+                      )
                     }
                   >
                     {votedForThis ? 'Voted' : 'Vote'}
                   </button>
                 ) : null}
-                {detail.status === 'voting' && isMine ? <span className="contest-entry__mine">Your entry</span> : null}
+                {detail.status === 'voting' && isMine ? (
+                  <span className="contest-entry__mine">Your entry</span>
+                ) : null}
                 {isAdmin && detail.status !== 'results' ? (
-                  <button type="button" disabled={busy} onClick={() => void run(() => api.withdraw(contestId, entry.entryId))}>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => void run(() => api.withdraw(contestId, entry.entryId))}
+                  >
                     Remove
                   </button>
                 ) : null}
@@ -153,7 +188,9 @@ export function ContestDetailPage({
         })}
       </section>
 
-      {!isAuthenticated && detail.status !== 'results' ? <p className="contest-detail__state">Sign in to enter or vote.</p> : null}
+      {!isAuthenticated && detail.status !== 'results' ? (
+        <p className="contest-detail__state">Sign in to enter or vote.</p>
+      ) : null}
     </main>
   )
 }

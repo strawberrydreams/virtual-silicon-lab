@@ -22,7 +22,9 @@ describe('006_contests migration', () => {
   it('creates contests, contest_entries, contest_votes', () => {
     const db = setup()
     const names = db
-      .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name IN ('contests','contest_entries','contest_votes')")
+      .prepare(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('contests','contest_entries','contest_votes')",
+      )
       .all()
       .map((r) => (r as { name: string }).name)
       .sort()
@@ -33,12 +35,15 @@ describe('006_contests migration', () => {
   it('cascades entries and votes when a contest is deleted', () => {
     const db = setup()
     seedChip(db, 'chipA', 'owner')
-    db.prepare('INSERT INTO contests (id, title, theme, status, created_by, created_at, updated_at) VALUES (?,?,?,?,?,?,?)')
-      .run('c1', 'T', 'Th', 'voting', 'owner', 0, 0)
-    db.prepare('INSERT INTO contest_entries (id, contest_id, published_chip_id, owner_user_id, created_at) VALUES (?,?,?,?,?)')
-      .run('e1', 'c1', 'chipA', 'owner', 0)
-    db.prepare('INSERT INTO contest_votes (contest_id, voter_user_id, entry_id, created_at) VALUES (?,?,?,?)')
-      .run('c1', 'owner', 'e1', 0)
+    db.prepare(
+      'INSERT INTO contests (id, title, theme, status, created_by, created_at, updated_at) VALUES (?,?,?,?,?,?,?)',
+    ).run('c1', 'T', 'Th', 'voting', 'owner', 0, 0)
+    db.prepare(
+      'INSERT INTO contest_entries (id, contest_id, published_chip_id, owner_user_id, created_at) VALUES (?,?,?,?,?)',
+    ).run('e1', 'c1', 'chipA', 'owner', 0)
+    db.prepare(
+      'INSERT INTO contest_votes (contest_id, voter_user_id, entry_id, created_at) VALUES (?,?,?,?)',
+    ).run('c1', 'owner', 'e1', 0)
 
     db.prepare('DELETE FROM contests WHERE id = ?').run('c1')
 
@@ -49,12 +54,15 @@ describe('006_contests migration', () => {
   it('cascades votes when an entry is withdrawn', () => {
     const db = setup()
     seedChip(db, 'chipA', 'owner')
-    db.prepare('INSERT INTO contests (id, title, theme, status, created_by, created_at, updated_at) VALUES (?,?,?,?,?,?,?)')
-      .run('c1', 'T', 'Th', 'voting', 'owner', 0, 0)
-    db.prepare('INSERT INTO contest_entries (id, contest_id, published_chip_id, owner_user_id, created_at) VALUES (?,?,?,?,?)')
-      .run('e1', 'c1', 'chipA', 'owner', 0)
-    db.prepare('INSERT INTO contest_votes (contest_id, voter_user_id, entry_id, created_at) VALUES (?,?,?,?)')
-      .run('c1', 'owner', 'e1', 0)
+    db.prepare(
+      'INSERT INTO contests (id, title, theme, status, created_by, created_at, updated_at) VALUES (?,?,?,?,?,?,?)',
+    ).run('c1', 'T', 'Th', 'voting', 'owner', 0, 0)
+    db.prepare(
+      'INSERT INTO contest_entries (id, contest_id, published_chip_id, owner_user_id, created_at) VALUES (?,?,?,?,?)',
+    ).run('e1', 'c1', 'chipA', 'owner', 0)
+    db.prepare(
+      'INSERT INTO contest_votes (contest_id, voter_user_id, entry_id, created_at) VALUES (?,?,?,?)',
+    ).run('c1', 'owner', 'e1', 0)
 
     db.prepare('DELETE FROM contest_entries WHERE id = ?').run('e1')
 

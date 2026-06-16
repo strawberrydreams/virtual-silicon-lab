@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import type Konva from 'konva'
 import type { Project } from '../../domain/project'
 import { resolveHeroSetForProject } from '../../visual/heroSetCatalog'
@@ -17,10 +17,14 @@ export function ExportPanel({ project }: { project: Project }) {
   const defaultPosterFormat = resolveHeroSetForProject(project)?.posterFormat ?? 'press-hero'
   const [posterFormat, setPosterFormat] = useState<PosterFormat>(defaultPosterFormat)
   const baseName = project.name || 'chip'
-
-  useEffect(() => {
+  // Reset the manual poster-format choice to the new default when the project (or
+  // its resolved hero default) changes, derived during render rather than in an effect.
+  const formatKey = `${project.id}:${defaultPosterFormat}`
+  const [syncedKey, setSyncedKey] = useState(formatKey)
+  if (syncedKey !== formatKey) {
+    setSyncedKey(formatKey)
     setPosterFormat(defaultPosterFormat)
-  }, [defaultPosterFormat, project.id])
+  }
 
   function downloadDie() {
     const url = dieStageRef.current?.toDataURL({ pixelRatio: DIE_EXPORT_PIXEL_RATIO })
@@ -75,7 +79,10 @@ export function ExportPanel({ project }: { project: Project }) {
         Share Poster
       </button>
 
-      <div className="pointer-events-none absolute left-[-10000px] top-[-10000px]" aria-hidden="true">
+      <div
+        className="pointer-events-none absolute left-[-10000px] top-[-10000px]"
+        aria-hidden="true"
+      >
         <DieExportStage ref={dieStageRef} project={project} />
         <PosterExportStage ref={posterStageRef} project={project} format={posterFormat} />
       </div>

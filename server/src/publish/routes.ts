@@ -110,7 +110,9 @@ export function publishRoutes({
   routes.post('/published-chips', async (c) => {
     const user = await readUser(c)
     if (user === null) return fail(c, 401, 'UNAUTHORIZED', 'Sign in required.')
-    const input = validatePublishInput(await c.req.json().catch(() => null), { maxPngBytes: uploadMaxBytes })
+    const input = validatePublishInput(await c.req.json().catch(() => null), {
+      maxPngBytes: uploadMaxBytes,
+    })
     if (!input.ok) return fail(c, 400, 'INVALID_INPUT', input.message)
 
     const existing = getPublishedChipForOwnerProject(db, user.id, input.value.project.id)
@@ -138,7 +140,9 @@ export function publishRoutes({
     if (user === null) return fail(c, 401, 'UNAUTHORIZED', 'Sign in required.')
     const chip = getPublishedChipForOwnerProject(db, user.id, c.req.param('sourceProjectId'))
     if (chip === null) return fail(c, 404, 'NOT_FOUND', 'Published chip not found.')
-    return c.json({ chip: serializePublishedChip(chip, resolvePublicBaseUrl(c.req.url, publicBaseUrl)) })
+    return c.json({
+      chip: serializePublishedChip(chip, resolvePublicBaseUrl(c.req.url, publicBaseUrl)),
+    })
   })
 
   routes.patch('/published-chips/source/:sourceProjectId', async (c) => {
@@ -148,9 +152,17 @@ export function publishRoutes({
     if (body === null || typeof body.isPublic !== 'boolean') {
       return fail(c, 400, 'INVALID_INPUT', 'isPublic must be a boolean.')
     }
-    const chip = setPublishedChipVisibility(db, user.id, c.req.param('sourceProjectId'), body.isPublic, now)
+    const chip = setPublishedChipVisibility(
+      db,
+      user.id,
+      c.req.param('sourceProjectId'),
+      body.isPublic,
+      now,
+    )
     if (chip === null) return fail(c, 404, 'NOT_FOUND', 'Published chip not found.')
-    return c.json({ chip: serializePublishedChip(chip, resolvePublicBaseUrl(c.req.url, publicBaseUrl)) })
+    return c.json({
+      chip: serializePublishedChip(chip, resolvePublicBaseUrl(c.req.url, publicBaseUrl)),
+    })
   })
 
   routes.delete('/published-chips/source/:sourceProjectId', async (c) => {
@@ -166,7 +178,9 @@ export function publishRoutes({
     const baseUrl = resolvePublicBaseUrl(c.req.url, publicBaseUrl)
     const sort = parseGallerySort(c.req.query('sort'))
     return c.json({
-      chips: listPublicPublishedChips(db, { sort, now }).map((chip) => serializeGallerySummary(chip, baseUrl)),
+      chips: listPublicPublishedChips(db, { sort, now }).map((chip) =>
+        serializeGallerySummary(chip, baseUrl),
+      ),
     })
   })
 
@@ -175,7 +189,9 @@ export function publishRoutes({
     if (chip === null) return fail(c, 404, 'NOT_FOUND', 'Published chip not found.')
     const user = await readUser(c)
     const likedByMe = user === null ? false : getLikeState(db, chip.id, user.id).likedByMe
-    return c.json({ chip: serializeGalleryDetail(chip, resolvePublicBaseUrl(c.req.url, publicBaseUrl), likedByMe) })
+    return c.json({
+      chip: serializeGalleryDetail(chip, resolvePublicBaseUrl(c.req.url, publicBaseUrl), likedByMe),
+    })
   })
 
   routes.get('/gallery/:slug/lineage', (c) => {

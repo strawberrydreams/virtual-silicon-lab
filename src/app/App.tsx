@@ -14,7 +14,12 @@ import { PRESET_CATALOG } from '../presets/presetCatalog'
 import { AuthStoreProvider, useAuthStore } from '../stores/authStoreContext'
 import { ProjectStoreProvider, useProjectStore } from '../stores/projectStoreContext'
 import { resolveHeroSetForProject } from '../visual/heroSetCatalog'
-import { PAGE_THEME_NAMES, pageThemes, resolvePageTheme, type PageThemeName } from '../visual/pageThemes'
+import {
+  PAGE_THEME_NAMES,
+  pageThemes,
+  resolvePageTheme,
+  type PageThemeName,
+} from '../visual/pageThemes'
 import { usePageTheme } from '../visual/pageThemeStore'
 
 function LandingRoute() {
@@ -51,17 +56,26 @@ function EditorRoute() {
   const [project, setProject] = useState<Project | 'loading' | 'missing'>('loading')
   const autoThemedProjectId = useRef<string | null>(null)
 
+  // Reset to the loading state when the route's project id changes, derived during
+  // render so the effect only owns the async load. `store` is the reactive store
+  // state (a new ref on every autosave), so the fetch keys on the stable `store.get`
+  // method to avoid re-fetching whenever the project list changes.
+  const [loadedId, setLoadedId] = useState(projectId)
+  if (loadedId !== projectId) {
+    setLoadedId(projectId)
+    setProject('loading')
+  }
+
+  const loadProject = store.get
   useEffect(() => {
     let active = true
-    setProject('loading')
-    store
-      .get(projectId)
+    loadProject(projectId)
       .then((found) => active && setProject(found ?? 'missing'))
       .catch(() => active && setProject('missing'))
     return () => {
       active = false
     }
-  }, [projectId])
+  }, [projectId, loadProject])
 
   useEffect(() => {
     if (project === 'loading' || project === 'missing') return
@@ -79,7 +93,9 @@ function EditorRoute() {
   if (project === 'missing') {
     return (
       <main className="min-h-screen bg-[#071015] p-8 text-[#d8f7ff]">
-        <p className="text-xs uppercase tracking-[0.45em] text-cyan-300">Concept Fabrication Terminal</p>
+        <p className="text-xs uppercase tracking-[0.45em] text-cyan-300">
+          Concept Fabrication Terminal
+        </p>
         <h1 className="mt-4 text-2xl uppercase tracking-[0.18em]">Project not found</h1>
         <p className="mt-3 max-w-xl text-sm text-slate-400">
           This project may have been deleted, or the link is no longer valid.

@@ -59,7 +59,11 @@ export function ColorSettingsPanel({ colorSettings, onChange }: Props) {
           </button>
         ))}
       </div>
-      <div className="color-settings-panel__modes" role="group" aria-label={`${selectedLabel} paint mode`}>
+      <div
+        className="color-settings-panel__modes"
+        role="group"
+        aria-label={`${selectedLabel} paint mode`}
+      >
         <button
           type="button"
           aria-pressed={paint.mode === 'solid'}
@@ -88,7 +92,9 @@ export function ColorSettingsPanel({ colorSettings, onChange }: Props) {
             aria-label="Solid color"
             className={fieldClass}
             value={paint.color}
-            onChange={(event) => onChange(selectedTarget, { mode: 'solid', color: event.target.value })}
+            onChange={(event) =>
+              onChange(selectedTarget, { mode: 'solid', color: event.target.value })
+            }
           />
         </label>
       ) : (
@@ -100,7 +106,11 @@ export function ColorSettingsPanel({ colorSettings, onChange }: Props) {
               className={fieldClass}
               value={paint.from}
               onChange={(event) =>
-                onChange(selectedTarget, { mode: 'gradient', from: event.target.value, to: paint.to })
+                onChange(selectedTarget, {
+                  mode: 'gradient',
+                  from: event.target.value,
+                  to: paint.to,
+                })
               }
             />
           </label>
@@ -111,7 +121,11 @@ export function ColorSettingsPanel({ colorSettings, onChange }: Props) {
               className={fieldClass}
               value={paint.to}
               onChange={(event) =>
-                onChange(selectedTarget, { mode: 'gradient', from: paint.from, to: event.target.value })
+                onChange(selectedTarget, {
+                  mode: 'gradient',
+                  from: paint.from,
+                  to: event.target.value,
+                })
               }
             />
           </label>

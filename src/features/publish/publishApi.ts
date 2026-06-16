@@ -98,10 +98,17 @@ export const livePublishApi: PublishApi = {
   },
   async setVisibility(projectId, isPublic) {
     return expectChip(
-      await request(`/api/published-chips/source/${encodeURIComponent(projectId)}`, jsonInit('PATCH', { isPublic })),
+      await request(
+        `/api/published-chips/source/${encodeURIComponent(projectId)}`,
+        jsonInit('PATCH', { isPublic }),
+      ),
     )
   },
   async unpublish(projectId) {
-    await expectOk(await request(`/api/published-chips/source/${encodeURIComponent(projectId)}`, { method: 'DELETE' }))
+    await expectOk(
+      await request(`/api/published-chips/source/${encodeURIComponent(projectId)}`, {
+        method: 'DELETE',
+      }),
+    )
   },
 }

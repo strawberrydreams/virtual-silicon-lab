@@ -16,7 +16,7 @@ export function shareRoutes({ db, publicBaseUrl, imageStore }: AppDeps) {
         ? null
         : chip.posterImagePath === null
           ? decodePngDataUrl(chip.posterImageDataUrl)
-          : imageStore?.readPublishedImage(chip.posterImagePath) ?? null
+          : (imageStore?.readPublishedImage(chip.posterImagePath) ?? null)
     if (bytes === null) return c.body(null, 404)
     return new Response(new Uint8Array(bytes), {
       status: 200,
@@ -30,7 +30,8 @@ export function shareRoutes({ db, publicBaseUrl, imageStore }: AppDeps) {
     if (chip === null) return c.html(renderNotFoundHtml({ baseUrl }), 404)
     const project = JSON.parse(chip.projectJson) as Project
     const parent = getChipLineage(db, chip.slug)?.ancestors.at(-1)
-    const remixedFrom = parent && !('hidden' in parent) ? { slug: parent.slug, title: parent.title } : undefined
+    const remixedFrom =
+      parent && !('hidden' in parent) ? { slug: parent.slug, title: parent.title } : undefined
     return c.html(
       renderViewerHtml({
         title: chip.title,

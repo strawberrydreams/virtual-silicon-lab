@@ -14,12 +14,19 @@ export type Comment = {
 
 export function isChipReactable(db: Database.Database, chipId: string): boolean {
   const row = db
-    .prepare("SELECT 1 FROM published_chips WHERE id = ? AND is_public = 1 AND moderation_status = 'visible'")
+    .prepare(
+      "SELECT 1 FROM published_chips WHERE id = ? AND is_public = 1 AND moderation_status = 'visible'",
+    )
     .get(chipId)
   return row !== undefined
 }
 
-export function likeChip(db: Database.Database, chipId: string, userId: string, now: () => number): void {
+export function likeChip(
+  db: Database.Database,
+  chipId: string,
+  userId: string,
+  now: () => number,
+): void {
   db.prepare(
     'INSERT OR IGNORE INTO likes (published_chip_id, user_id, created_at) VALUES (?, ?, ?)',
   ).run(chipId, userId, now())
@@ -30,16 +37,26 @@ export function unlikeChip(db: Database.Database, chipId: string, userId: string
 }
 
 export function countLikes(db: Database.Database, chipId: string): number {
-  return (db.prepare('SELECT COUNT(*) AS n FROM likes WHERE published_chip_id = ?').get(chipId) as { n: number }).n
+  return (
+    db.prepare('SELECT COUNT(*) AS n FROM likes WHERE published_chip_id = ?').get(chipId) as {
+      n: number
+    }
+  ).n
 }
 
 export function hasUserLiked(db: Database.Database, chipId: string, userId: string): boolean {
   return (
-    db.prepare('SELECT 1 FROM likes WHERE published_chip_id = ? AND user_id = ?').get(chipId, userId) !== undefined
+    db
+      .prepare('SELECT 1 FROM likes WHERE published_chip_id = ? AND user_id = ?')
+      .get(chipId, userId) !== undefined
   )
 }
 
-export function getLikeState(db: Database.Database, chipId: string, userId: string | null): LikeState {
+export function getLikeState(
+  db: Database.Database,
+  chipId: string,
+  userId: string | null,
+): LikeState {
   return {
     likeCount: countLikes(db, chipId),
     likedByMe: userId === null ? false : hasUserLiked(db, chipId, userId),

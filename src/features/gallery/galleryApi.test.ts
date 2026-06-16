@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createProject } from '../../domain/projectFactory'
-import { GalleryApiError, liveGalleryApi, ServerUnreachableError } from './galleryApi'
+import { liveGalleryApi, ServerUnreachableError } from './galleryApi'
 
 const summary = {
   id: 'pub1',
@@ -49,7 +49,15 @@ describe('liveGalleryApi', () => {
   })
 
   it('loads detail by slug and maps 404 to null', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(jsonResponse(200, { chip: detail })).mockResolvedValueOnce(jsonResponse(404, { error: { code: 'NOT_FOUND', message: 'Missing.' } })))
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValueOnce(jsonResponse(200, { chip: detail }))
+        .mockResolvedValueOnce(
+          jsonResponse(404, { error: { code: 'NOT_FOUND', message: 'Missing.' } }),
+        ),
+    )
 
     expect(await liveGalleryApi.get('ada-chip-deadbeef')).toEqual(detail)
     expect(await liveGalleryApi.get('missing')).toBeNull()
@@ -57,14 +65,18 @@ describe('liveGalleryApi', () => {
 
   it('loads lineage by slug and maps 404 to null', async () => {
     const lineage = {
-      ancestors: [{ slug: 'parent', title: 'Parent', ownerDisplayName: 'Ada', posterImageUrl: '/p.png' }],
+      ancestors: [
+        { slug: 'parent', title: 'Parent', ownerDisplayName: 'Ada', posterImageUrl: '/p.png' },
+      ],
       children: [],
       childCount: 0,
     }
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce(jsonResponse(200, lineage))
-      .mockResolvedValueOnce(jsonResponse(404, { error: { code: 'NOT_FOUND', message: 'Missing.' } }))
+      .mockResolvedValueOnce(
+        jsonResponse(404, { error: { code: 'NOT_FOUND', message: 'Missing.' } }),
+      )
     vi.stubGlobal('fetch', fetchMock)
 
     expect(await liveGalleryApi.getLineage('child-slug')).toEqual(lineage)
@@ -75,7 +87,11 @@ describe('liveGalleryApi', () => {
   it('maps server error bodies to GalleryApiError', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn().mockResolvedValue(jsonResponse(500, { error: { code: 'BROKEN', message: 'Gallery failed.' } })),
+      vi
+        .fn()
+        .mockResolvedValue(
+          jsonResponse(500, { error: { code: 'BROKEN', message: 'Gallery failed.' } }),
+        ),
     )
 
     await expect(liveGalleryApi.list()).rejects.toMatchObject({

@@ -66,7 +66,11 @@ export function reactionsRoutes({ db, sessionSecret, now = Date.now, adminEmails
     if (text === '' || text.length > MAX_COMMENT_LENGTH) {
       return fail(c, 400, 'INVALID_INPUT', `body must be 1 to ${MAX_COMMENT_LENGTH} characters.`)
     }
-    const comment = createComment(db, { publishedChipId: chipId, authorUserId: user.id, body: text }, now)
+    const comment = createComment(
+      db,
+      { publishedChipId: chipId, authorUserId: user.id, body: text },
+      now,
+    )
     return c.json({ comment }, 201)
   })
 

@@ -12,9 +12,9 @@ describe('loadRuntimeConfig', () => {
   })
 
   it('requires a strong session secret in production', () => {
-    expect(() => loadRuntimeConfig({ NODE_ENV: 'production', VSL_PUBLIC_BASE_URL: 'https://vsl.example' })).toThrow(
-      'VSL_SESSION_SECRET is required in production.',
-    )
+    expect(() =>
+      loadRuntimeConfig({ NODE_ENV: 'production', VSL_PUBLIC_BASE_URL: 'https://vsl.example' }),
+    ).toThrow('VSL_SESSION_SECRET is required in production.')
     expect(() =>
       loadRuntimeConfig({
         NODE_ENV: 'production',

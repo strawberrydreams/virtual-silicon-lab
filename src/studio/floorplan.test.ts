@@ -67,7 +67,17 @@ describe('buildFillerCells', () => {
   it('never overlaps a real block', () => {
     const project = makeProject({
       blocks: [
-        { id: 'b1', type: 'CPU', category: 'real', x: 200, y: 200, w: 360, h: 360, rotation: 0, zIndex: 0 },
+        {
+          id: 'b1',
+          type: 'CPU',
+          category: 'real',
+          x: 200,
+          y: 200,
+          w: 360,
+          h: 360,
+          rotation: 0,
+          zIndex: 0,
+        },
       ],
     })
     const block = project.blocks[0]
@@ -86,7 +96,17 @@ describe('buildFillerCells', () => {
     // while its unrotated rect would claim [400,800]x[160,240].
     const project = makeProject({
       blocks: [
-        { id: 'rot', type: 'CPU', category: 'real', x: 400, y: 160, w: 400, h: 80, rotation: 90, zIndex: 0 },
+        {
+          id: 'rot',
+          type: 'CPU',
+          category: 'real',
+          x: 400,
+          y: 160,
+          w: 400,
+          h: 80,
+          rotation: 90,
+          zIndex: 0,
+        },
       ],
     })
     const footprint = { x: 320, y: 160, w: 80, h: 400 }
@@ -112,7 +132,17 @@ describe('buildFillerCells', () => {
   it('returns no cells when a block covers the whole usable region', () => {
     const project = makeProject({
       blocks: [
-        { id: 'full', type: 'CPU', category: 'real', x: 8, y: 8, w: 744, h: 744, rotation: 0, zIndex: 0 },
+        {
+          id: 'full',
+          type: 'CPU',
+          category: 'real',
+          x: 8,
+          y: 8,
+          w: 744,
+          h: 744,
+          rotation: 0,
+          zIndex: 0,
+        },
       ],
     })
     expect(buildFillerCells(project)).toEqual([])

@@ -33,8 +33,12 @@ describe('EditorPage', () => {
     expect(screen.getByRole('region', { name: 'Product analysis stage' })).toBeInTheDocument()
     expect(screen.getByRole('region', { name: 'Editor top command bar' })).toBeInTheDocument()
     expect(screen.getByRole('region', { name: 'Editor status bar' })).toBeInTheDocument()
-    expect(screen.getByRole('complementary', { name: 'Inspector and export rail' })).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'AURORA C-1 — Consciousness Processor' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('complementary', { name: 'Inspector and export rail' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('heading', { name: 'AURORA C-1 — Consciousness Processor' }),
+    ).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Exit Editor' })).toHaveAttribute('href', '/dashboard')
     expect(screen.getByRole('button', { name: 'Simulate' })).toBeDisabled()
     expect(screen.getByRole('heading', { name: 'Generated Spec' })).toBeInTheDocument()
@@ -72,7 +76,9 @@ describe('EditorPage', () => {
 
     const selectedPanel = within(inspector).getByRole('region', { name: 'Selected tile summary' })
     const basicMetricLabels = Array.from(
-      selectedPanel.querySelectorAll('.selected-tile-panel__metrics .selected-tile-panel__metric span'),
+      selectedPanel.querySelectorAll(
+        '.selected-tile-panel__metrics .selected-tile-panel__metric span',
+      ),
     ).map((label) => label.textContent)
 
     expect(within(inspector).getAllByText('CPU').length).toBeGreaterThan(0)

@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useRef, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import { useStore } from 'zustand'
 import { createIndexedDbProjectRepository } from '../storage/indexedDbProjectRepository'
 import { createLocalStorageProjectRepository } from '../storage/localStorageProjectRepository'
@@ -23,16 +23,18 @@ export function ProjectStoreProvider({
   children: ReactNode
   repository?: ProjectRepository
 }) {
-  const store = useRef<Store | undefined>(undefined)
-  store.current ??= createProjectStore(repository ?? createDefaultRepository())
+  // Lazy useState keeps one stable store instance without reading a ref during
+  // render (react-hooks/refs).
+  const [store] = useState<Store>(() => createProjectStore(repository ?? createDefaultRepository()))
 
   useEffect(() => {
-    void store.current?.getState().load()
-  }, [])
+    void store.getState().load()
+  }, [store])
 
-  return <ProjectStoreContext.Provider value={store.current}>{children}</ProjectStoreContext.Provider>
+  return <ProjectStoreContext.Provider value={store}>{children}</ProjectStoreContext.Provider>
 }
 
+// eslint-disable-next-line react-refresh/only-export-components -- context hook is intentionally colocated with its provider; fast-refresh boundary is acceptable
 export function useProjectStore() {
   const store = useContext(ProjectStoreContext)
   if (store === undefined) throw new Error('ProjectStoreProvider is missing')

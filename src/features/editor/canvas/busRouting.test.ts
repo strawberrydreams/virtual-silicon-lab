@@ -2,7 +2,13 @@ import { describe, expect, it } from 'vitest'
 import { busBundle, routedBusPairs } from './busRouting'
 
 describe('routedBusPairs', () => {
-  const block = (type: string, x: number, y: number) => ({ type: type as never, x, y, w: 40, h: 40 })
+  const block = (type: string, x: number, y: number) => ({
+    type: type as never,
+    x,
+    y,
+    w: 40,
+    h: 40,
+  })
 
   it('routes each memory and io block to its nearest compute block', () => {
     const pairs = routedBusPairs([
