@@ -161,6 +161,7 @@ export function getContestDetail(
        JOIN published_chips p ON p.id = e.published_chip_id
        JOIN users u ON u.id = e.owner_user_id
        WHERE e.contest_id = ?
+         AND p.is_public = 1 AND p.moderation_status = 'visible'
        ORDER BY vote_count DESC, e.created_at ASC`,
     )
     .all(contestId) as Array<{

@@ -176,6 +176,34 @@ describe('contest entries', () => {
     expect(withdrawEntry(d, entry.entryId)).toBe(true)
     expect(getEntryMeta(d, entry.entryId)).toBeNull()
   })
+
+  it('detail excludes entries whose chip was hidden or made private after entering', () => {
+    const d = db()
+    seedUserChip(d, 'u1', 'chipVisible')
+    seedUserChip(d, 'u2', 'chipHidden')
+    seedUserChip(d, 'u3', 'chipPrivate')
+    const c = createContest(d, { title: 'A', theme: 't', createdBy: 'admin' }, now)
+    for (const [chip, user] of [
+      ['chipVisible', 'u1'],
+      ['chipHidden', 'u2'],
+      ['chipPrivate', 'u3'],
+    ] as const) {
+      const entry = createEntry(
+        d,
+        { contestId: c.id, publishedChipId: chip, ownerUserId: user },
+        now,
+      )
+      if (entry === 'duplicate') throw new Error('unreachable')
+    }
+    updateContest(d, c.id, { status: 'voting' }, now)
+
+    // Admin hide / owner makes private AFTER the chips were already entered.
+    d.prepare("UPDATE published_chips SET moderation_status = 'hidden' WHERE id = 'chipHidden'").run()
+    d.prepare("UPDATE published_chips SET is_public = 0 WHERE id = 'chipPrivate'").run()
+
+    const detail = getContestDetail(d, c.id, null)
+    expect(detail?.entries.map((entry) => entry.publishedChipId)).toEqual(['chipVisible'])
+  })
 })
 
 describe('contest votes + results', () => {
