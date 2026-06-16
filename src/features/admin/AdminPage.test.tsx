@@ -16,7 +16,7 @@ const user: AuthUser = {
 function authApi(): AuthApi {
   return {
     me: vi.fn().mockResolvedValue({ user, isAdmin: true }),
-    serverConfig: vi.fn().mockResolvedValue({ signupsOpen: true }),
+    serverConfig: vi.fn().mockResolvedValue({ accessMode: 'open' }),
     signup: vi.fn(),
     login: vi.fn(),
     logout: vi.fn(),

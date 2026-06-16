@@ -17,7 +17,7 @@ export const testUser: AuthUser = {
 export function fakeApi(overrides: Partial<AuthApi> = {}): AuthApi {
   return {
     me: vi.fn().mockResolvedValue(null),
-    serverConfig: vi.fn().mockResolvedValue({ signupsOpen: true }),
+    serverConfig: vi.fn().mockResolvedValue({ accessMode: 'open' }),
     signup: vi.fn().mockResolvedValue(testUser),
     login: vi.fn().mockResolvedValue(testUser),
     logout: vi.fn().mockResolvedValue(undefined),
@@ -67,6 +67,25 @@ describe('AccountPage anonymous forms', () => {
       email: 'ada@example.com',
       displayName: 'Ada',
       password: 'hunter22hunter22',
+    })
+  })
+
+  it('includes the invite code in invite-mode signup', async () => {
+    const api = fakeApi({ serverConfig: vi.fn().mockResolvedValue({ accessMode: 'invite' }) })
+    renderAccountPage(api)
+
+    await userEvent.type(await screen.findByLabelText('New Email'), 'ada@example.com')
+    await userEvent.type(screen.getByLabelText('Display Name'), 'Ada')
+    await userEvent.type(screen.getByLabelText('New Password'), 'hunter22hunter22')
+    await userEvent.type(screen.getByLabelText('Invite Code'), 'INVITEABC234')
+    await userEvent.click(screen.getByRole('button', { name: 'Create Account' }))
+
+    expect(await screen.findByText('ada@example.com')).toBeInTheDocument()
+    expect(api.signup).toHaveBeenCalledWith({
+      email: 'ada@example.com',
+      displayName: 'Ada',
+      password: 'hunter22hunter22',
+      inviteCode: 'INVITEABC234',
     })
   })
 

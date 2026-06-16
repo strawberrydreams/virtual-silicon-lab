@@ -1,4 +1,5 @@
 export type AuthUser = { id: string; email: string; displayName: string; createdAt: number }
+export type AccessMode = 'closed' | 'invite' | 'open'
 
 export class AuthApiError extends Error {
   constructor(
@@ -19,8 +20,13 @@ export class ServerUnreachableError extends Error {
 
 export type AuthApi = {
   me: () => Promise<{ user: AuthUser; isAdmin: boolean } | null>
-  serverConfig: () => Promise<{ signupsOpen: boolean }>
-  signup: (input: { email: string; displayName: string; password: string }) => Promise<AuthUser>
+  serverConfig: () => Promise<{ accessMode: AccessMode }>
+  signup: (input: {
+    email: string
+    displayName: string
+    password: string
+    inviteCode?: string
+  }) => Promise<AuthUser>
   login: (input: { email: string; password: string }) => Promise<AuthUser>
   logout: () => Promise<void>
   updateDisplayName: (displayName: string) => Promise<AuthUser>
@@ -81,8 +87,13 @@ export const liveAuthApi: AuthApi = {
   async serverConfig() {
     const res = await request('/api/health')
     if (!res.ok) throw await toApiError(res)
-    const body = (await res.json()) as { signupsOpen?: boolean }
-    return { signupsOpen: body.signupsOpen !== false }
+    const body = (await res.json()) as { accessMode?: unknown }
+    return {
+      accessMode:
+        body.accessMode === 'closed' || body.accessMode === 'invite' || body.accessMode === 'open'
+          ? body.accessMode
+          : 'open',
+    }
   },
   async signup(input) {
     return expectUser(await request('/api/auth/signup', jsonInit('POST', input)))

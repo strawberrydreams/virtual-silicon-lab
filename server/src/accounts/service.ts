@@ -8,6 +8,7 @@ export type AccountUser = { id: string; email: string; displayName: string; crea
 export const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000
 
 type UserRow = { id: string; email: string; display_name: string; created_at: number }
+type UserAuthRow = UserRow & { banned_at: number | null }
 
 function toUser(row: UserRow): AccountUser {
   return { id: row.id, email: row.email, displayName: row.display_name, createdAt: row.created_at }
@@ -21,6 +22,7 @@ export async function createAccount(
   db: Database.Database,
   input: SignupInput,
   now: () => number,
+  invitedViaCode: string | null = null,
 ): Promise<AccountUser | 'email-taken'> {
   const passwordHash = await hashPassword(input.password)
   const user: AccountUser = {
@@ -31,8 +33,18 @@ export async function createAccount(
   }
   try {
     db.prepare(
-      'INSERT INTO users (id, email, display_name, password_hash, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)',
-    ).run(user.id, user.email, user.displayName, passwordHash, user.createdAt, user.createdAt)
+      `INSERT INTO users
+        (id, email, display_name, password_hash, created_at, updated_at, invited_via_code)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    ).run(
+      user.id,
+      user.email,
+      user.displayName,
+      passwordHash,
+      user.createdAt,
+      user.createdAt,
+      invitedViaCode,
+    )
   } catch (error) {
     if ((error as { code?: string }).code === 'SQLITE_CONSTRAINT_UNIQUE') return 'email-taken'
     throw error
@@ -46,9 +58,12 @@ export async function verifyCredentials(
   password: string,
 ): Promise<AccountUser | null> {
   const row = db
-    .prepare('SELECT id, email, display_name, password_hash, created_at FROM users WHERE email = ?')
-    .get(email) as (UserRow & { password_hash: string }) | undefined
+    .prepare(
+      'SELECT id, email, display_name, password_hash, created_at, banned_at FROM users WHERE email = ?',
+    )
+    .get(email) as (UserAuthRow & { password_hash: string }) | undefined
   if (row === undefined) return null
+  if (row.banned_at !== null) return null
   if (!(await verifyPassword(row.password_hash, password))) return null
   return toUser(row)
 }
@@ -71,12 +86,13 @@ export function getSessionUser(
   const tokenHash = hashToken(token)
   const row = db
     .prepare(
-      `SELECT u.id, u.email, u.display_name, u.created_at, s.expires_at
+      `SELECT u.id, u.email, u.display_name, u.created_at, u.banned_at, s.expires_at
        FROM sessions s JOIN users u ON u.id = s.user_id
        WHERE s.token_hash = ?`,
     )
-    .get(tokenHash) as (UserRow & { expires_at: number }) | undefined
+    .get(tokenHash) as (UserAuthRow & { expires_at: number }) | undefined
   if (row === undefined) return null
+  if (row.banned_at !== null) return null
   if (row.expires_at <= now()) {
     db.prepare('DELETE FROM sessions WHERE token_hash = ?').run(tokenHash)
     return null

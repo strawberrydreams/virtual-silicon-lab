@@ -9,7 +9,7 @@ function api(me: AuthApi['me']): AuthApi {
   const reject = () => Promise.reject(new Error('not under test'))
   return {
     me,
-    serverConfig: vi.fn().mockResolvedValue({ signupsOpen: true }),
+    serverConfig: vi.fn().mockResolvedValue({ accessMode: 'open' }),
     signup: reject,
     login: reject,
     logout: reject,

@@ -34,7 +34,7 @@ serve(
       uploadMaxBytes: runtimeConfig.uploadMaxBytes,
       rateLimit: runtimeConfig.rateLimit,
       imageStore,
-      signupsOpen: runtimeConfig.signupsOpen,
+      accessMode: runtimeConfig.accessMode,
       adminEmails: runtimeConfig.adminEmails,
     }).fetch,
     port,

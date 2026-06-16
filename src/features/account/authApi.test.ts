@@ -37,14 +37,14 @@ describe('liveAuthApi', () => {
     expect(await liveAuthApi.me()).toBeNull()
   })
 
-  it('serverConfig() returns signupsOpen from /api/health', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(200, { signupsOpen: false })))
-    expect(await liveAuthApi.serverConfig()).toEqual({ signupsOpen: false })
+  it('serverConfig() returns accessMode from /api/health', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(200, { accessMode: 'invite' })))
+    expect(await liveAuthApi.serverConfig()).toEqual({ accessMode: 'invite' })
   })
 
-  it('serverConfig() defaults signupsOpen to true when the server omits it', async () => {
+  it('serverConfig() defaults accessMode to open when the server omits it', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(200, {})))
-    expect(await liveAuthApi.serverConfig()).toEqual({ signupsOpen: true })
+    expect(await liveAuthApi.serverConfig()).toEqual({ accessMode: 'open' })
   })
 
   it('maps server error bodies to AuthApiError with code and message', async () => {

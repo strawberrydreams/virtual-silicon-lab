@@ -1,7 +1,9 @@
 import { Hono } from 'hono'
 import type { Context } from 'hono'
 import { deleteCookie, getSignedCookie, setSignedCookie } from 'hono/cookie'
-import type { AppDeps } from '../app'
+import { resolveAccessMode, type AppDeps } from '../app'
+import { redeemInviteCode } from '../invites/service'
+import { normalizeInviteCode } from '../invites/validation'
 import { isAdminEmail } from '../moderation/adminAuth'
 import {
   changePassword,
@@ -31,10 +33,12 @@ export function accountRoutes({
   sessionSecret,
   now = Date.now,
   secureCookies = false,
-  signupsOpen = true,
+  accessMode,
+  signupsOpen,
   adminEmails = [],
 }: AppDeps) {
   const routes = new Hono()
+  const resolvedAccessMode = resolveAccessMode({ accessMode, signupsOpen })
 
   function fail(c: Context, status: ErrorStatus, code: string, message: string) {
     return c.json({ error: { code, message } }, status)
@@ -61,12 +65,21 @@ export function accountRoutes({
     return user === null ? null : { token, user }
   }
   routes.post('/auth/signup', async (c) => {
-    if (!signupsOpen) {
+    if (resolvedAccessMode === 'closed') {
       return fail(c, 403, 'SIGNUPS_CLOSED', 'New sign-ups are currently closed.')
     }
     const input = validateSignupInput(await c.req.json().catch(() => null))
     if (!input.ok) return fail(c, 400, 'INVALID_INPUT', input.message)
-    const user = await createAccount(db, input.value, now)
+    let invitedViaCode: string | null = null
+    if (resolvedAccessMode === 'invite') {
+      const code = normalizeInviteCode(input.value.inviteCode)
+      const result = code === '' ? 'invalid' : redeemInviteCode(db, code, now)
+      if (result !== 'ok') {
+        return fail(c, 400, 'INVALID_INVITE', 'A valid invite code is required.')
+      }
+      invitedViaCode = code
+    }
+    const user = await createAccount(db, input.value, now, invitedViaCode)
     if (user === 'email-taken') {
       return fail(c, 409, 'EMAIL_TAKEN', 'An account with this email already exists.')
     }

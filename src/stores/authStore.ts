@@ -1,5 +1,6 @@
 import { createStore } from 'zustand/vanilla'
 import {
+  type AccessMode,
   liveAuthApi,
   ServerUnreachableError,
   type AuthApi,
@@ -12,9 +13,14 @@ type AuthState = {
   status: AuthStatus
   user: AuthUser | null
   isAdmin: boolean
-  signupsOpen: boolean
+  accessMode: AccessMode
   init: () => Promise<void>
-  signup: (input: { email: string; displayName: string; password: string }) => Promise<void>
+  signup: (input: {
+    email: string
+    displayName: string
+    password: string
+    inviteCode?: string
+  }) => Promise<void>
   login: (input: { email: string; password: string }) => Promise<void>
   logout: () => Promise<void>
   updateDisplayName: (displayName: string) => Promise<void>
@@ -45,7 +51,7 @@ export function createAuthStore(api: AuthApi = liveAuthApi) {
       status: 'unknown',
       user: null,
       isAdmin: false,
-      signupsOpen: true,
+      accessMode: 'open',
       async init() {
         try {
           const [me, config] = await Promise.all([api.me(), api.serverConfig()])
@@ -55,17 +61,17 @@ export function createAuthStore(api: AuthApi = liveAuthApi) {
                   status: 'anonymous',
                   user: null,
                   isAdmin: false,
-                  signupsOpen: config.signupsOpen,
+                  accessMode: config.accessMode,
                 }
               : {
                   status: 'authenticated',
                   user: me.user,
                   isAdmin: me.isAdmin,
-                  signupsOpen: config.signupsOpen,
+                  accessMode: config.accessMode,
                 },
           )
         } catch (error) {
-          // signupsOpen keeps its previous value (default true) — fail open so a
+          // accessMode keeps its previous value (default open) so a
           // transient /api/health error never locks new users out of signing up.
           set({
             status: error instanceof ServerUnreachableError ? 'offline' : 'anonymous',

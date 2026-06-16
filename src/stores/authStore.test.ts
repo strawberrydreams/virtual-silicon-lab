@@ -12,7 +12,7 @@ const user: AuthUser = { id: 'u1', email: 'ada@example.com', displayName: 'Ada',
 function fakeApi(overrides: Partial<AuthApi> = {}): AuthApi {
   return {
     me: vi.fn().mockResolvedValue(null),
-    serverConfig: vi.fn().mockResolvedValue({ signupsOpen: true }),
+    serverConfig: vi.fn().mockResolvedValue({ accessMode: 'open' }),
     signup: vi.fn().mockResolvedValue(user),
     login: vi.fn().mockResolvedValue(user),
     logout: vi.fn().mockResolvedValue(undefined),
@@ -40,16 +40,16 @@ describe('authStore', () => {
     expect(store.getState()).toMatchObject({ status: 'authenticated', user })
   })
 
-  it('captures isAdmin and signupsOpen from init', async () => {
+  it('captures isAdmin and accessMode from init', async () => {
     const store = createAuthStore(
       fakeApi({
         me: vi.fn().mockResolvedValue({ user, isAdmin: true }),
-        serverConfig: vi.fn().mockResolvedValue({ signupsOpen: false }),
+        serverConfig: vi.fn().mockResolvedValue({ accessMode: 'invite' }),
       }),
     )
     await store.getState().init()
     expect(store.getState().isAdmin).toBe(true)
-    expect(store.getState().signupsOpen).toBe(false)
+    expect(store.getState().accessMode).toBe('invite')
   })
 
   it('treats an unreachable server as the offline state, not an error', async () => {

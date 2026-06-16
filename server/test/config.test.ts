@@ -55,18 +55,18 @@ describe('loadRuntimeConfig', () => {
     expect(config.uploadMaxBytes).toBe(8 * 1024 * 1024)
   })
 
-  it('defaults signupsOpen to false and adminEmails to empty', () => {
+  it('defaults accessMode to closed and adminEmails to empty', () => {
     const config = loadRuntimeConfig({})
-    expect(config.signupsOpen).toBe(false)
+    expect(config.accessMode).toBe('closed')
     expect(config.adminEmails).toEqual([])
   })
 
-  it('parses VSL_SIGNUPS_OPEN and a comma-separated, normalized VSL_ADMIN_EMAILS', () => {
+  it('falls back from VSL_SIGNUPS_OPEN and parses comma-separated admin emails', () => {
     const config = loadRuntimeConfig({
       VSL_SIGNUPS_OPEN: 'true',
       VSL_ADMIN_EMAILS: ' Ada@Example.com , grace@example.com ,',
     })
-    expect(config.signupsOpen).toBe(true)
+    expect(config.accessMode).toBe('open')
     expect(config.adminEmails).toEqual(['ada@example.com', 'grace@example.com'])
   })
 

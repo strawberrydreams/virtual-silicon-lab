@@ -3,7 +3,9 @@ import { Hono } from 'hono'
 import { CURRENT_SCHEMA_VERSION } from '@domain/project'
 import { accountRoutes } from './accounts/routes'
 import { contestRoutes } from './contests/routes'
+import type { AccessMode } from './config'
 import type { PublishedImageStore } from './images/fileImageStore'
+import { inviteRoutes } from './invites/routes'
 import { moderationRoutes } from './moderation/routes'
 import { publishRoutes } from './publish/routes'
 import { reactionsRoutes } from './reactions/routes'
@@ -19,8 +21,14 @@ export type AppDeps = {
   uploadMaxBytes?: number
   rateLimit?: RateLimitOptions
   imageStore?: PublishedImageStore
+  accessMode?: AccessMode
   signupsOpen?: boolean
   adminEmails?: string[]
+}
+
+export function resolveAccessMode(deps: Pick<AppDeps, 'accessMode' | 'signupsOpen'>): AccessMode {
+  if (deps.accessMode !== undefined) return deps.accessMode
+  return deps.signupsOpen === false ? 'closed' : 'open'
 }
 
 export function createApp(deps: AppDeps) {
@@ -55,7 +63,7 @@ export function createApp(deps: AppDeps) {
     c.json({
       ok: true,
       projectSchemaVersion: CURRENT_SCHEMA_VERSION,
-      signupsOpen: deps.signupsOpen ?? true,
+      accessMode: resolveAccessMode(deps),
     }),
   )
   app.get('/uploads/*', (c) => {
@@ -70,6 +78,7 @@ export function createApp(deps: AppDeps) {
     })
   })
   app.route('/api', accountRoutes(deps))
+  app.route('/api', inviteRoutes(deps))
   app.route('/api', publishRoutes(deps))
   app.route('/api', moderationRoutes(deps))
   app.route('/api', reactionsRoutes(deps))

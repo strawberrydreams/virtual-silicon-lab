@@ -51,15 +51,15 @@ function AnonymousPanels() {
   return (
     <div className="mt-8 grid gap-6 md:grid-cols-2">
       <SignInForm />
-      {auth.signupsOpen ? (
-        <SignupForm />
-      ) : (
+      {auth.accessMode === 'closed' ? (
         <section className={panelClass}>
           <h2 className="text-sm uppercase tracking-[0.18em]">Create Account</h2>
           <p className="mt-3 text-sm text-[var(--v2-muted)]">
             Sign-ups are currently closed (private beta).
           </p>
         </section>
+      ) : (
+        <SignupForm />
       )}
     </div>
   )
@@ -123,6 +123,7 @@ function SignupForm() {
   const [email, setEmail] = useState('')
   const [displayName, setDisplayName] = useState('')
   const [password, setPassword] = useState('')
+  const [inviteCode, setInviteCode] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
@@ -131,7 +132,12 @@ function SignupForm() {
     setBusy(true)
     setError(null)
     try {
-      await auth.signup({ email, displayName, password })
+      await auth.signup({
+        email,
+        displayName,
+        password,
+        ...(auth.accessMode === 'invite' ? { inviteCode } : {}),
+      })
     } catch (caught) {
       setError(describeAuthError(caught))
     } finally {
@@ -172,6 +178,19 @@ function SignupForm() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
+        {auth.accessMode === 'invite' && (
+          <>
+            <label className={`${labelClass} mt-3`} htmlFor="signup-invite-code">
+              Invite Code
+            </label>
+            <input
+              className={fieldClass}
+              id="signup-invite-code"
+              value={inviteCode}
+              onChange={(e) => setInviteCode(e.target.value)}
+            />
+          </>
+        )}
         {error !== null && <p className="mt-3 text-sm text-red-400">{error}</p>}
         <button className={buttonClass} disabled={busy} type="submit">
           Create Account

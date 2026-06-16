@@ -52,7 +52,7 @@ function fakeApi(overrides: Partial<GalleryApi> = {}): GalleryApi {
 function fakeAuthApi(): AuthApi {
   return {
     me: vi.fn().mockResolvedValue(null),
-    serverConfig: vi.fn().mockResolvedValue({ signupsOpen: true }),
+    serverConfig: vi.fn().mockResolvedValue({ accessMode: 'open' }),
     signup: vi.fn(),
     login: vi.fn(),
     logout: vi.fn(),
