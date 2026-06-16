@@ -4,6 +4,7 @@ import { serve } from '@hono/node-server'
 import { createApp } from './app'
 import { loadRuntimeConfig } from './config'
 import { openDatabase, runMigrations } from './db'
+import { ConsoleEmailProvider } from './email/provider'
 import { createFileImageStore } from './images/fileImageStore'
 import { migrations } from './migrations'
 
@@ -35,6 +36,8 @@ serve(
       rateLimit: runtimeConfig.rateLimit,
       imageStore,
       accessMode: runtimeConfig.accessMode,
+      emailProvider: new ConsoleEmailProvider(),
+      requireVerifiedPublish: runtimeConfig.requireVerifiedPublish,
       adminEmails: runtimeConfig.adminEmails,
     }).fetch,
     port,

@@ -3,16 +3,34 @@ import type Database from 'better-sqlite3'
 import { hashPassword, verifyPassword } from './passwords'
 import type { SignupInput } from './validation'
 
-export type AccountUser = { id: string; email: string; displayName: string; createdAt: number }
+export type AccountUser = {
+  id: string
+  email: string
+  displayName: string
+  createdAt: number
+  emailVerified: boolean
+}
 export type AccountSessionUser = AccountUser & { bannedAt: number | null }
 
 export const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000
 
-type UserRow = { id: string; email: string; display_name: string; created_at: number }
+type UserRow = {
+  id: string
+  email: string
+  display_name: string
+  created_at: number
+  email_verified_at?: number | null
+}
 type UserAuthRow = UserRow & { banned_at: number | null }
 
 function toUser(row: UserRow): AccountUser {
-  return { id: row.id, email: row.email, displayName: row.display_name, createdAt: row.created_at }
+  return {
+    id: row.id,
+    email: row.email,
+    displayName: row.display_name,
+    createdAt: row.created_at,
+    emailVerified: row.email_verified_at != null,
+  }
 }
 
 function toSessionUser(row: UserAuthRow): AccountSessionUser {
@@ -35,6 +53,7 @@ export async function createAccount(
     email: input.email,
     displayName: input.displayName,
     createdAt: now(),
+    emailVerified: false,
   }
   try {
     db.prepare(
@@ -64,7 +83,8 @@ export async function verifyCredentials(
 ): Promise<AccountUser | null> {
   const row = db
     .prepare(
-      'SELECT id, email, display_name, password_hash, created_at, banned_at FROM users WHERE email = ?',
+      `SELECT id, email, display_name, password_hash, created_at, email_verified_at, banned_at
+       FROM users WHERE email = ?`,
     )
     .get(email) as (UserAuthRow & { password_hash: string }) | undefined
   if (row === undefined) return null
@@ -100,7 +120,8 @@ export function getSessionUserWithStatus(
   const tokenHash = hashToken(token)
   const row = db
     .prepare(
-      `SELECT u.id, u.email, u.display_name, u.created_at, u.banned_at, s.expires_at
+      `SELECT u.id, u.email, u.display_name, u.created_at, u.email_verified_at, u.banned_at,
+              s.expires_at
        FROM sessions s JOIN users u ON u.id = s.user_id
        WHERE s.token_hash = ?`,
     )
@@ -129,7 +150,7 @@ export function updateDisplayName(
     userId,
   )
   const row = db
-    .prepare('SELECT id, email, display_name, created_at FROM users WHERE id = ?')
+    .prepare('SELECT id, email, display_name, created_at, email_verified_at FROM users WHERE id = ?')
     .get(userId) as UserRow
   return toUser(row)
 }
@@ -160,6 +181,45 @@ export async function changePassword(
     hashToken(keepToken),
   )
   return 'ok'
+}
+
+export function markEmailVerified(
+  db: Database.Database,
+  userId: string,
+  now: () => number,
+): AccountUser | null {
+  const timestamp = now()
+  const result = db
+    .prepare('UPDATE users SET email_verified_at = ?, updated_at = ? WHERE id = ?')
+    .run(timestamp, timestamp, userId)
+  if (result.changes === 0) return null
+  const row = db
+    .prepare('SELECT id, email, display_name, created_at, email_verified_at FROM users WHERE id = ?')
+    .get(userId) as UserRow
+  return toUser(row)
+}
+
+export function findUserIdByEmail(db: Database.Database, email: string): string | null {
+  const row = db.prepare('SELECT id FROM users WHERE email = ?').get(email) as
+    | { id: string }
+    | undefined
+  return row?.id ?? null
+}
+
+export async function resetPasswordAndRevokeSessions(
+  db: Database.Database,
+  userId: string,
+  password: string,
+  now: () => number,
+): Promise<boolean> {
+  const passwordHash = await hashPassword(password)
+  const timestamp = now()
+  const result = db
+    .prepare('UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?')
+    .run(passwordHash, timestamp, userId)
+  if (result.changes === 0) return false
+  db.prepare('DELETE FROM sessions WHERE user_id = ?').run(userId)
+  return true
 }
 
 export async function deleteAccount(

@@ -162,6 +162,28 @@ describe('reactions routes — comments', () => {
     expect(((await res.json()) as { error: { code: string } }).error.code).toBe('ACCOUNT_BANNED')
   })
 
+  it('soft-gates comments until email is verified when required', async () => {
+    const { app, db } = createTestApp(Date.now, { ...OPTS, requireVerifiedPublish: true })
+    seedChip(db, 'c1', 's1')
+    const cookie = await signIn(app, VALID_SIGNUP)
+
+    const blocked = await app.request(
+      '/api/published-chips/c1/comments',
+      jsonRequest('POST', { body: 'blocked' }, cookie),
+    )
+    expect(blocked.status).toBe(403)
+    expect(((await blocked.json()) as { error: { code: string } }).error.code).toBe(
+      'EMAIL_UNVERIFIED',
+    )
+
+    db.prepare('UPDATE users SET email_verified_at = ? WHERE email = ?').run(100, VALID_SIGNUP.email)
+    const ok = await app.request(
+      '/api/published-chips/c1/comments',
+      jsonRequest('POST', { body: 'verified' }, cookie),
+    )
+    expect(ok.status).toBe(201)
+  })
+
   it('lets the author delete, blocks other non-admins (403), allows admin', async () => {
     const { app, db } = createTestApp(Date.now, OPTS)
     seedChip(db, 'c1', 's1')

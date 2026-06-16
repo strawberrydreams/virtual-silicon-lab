@@ -1218,3 +1218,27 @@ ban write-block, comment moderation, audit logging은 API/서비스 테스트로
   GREEN: `npm run test --workspace server -- publishRoutes reactionsRoutes reactionsService moderationService moderationRoutes`
   5파일/43테스트 통과. 서버 전체 `npm run test --workspace server` 45파일/213테스트 통과, `npm run typecheck:server`
   통과, `npm run lint` 통과.
+
+## V5-M2 Account Security — Server Completion (2026-06-17)
+
+M2는 먼저 서버 보안 계약을 끝냈다. Client verify/reset 페이지와 unverified banner는 후속 client polish로 남아 있지만,
+이메일 인증·비밀번호 재설정·verified write gate의 API와 DB 동작은 테스트로 고정됐다.
+
+- **Migration.** `010_account_security`를 추가했다: `users.email_verified_at`,
+  `email_verification_tokens`, `password_reset_tokens`. 토큰 테이블은 session과 같은 sha256-at-rest 패턴을 쓴다.
+- **Email provider.** `server/src/email/provider.ts`에 `EmailProvider`, `ConsoleEmailProvider`, `FakeEmailProvider`를 추가했다.
+  dev 서버는 console provider를 주입하고, 테스트는 fake provider sent mailbox를 검사한다. 현재 production provider selection은
+  아직 console 기본이며, 실제 provider fail-fast는 배포 config 세부화 때 보강 여지가 있다.
+- **Token flow.** `issueToken()`/`consumeToken()`은 raw token을 한 번만 반환/소비하고 DB에는 hash만 저장한다. expired token도
+  consume 시 삭제한다.
+- **Email verification.** Signup 후 verification token을 발급해 `/verify-email?token=...` 링크를 발송한다. 발송 실패는
+  signup 실패로 전파하지 않고 log만 남긴다. `POST /api/auth/verify-email`은 token을 single-use consume하고
+  `email_verified_at`을 설정한다. `/api/me` user payload에는 `emailVerified`가 포함된다.
+- **Password reset.** `forgot-password`는 알려진 email에만 reset mail을 보내지만 항상 `{ ok: true }`를 반환해 enumeration을
+  막는다. `reset-password`는 token+new password를 검증하고 password hash를 교체하며 모든 기존 session을 revoke한다.
+- **Soft gate.** `requireVerifiedPublish`가 true면 publish와 comment write는 미인증 계정에 `403 EMAIL_UNVERIFIED`를 반환한다.
+  기존 M1 `requireActiveUser()`에 ban guard와 email guard가 함께 있다.
+- **검증.** RED: `accountSecurityMigration emailProvider accountTokens verifyEmail passwordReset publishRoutes reactionsRoutes`
+  suite가 모듈/migration/soft-gate 부재로 실패. GREEN: 같은 targeted suite 7파일/28테스트 통과. 서버 전체
+  `npm run test --workspace server` 50파일/221테스트 통과, `npm run typecheck:server` 통과, `npm run lint` 통과,
+  `npm run build` 통과(기존 Vite 500kB chunk warning).

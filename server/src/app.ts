@@ -4,6 +4,7 @@ import { CURRENT_SCHEMA_VERSION } from '@domain/project'
 import { accountRoutes } from './accounts/routes'
 import { contestRoutes } from './contests/routes'
 import type { AccessMode } from './config'
+import type { EmailProvider } from './email/provider'
 import type { PublishedImageStore } from './images/fileImageStore'
 import { inviteRoutes } from './invites/routes'
 import { moderationRoutes } from './moderation/routes'
@@ -23,6 +24,8 @@ export type AppDeps = {
   imageStore?: PublishedImageStore
   accessMode?: AccessMode
   signupsOpen?: boolean
+  emailProvider?: EmailProvider
+  requireVerifiedPublish?: boolean
   adminEmails?: string[]
 }
 

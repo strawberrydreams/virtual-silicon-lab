@@ -19,7 +19,13 @@ const SESSION_COOKIE = 'vsl_session'
 type ErrorStatus = 400 | 401 | 403 | 404
 const MAX_COMMENT_LENGTH = 1000
 
-export function reactionsRoutes({ db, sessionSecret, now = Date.now, adminEmails = [] }: AppDeps) {
+export function reactionsRoutes({
+  db,
+  sessionSecret,
+  now = Date.now,
+  adminEmails = [],
+  requireVerifiedPublish = false,
+}: AppDeps) {
   const routes = new Hono()
 
   function fail(c: Context, status: ErrorStatus, code: string, message: string) {
@@ -42,6 +48,9 @@ export function reactionsRoutes({ db, sessionSecret, now = Date.now, adminEmails
     if (user === null) return fail(c, 401, 'UNAUTHORIZED', 'Sign in required.')
     if (user.bannedAt !== null) {
       return fail(c, 403, 'ACCOUNT_BANNED', 'This account is banned.')
+    }
+    if (requireVerifiedPublish && !user.emailVerified) {
+      return fail(c, 403, 'EMAIL_UNVERIFIED', 'Verify your email before commenting.')
     }
     return user
   }

@@ -74,6 +74,28 @@ describe('publish routes', () => {
     expect(((await res.json()) as { error: { code: string } }).error.code).toBe('ACCOUNT_BANNED')
   })
 
+  it('soft-gates publish until email is verified when required', async () => {
+    const { app, db } = createTestApp(() => 2_000, { requireVerifiedPublish: true })
+    const signup = await app.request('/api/auth/signup', jsonRequest('POST', VALID_SIGNUP))
+    const cookie = sessionCookie(signup)
+
+    const blocked = await app.request(
+      '/api/published-chips',
+      jsonRequest('POST', publishPayload(), cookie),
+    )
+    expect(blocked.status).toBe(403)
+    expect(((await blocked.json()) as { error: { code: string } }).error.code).toBe(
+      'EMAIL_UNVERIFIED',
+    )
+
+    db.prepare('UPDATE users SET email_verified_at = ? WHERE email = ?').run(
+      2_100,
+      VALID_SIGNUP.email,
+    )
+    const ok = await app.request('/api/published-chips', jsonRequest('POST', publishPayload(), cookie))
+    expect(ok.status).toBe(201)
+  })
+
   it('returns the current account publish record for a source project', async () => {
     const { app, cookie } = await signedInCookie()
     await app.request('/api/published-chips', {

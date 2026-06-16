@@ -94,6 +94,7 @@ export function publishRoutes({
   publicBaseUrl,
   uploadMaxBytes,
   imageStore,
+  requireVerifiedPublish = false,
 }: AppDeps) {
   const routes = new Hono()
 
@@ -117,6 +118,9 @@ export function publishRoutes({
     if (user === null) return fail(c, 401, 'UNAUTHORIZED', 'Sign in required.')
     if (user.bannedAt !== null) {
       return fail(c, 403, 'ACCOUNT_BANNED', 'This account is banned.')
+    }
+    if (requireVerifiedPublish && !user.emailVerified) {
+      return fail(c, 403, 'EMAIL_UNVERIFIED', 'Verify your email before publishing.')
     }
     return user
   }

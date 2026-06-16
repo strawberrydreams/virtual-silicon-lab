@@ -7,6 +7,7 @@ export type RuntimeConfig = {
   publicBaseUrl?: string
   uploadMaxBytes: number
   accessMode: AccessMode
+  requireVerifiedPublish: boolean
   adminEmails: string[]
   rateLimit?: {
     windowMs: number
@@ -75,6 +76,7 @@ export function loadRuntimeConfig(env: RuntimeEnv = process.env): RuntimeConfig 
   const isProduction = env.NODE_ENV === 'production'
   const uploadMaxBytes = readPositiveInteger(env, 'VSL_UPLOAD_MAX_BYTES', DEFAULT_UPLOAD_MAX_BYTES)
   const accessMode = parseAccessMode(env)
+  const requireVerifiedPublish = parseBoolean(env, 'VSL_REQUIRE_VERIFIED_PUBLISH', isProduction)
   const adminEmails = parseAdminEmails(env)
 
   const sessionSecret = env.VSL_SESSION_SECRET
@@ -96,6 +98,7 @@ export function loadRuntimeConfig(env: RuntimeEnv = process.env): RuntimeConfig 
       publicBaseUrl: parseBaseUrl(env.VSL_PUBLIC_BASE_URL, 'VSL_PUBLIC_BASE_URL'),
       uploadMaxBytes,
       accessMode,
+      requireVerifiedPublish,
       adminEmails,
       rateLimit: {
         windowMs: readPositiveInteger(
@@ -118,6 +121,7 @@ export function loadRuntimeConfig(env: RuntimeEnv = process.env): RuntimeConfig 
         : parseBaseUrl(env.VSL_PUBLIC_BASE_URL, 'VSL_PUBLIC_BASE_URL'),
     uploadMaxBytes,
     accessMode,
+    requireVerifiedPublish,
     adminEmails,
   }
 }
