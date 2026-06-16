@@ -120,6 +120,40 @@ describe('moderation routes', () => {
     expect(body.entries[0].targetId).toBe('chip1')
   })
 
+  it('lets an admin feature and unfeature a chip with audit entries', async () => {
+    let timestamp = 1_000
+    const { app, db } = createTestApp(() => timestamp++, ADMIN_OPTS)
+    seedChip(db, 'chip1', 'slug-1')
+    const adminCookie = await signIn(app, VALID_SIGNUP)
+
+    const featured = await app.request('/api/admin/published-chips/chip1/feature', {
+      method: 'POST',
+      headers: { cookie: adminCookie },
+    })
+    expect(featured.status).toBe(200)
+    expect(
+      (
+        (await (await app.request('/api/gallery/featured')).json()) as {
+          chips: { slug: string }[]
+        }
+      ).chips,
+    ).toEqual([expect.objectContaining({ slug: 'slug-1' })])
+
+    const unfeatured = await app.request('/api/admin/published-chips/chip1/unfeature', {
+      method: 'POST',
+      headers: { cookie: adminCookie },
+    })
+    expect(unfeatured.status).toBe(200)
+    expect(
+      ((await (await app.request('/api/gallery/featured')).json()) as { chips: unknown[] }).chips,
+    ).toEqual([])
+
+    const audit = (await (
+      await app.request('/api/admin/audit-log', { headers: { cookie: adminCookie } })
+    ).json()) as { entries: { action: string; targetId: string }[] }
+    expect(audit.entries.map((entry) => entry.action)).toEqual(['unfeature_chip', 'feature_chip'])
+  })
+
   it('ban endpoint revokes sessions and audit-logs the action', async () => {
     const { app, db } = createTestApp(() => 1_000, ADMIN_OPTS)
     const adminCookie = await signIn(app, VALID_SIGNUP)

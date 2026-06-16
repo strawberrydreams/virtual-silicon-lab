@@ -6,6 +6,7 @@ import { getSessionUser, type AccountUser } from '../accounts/service'
 import { listAudit, recordAudit } from './auditLog'
 import { isAdminEmail } from './adminAuth'
 import { banUser, unbanUser } from './bans'
+import { setFeatured } from '../publish/service'
 import {
   adminDeleteChip,
   createCommentReport,
@@ -158,6 +159,42 @@ export function moderationRoutes({
       {
         adminUserId: c.get('adminUser').id,
         action: 'unhide_chip',
+        targetType: 'chip',
+        targetId: c.req.param('id'),
+        detail: null,
+      },
+      now,
+    )
+    return c.json({ ok: true })
+  })
+
+  routes.post('/admin/published-chips/:id/feature', (c) => {
+    if (!setFeatured(db, c.req.param('id'), true, now)) {
+      return fail(c, 404, 'NOT_FOUND', 'Published chip not found.')
+    }
+    recordAudit(
+      db,
+      {
+        adminUserId: c.get('adminUser').id,
+        action: 'feature_chip',
+        targetType: 'chip',
+        targetId: c.req.param('id'),
+        detail: null,
+      },
+      now,
+    )
+    return c.json({ ok: true })
+  })
+
+  routes.post('/admin/published-chips/:id/unfeature', (c) => {
+    if (!setFeatured(db, c.req.param('id'), false, now)) {
+      return fail(c, 404, 'NOT_FOUND', 'Published chip not found.')
+    }
+    recordAudit(
+      db,
+      {
+        adminUserId: c.get('adminUser').id,
+        action: 'unfeature_chip',
         targetType: 'chip',
         targetId: c.req.param('id'),
         detail: null,

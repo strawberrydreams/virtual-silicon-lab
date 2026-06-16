@@ -209,4 +209,13 @@ export const migrations: Migration[] = [
       `)
     },
   },
+  {
+    id: '011_featured',
+    up: (db) => {
+      db.exec(`
+        ALTER TABLE published_chips ADD COLUMN featured_at INTEGER;
+        CREATE INDEX idx_published_chips_featured ON published_chips(featured_at DESC);
+      `)
+    },
+  },
 ]

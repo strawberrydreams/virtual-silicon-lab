@@ -6,6 +6,7 @@ import { getSessionUserWithStatus, type AccountUser } from '../accounts/service'
 import {
   deletePublishedChip,
   getChipLineage,
+  listFeaturedChips,
   getPublicPublishedChipBySlug,
   getPublishedChipForOwnerProject,
   listOwnerPublicChips,
@@ -199,6 +200,13 @@ export function publishRoutes({
       chips: listPublicPublishedChips(db, { sort, now }).map((chip) =>
         serializeGallerySummary(chip, baseUrl),
       ),
+    })
+  })
+
+  routes.get('/gallery/featured', (c) => {
+    const baseUrl = resolvePublicBaseUrl(c.req.url, publicBaseUrl)
+    return c.json({
+      chips: listFeaturedChips(db).map((chip) => serializeGallerySummary(chip, baseUrl)),
     })
   })
 

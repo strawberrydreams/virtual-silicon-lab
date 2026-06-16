@@ -299,6 +299,38 @@ export function listPublicPublishedChips(
   return rows.map(toPublicGalleryChip)
 }
 
+export function setFeatured(
+  db: Database.Database,
+  chipId: string,
+  featured: boolean,
+  now: () => number,
+): boolean {
+  return db
+    .prepare('UPDATE published_chips SET featured_at = ? WHERE id = ?')
+    .run(featured ? now() : null, chipId).changes > 0
+}
+
+export function listFeaturedChips(
+  db: Database.Database,
+  limit = 8,
+): PublicGalleryChip[] {
+  const rows = db
+    .prepare(
+      `SELECT p.*, u.display_name AS owner_display_name,
+              (SELECT COUNT(*) FROM likes l WHERE l.published_chip_id = p.id) AS like_count,
+              (SELECT COUNT(*) FROM comments cm WHERE cm.published_chip_id = p.id) AS comment_count
+       FROM published_chips p
+       JOIN users u ON u.id = p.owner_user_id
+       WHERE p.featured_at IS NOT NULL
+         AND p.is_public = 1
+         AND p.moderation_status = 'visible'
+       ORDER BY p.featured_at DESC
+       LIMIT ?`,
+    )
+    .all(limit) as PublicGalleryChipRow[]
+  return rows.map(toPublicGalleryChip)
+}
+
 export function listOwnerPublicChips(
   db: Database.Database,
   ownerUserId: string,
