@@ -9,7 +9,9 @@ import type { PublishedImageStore } from './images/fileImageStore'
 import { inviteRoutes } from './invites/routes'
 import { moderationRoutes } from './moderation/routes'
 import { publishRoutes } from './publish/routes'
+import { profileRoutes } from './profiles/routes'
 import { reactionsRoutes } from './reactions/routes'
+import { seoRoutes } from './seo/routes'
 import { createRateLimiter, type RateLimitOptions } from './rateLimit'
 import { shareRoutes } from './share/routes'
 
@@ -86,6 +88,8 @@ export function createApp(deps: AppDeps) {
   app.route('/api', moderationRoutes(deps))
   app.route('/api', reactionsRoutes(deps))
   app.route('/api', contestRoutes(deps))
+  app.route('/api', profileRoutes(deps))
+  app.route('/', seoRoutes(deps))
   app.route('/', shareRoutes(deps))
 
   return app

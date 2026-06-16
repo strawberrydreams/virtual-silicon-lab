@@ -9,6 +9,7 @@ export type AccountUser = {
   displayName: string
   createdAt: number
   emailVerified: boolean
+  handle: string | null
 }
 export type AccountSessionUser = AccountUser & { bannedAt: number | null }
 
@@ -20,6 +21,7 @@ type UserRow = {
   display_name: string
   created_at: number
   email_verified_at?: number | null
+  handle?: string | null
 }
 type UserAuthRow = UserRow & { banned_at: number | null }
 
@@ -30,6 +32,7 @@ function toUser(row: UserRow): AccountUser {
     displayName: row.display_name,
     createdAt: row.created_at,
     emailVerified: row.email_verified_at != null,
+    handle: row.handle ?? null,
   }
 }
 
@@ -54,6 +57,7 @@ export async function createAccount(
     displayName: input.displayName,
     createdAt: now(),
     emailVerified: false,
+    handle: null,
   }
   try {
     db.prepare(
@@ -83,7 +87,7 @@ export async function verifyCredentials(
 ): Promise<AccountUser | null> {
   const row = db
     .prepare(
-      `SELECT id, email, display_name, password_hash, created_at, email_verified_at, banned_at
+      `SELECT id, email, display_name, password_hash, created_at, email_verified_at, handle, banned_at
        FROM users WHERE email = ?`,
     )
     .get(email) as (UserAuthRow & { password_hash: string }) | undefined
@@ -120,7 +124,7 @@ export function getSessionUserWithStatus(
   const tokenHash = hashToken(token)
   const row = db
     .prepare(
-      `SELECT u.id, u.email, u.display_name, u.created_at, u.email_verified_at, u.banned_at,
+      `SELECT u.id, u.email, u.display_name, u.created_at, u.email_verified_at, u.handle, u.banned_at,
               s.expires_at
        FROM sessions s JOIN users u ON u.id = s.user_id
        WHERE s.token_hash = ?`,
@@ -150,7 +154,7 @@ export function updateDisplayName(
     userId,
   )
   const row = db
-    .prepare('SELECT id, email, display_name, created_at, email_verified_at FROM users WHERE id = ?')
+    .prepare('SELECT id, email, display_name, created_at, email_verified_at, handle FROM users WHERE id = ?')
     .get(userId) as UserRow
   return toUser(row)
 }
@@ -194,7 +198,7 @@ export function markEmailVerified(
     .run(timestamp, timestamp, userId)
   if (result.changes === 0) return null
   const row = db
-    .prepare('SELECT id, email, display_name, created_at, email_verified_at FROM users WHERE id = ?')
+    .prepare('SELECT id, email, display_name, created_at, email_verified_at, handle FROM users WHERE id = ?')
     .get(userId) as UserRow
   return toUser(row)
 }

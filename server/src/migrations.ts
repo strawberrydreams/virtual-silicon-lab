@@ -218,4 +218,13 @@ export const migrations: Migration[] = [
       `)
     },
   },
+  {
+    id: '012_profiles_seo',
+    up: (db) => {
+      db.exec(`
+        ALTER TABLE users ADD COLUMN handle TEXT;
+        CREATE UNIQUE INDEX idx_users_handle ON users(handle) WHERE handle IS NOT NULL;
+      `)
+    },
+  },
 ]
