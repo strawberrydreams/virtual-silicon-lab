@@ -1,13 +1,13 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { MemoryRouter, Route, Routes, useNavigate } from 'react-router-dom'
 import { describe, expect, it, vi } from 'vitest'
 import { createProject } from '../../domain/projectFactory'
 import type { AuthApi } from '../account/authApi'
 import { AuthStoreProvider } from '../../stores/authStoreContext'
 import type { ChipLineage, GalleryApi, GalleryChipDetail } from './galleryApi'
 import { ServerUnreachableError } from './galleryApi'
-import type { ReactionsApi } from './reactionsApi'
+import type { GalleryComment, ReactionsApi } from './reactionsApi'
 import { GalleryDetailPage } from './GalleryDetailPage'
 
 const project = {
@@ -95,6 +95,23 @@ function renderDetail(
   )
 }
 
+function GalleryRouteHarness({ api, reactions }: { api: GalleryApi; reactions: ReactionsApi }) {
+  const navigate = useNavigate()
+  return (
+    <>
+      <button type="button" onClick={() => navigate('/gallery/grace-chip-deadbeef')}>
+        Open Grace
+      </button>
+      <Routes>
+        <Route
+          path="/gallery/:slug"
+          element={<GalleryDetailPage api={api} reactions={reactions} />}
+        />
+      </Routes>
+    </>
+  )
+}
+
 describe('GalleryDetailPage', () => {
   it('renders poster, owner, version, and fake spec fields', async () => {
     renderDetail(fakeApi())
@@ -173,5 +190,50 @@ describe('GalleryDetailPage', () => {
     expect(
       screen.queryByRole('button', { name: /remix into my projects/i }),
     ).not.toBeInTheDocument()
+  })
+
+  it('clears stale comments when navigating between gallery details', async () => {
+    const secondDetail: GalleryChipDetail = {
+      ...detail,
+      id: 'pub2',
+      slug: 'grace-chip-deadbeef',
+      title: 'Grace Chip',
+      project: createProject('Grace Chip', 'project-2', 2_000),
+    }
+    const api = fakeApi({
+      get: vi.fn((slug: string) =>
+        Promise.resolve(slug === 'grace-chip-deadbeef' ? secondDetail : detail),
+      ),
+    })
+    const reactions = fakeReactions()
+    reactions.listComments = vi.fn((chipId: string) => {
+      if (chipId === 'pub1') {
+        return Promise.resolve([
+          {
+            id: 'comment-1',
+            publishedChipId: 'pub1',
+            authorUserId: 'u1',
+            authorDisplayName: 'Ada',
+            body: 'old chip comment',
+            createdAt: 1_000,
+          },
+        ])
+      }
+      return new Promise<GalleryComment[]>(() => undefined)
+    })
+    render(
+      <AuthStoreProvider api={fakeAuthApi()}>
+        <MemoryRouter initialEntries={['/gallery/ada-chip-deadbeef']}>
+          <GalleryRouteHarness api={api} reactions={reactions} />
+        </MemoryRouter>
+      </AuthStoreProvider>,
+    )
+
+    expect(await screen.findByText('old chip comment')).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Open Grace' }))
+
+    expect(await screen.findByRole('heading', { name: 'Grace Chip' })).toBeInTheDocument()
+    expect(screen.queryByText('old chip comment')).not.toBeInTheDocument()
   })
 })

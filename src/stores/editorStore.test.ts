@@ -147,6 +147,24 @@ describe('editor store commands', () => {
     expect(rotatedCorners(moved).every((corner) => corner.y <= 640 + 1e-6)).toBe(true)
   })
 
+  it('ignores stale transform and update commands without creating history', () => {
+    const store = createEditorStore(createProject('p', 'p1', 0))
+    const initialProject = store.getState().project
+
+    store
+      .getState()
+      .transformBlock('missing-block', { x: 40, y: 40, w: 120, h: 80, rotation: 0 })
+    store.getState().updateBlockVisual('missing-block', { colorOverride: '#ff00ff' })
+    store.getState().transformSticker('missing-sticker', { x: 24, y: 48, rotation: 12 })
+    store.getState().updateSticker('missing-sticker', { text: 'STALE' })
+    store.getState().transformSpray('missing-spray', { x: 24, y: 48, radius: 96 })
+    store.getState().updateSpray('missing-spray', { intensity: 0.5 })
+
+    expect(store.getState().project).toBe(initialProject)
+    expect(store.getState().past).toHaveLength(0)
+    expect(store.getState().future).toHaveLength(0)
+  })
+
   it('deletes the selected block and clears selection', () => {
     const store = createEditorStore(seededProject())
     store.getState().select('cpu')

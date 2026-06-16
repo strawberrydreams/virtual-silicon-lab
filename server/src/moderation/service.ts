@@ -56,7 +56,11 @@ export function createReport(
   input: { publishedChipId: string; reporterUserId: string | null; reason: string | null },
   now: () => number,
 ): Report | 'chip-not-found' {
-  const chip = db.prepare('SELECT id FROM published_chips WHERE id = ?').get(input.publishedChipId)
+  const chip = db
+    .prepare(
+      "SELECT id FROM published_chips WHERE id = ? AND is_public = 1 AND moderation_status = 'visible'",
+    )
+    .get(input.publishedChipId)
   if (chip === undefined) return 'chip-not-found'
   const id = randomUUID()
   db.prepare(

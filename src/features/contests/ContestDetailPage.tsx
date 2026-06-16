@@ -27,6 +27,14 @@ export function ContestDetailPage({
   const [myChips, setMyChips] = useState<MyChip[]>([])
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
+  // Reset stale route data immediately when navigating between contest detail pages.
+  const [loadedContestId, setLoadedContestId] = useState(contestId)
+  if (loadedContestId !== contestId) {
+    setLoadedContestId(contestId)
+    setDetail('loading')
+    setBusy(false)
+    setMessage(null)
+  }
 
   const reload = useCallback(() => {
     api

@@ -30,7 +30,7 @@ export function AdminPage({
 
   const reloadContests = useCallback(() => {
     contestsApi
-      .list()
+      .listAdmin()
       .then(setContests)
       .catch(() => setContests([]))
   }, [contestsApi])

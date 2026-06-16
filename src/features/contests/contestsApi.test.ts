@@ -19,6 +19,14 @@ describe('liveContestsApi', () => {
     expect(fetchMock).toHaveBeenCalledWith('/api/contests', { method: 'GET' })
   })
 
+  it('lists admin contests including drafts', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(200, { contests: [{ id: 'draft' }] }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    expect(await liveContestsApi.listAdmin()).toEqual([{ id: 'draft' }])
+    expect(fetchMock).toHaveBeenCalledWith('/api/admin/contests', { method: 'GET' })
+  })
+
   it('gets a contest detail', async () => {
     const fetchMock = vi
       .fn()

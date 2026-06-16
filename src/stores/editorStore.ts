@@ -270,8 +270,8 @@ export function createEditorStore(initialProject: Project, options: Options = {}
       transformBlock(id, transform) {
         const { project } = get()
         const current = project.blocks.find((block) => block.id === id)
+        if (current === undefined) return
         const isDragOnly =
-          current !== undefined &&
           current.w === transform.w &&
           current.h === transform.h &&
           current.rotation === (transform.rotation ?? current.rotation)
@@ -307,6 +307,7 @@ export function createEditorStore(initialProject: Project, options: Options = {}
 
       transformSticker(id, transform) {
         const { project } = get()
+        if (!project.studio.stickers.some((sticker) => sticker.id === id)) return
         const point = clampPoint(project.die, transform.x, transform.y)
         commit({
           ...project,
@@ -327,6 +328,7 @@ export function createEditorStore(initialProject: Project, options: Options = {}
 
       transformSpray(id, transform) {
         const { project } = get()
+        if (!project.studio.sprays.some((spray) => spray.id === id)) return
         const point = clampPoint(project.die, transform.x, transform.y)
         commit({
           ...project,
@@ -350,6 +352,7 @@ export function createEditorStore(initialProject: Project, options: Options = {}
 
       updateSticker(id, patch) {
         const { project } = get()
+        if (!project.studio.stickers.some((sticker) => sticker.id === id)) return
         commit(
           {
             ...project,
@@ -367,6 +370,7 @@ export function createEditorStore(initialProject: Project, options: Options = {}
 
       updateSpray(id, patch) {
         const { project } = get()
+        if (!project.studio.sprays.some((spray) => spray.id === id)) return
         commit(
           {
             ...project,
@@ -397,6 +401,7 @@ export function createEditorStore(initialProject: Project, options: Options = {}
 
       updateBlockVisual(id, patch) {
         const { project } = get()
+        if (!project.blocks.some((block) => block.id === id)) return
         commit(
           replaceBlocks(
             project,

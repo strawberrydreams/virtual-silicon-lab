@@ -15,6 +15,7 @@ import {
   getContestDetail,
   getContestStatus,
   getEntryMeta,
+  listAdminContests,
   listPublicContests,
   retractVote,
   updateContest,
@@ -81,6 +82,13 @@ export function contestRoutes({
     if (!isAdminEmail(user.email, adminEmails)) return 'forbidden'
     return user
   }
+
+  routes.get('/admin/contests', async (c) => {
+    const admin = await readAdmin(c)
+    if (admin === 'unauthorized') return fail(c, 401, 'UNAUTHORIZED', 'Sign in required.')
+    if (admin === 'forbidden') return fail(c, 403, 'FORBIDDEN', 'Admin access required.')
+    return c.json({ contests: listAdminContests(db) })
+  })
 
   routes.post('/admin/contests', async (c) => {
     const admin = await readAdmin(c)

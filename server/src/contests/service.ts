@@ -141,6 +141,35 @@ export function listPublicContests(db: Database.Database): ContestSummary[] {
   }))
 }
 
+export function listAdminContests(db: Database.Database): ContestSummary[] {
+  const rows = db
+    .prepare(
+      `SELECT c.id, c.title, c.theme, c.status, c.created_at,
+              (SELECT COUNT(*) FROM contest_entries e WHERE e.contest_id = c.id) AS entry_count,
+              (SELECT COUNT(*) FROM contest_votes v WHERE v.contest_id = c.id) AS vote_count
+       FROM contests c
+       ORDER BY c.created_at DESC`,
+    )
+    .all() as Array<{
+    id: string
+    title: string
+    theme: string
+    status: ContestStatus
+    created_at: number
+    entry_count: number
+    vote_count: number
+  }>
+  return rows.map((row) => ({
+    id: row.id,
+    title: row.title,
+    theme: row.theme,
+    status: row.status,
+    entryCount: row.entry_count,
+    voteCount: row.vote_count,
+    createdAt: row.created_at,
+  }))
+}
+
 export function getContestDetail(
   db: Database.Database,
   contestId: string,
@@ -284,7 +313,12 @@ export function entryOwner(
   entryId: string,
 ): { contestId: string; ownerUserId: string } | null {
   const row = db
-    .prepare('SELECT contest_id, owner_user_id FROM contest_entries WHERE id = ?')
+    .prepare(
+      `SELECT e.contest_id, e.owner_user_id
+       FROM contest_entries e
+       JOIN published_chips p ON p.id = e.published_chip_id
+       WHERE e.id = ? AND p.is_public = 1 AND p.moderation_status = 'visible'`,
+    )
     .get(entryId) as { contest_id: string; owner_user_id: string } | undefined
   return row === undefined ? null : { contestId: row.contest_id, ownerUserId: row.owner_user_id }
 }

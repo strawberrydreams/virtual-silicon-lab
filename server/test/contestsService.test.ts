@@ -233,6 +233,17 @@ describe('contest votes + results', () => {
     expect(entryOwner(d, 'missing')).toBeNull()
   })
 
+  it('entryOwner returns null after the entry chip is hidden or made private', () => {
+    const d = db()
+    const { a, b } = seedContestWithEntries(d)
+
+    d.prepare("UPDATE published_chips SET moderation_status = 'hidden' WHERE id = 'chipA'").run()
+    d.prepare("UPDATE published_chips SET is_public = 0 WHERE id = 'chipB'").run()
+
+    expect(entryOwner(d, a.entryId)).toBeNull()
+    expect(entryOwner(d, b.entryId)).toBeNull()
+  })
+
   it('casts one vote per user and replaces on re-vote', () => {
     const d = db()
     const { c, a, b } = seedContestWithEntries(d)

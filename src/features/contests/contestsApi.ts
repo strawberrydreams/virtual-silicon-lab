@@ -41,6 +41,7 @@ export type MyChip = {
 
 export type ContestsApi = {
   list: () => Promise<ContestSummary[]>
+  listAdmin: () => Promise<ContestSummary[]>
   get: (id: string) => Promise<ContestDetail>
   enter: (contestId: string, publishedChipId: string) => Promise<void>
   withdraw: (contestId: string, entryId: string) => Promise<void>
@@ -67,6 +68,10 @@ function jsonInit(method: string, body: unknown): RequestInit {
 export const liveContestsApi: ContestsApi = {
   async list() {
     const res = await ok(await fetch('/api/contests', { method: 'GET' }))
+    return ((await res.json()) as { contests: ContestSummary[] }).contests
+  },
+  async listAdmin() {
+    const res = await ok(await fetch('/api/admin/contests', { method: 'GET' }))
     return ((await res.json()) as { contests: ContestSummary[] }).contests
   },
   async get(id) {

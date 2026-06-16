@@ -74,6 +74,26 @@ describe('authStore', () => {
     expect(store.getState()).toMatchObject({ status: 'authenticated', user })
   })
 
+  it('refreshes admin state after authentication and clears it when the session ends', async () => {
+    const store = createAuthStore(
+      fakeApi({ me: vi.fn().mockResolvedValue({ user, isAdmin: true }) }),
+    )
+
+    await store.getState().login({ email: user.email, password: 'hunter22hunter22' })
+    expect(store.getState()).toMatchObject({ status: 'authenticated', user, isAdmin: true })
+
+    await store.getState().logout()
+    expect(store.getState()).toMatchObject({ status: 'anonymous', user: null, isAdmin: false })
+
+    await store
+      .getState()
+      .signup({ email: user.email, displayName: 'Ada', password: 'hunter22hunter22' })
+    expect(store.getState()).toMatchObject({ status: 'authenticated', user, isAdmin: true })
+
+    await store.getState().deleteAccount('hunter22hunter22')
+    expect(store.getState()).toMatchObject({ status: 'anonymous', user: null, isAdmin: false })
+  })
+
   it('propagates API errors from actions so forms can show them', async () => {
     const store = createAuthStore(
       fakeApi({

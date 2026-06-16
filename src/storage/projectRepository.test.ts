@@ -1,4 +1,5 @@
 import 'fake-indexeddb/auto'
+import { openDB } from 'idb'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createProject } from '../domain/projectFactory'
 import { createIndexedDbProjectRepository } from './indexedDbProjectRepository'
@@ -18,6 +19,21 @@ describe('project repositories', () => {
 
     await repository.remove('project-1')
     expect(await repository.list()).toEqual([])
+  })
+
+  it('returns undefined for a corrupt IndexedDB record requested by id', async () => {
+    const databaseName = `test-corrupt-get-${crypto.randomUUID()}`
+    const database = await openDB(databaseName, 1, {
+      upgrade(db) {
+        db.createObjectStore('projects')
+      },
+    })
+    await database.put('projects', { schemaVersion: 1, id: 'half-written' }, 'half-written')
+    database.close()
+
+    const repository = createIndexedDbProjectRepository(databaseName)
+
+    await expect(repository.get('half-written')).resolves.toBeUndefined()
   })
 
   it('uses localStorage when the primary repository fails', async () => {

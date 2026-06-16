@@ -1,5 +1,5 @@
-import { render, screen } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { act, render, screen } from '@testing-library/react'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Project } from '../../../domain/project'
 import { createProject } from '../../../domain/projectFactory'
 import { ChipArtwork } from './ChipArtwork'
@@ -34,6 +34,52 @@ vi.mock('react-konva', async () => {
     Star: node('Star'),
     Text: node('Text'),
   }
+})
+
+class FakeImage {
+  private readonly loadListeners = new Set<(event: Event) => void>()
+  src = ''
+
+  addEventListener(type: string, listener: EventListenerOrEventListenerObject) {
+    if (type !== 'load') return
+    this.loadListeners.add(listener as (event: Event) => void)
+  }
+
+  removeEventListener(type: string, listener: EventListenerOrEventListenerObject) {
+    if (type !== 'load') return
+    this.loadListeners.delete(listener as (event: Event) => void)
+  }
+
+  load() {
+    const event = new Event('load')
+    for (const listener of this.loadListeners) listener(event)
+  }
+}
+
+function imageProject(imageDataUrl: string): Project {
+  const project = createProject('Image Overlay', 'image-overlay', 100)
+  return {
+    ...project,
+    blocks: [
+      {
+        id: 'tile-1',
+        type: 'CPU',
+        category: 'real',
+        x: 24,
+        y: 24,
+        w: 160,
+        h: 96,
+        rotation: 0,
+        glow: true,
+        zIndex: 0,
+        imageDataUrl,
+      },
+    ],
+  }
+}
+
+afterEach(() => {
+  vi.unstubAllGlobals()
 })
 
 describe('ChipArtwork studio layers', () => {
@@ -135,5 +181,28 @@ describe('ChipArtwork studio layers', () => {
 
     expect(document.querySelector('[data-name="chip-layer-micro"]')).toBeInTheDocument()
     expect(document.querySelector('[data-name="chip-layer-traces"]')).not.toBeInTheDocument()
+  })
+
+  it('does not keep rendering a stale custom image while a replacement is loading', () => {
+    const images: FakeImage[] = []
+    vi.stubGlobal(
+      'Image',
+      class extends FakeImage {
+        constructor() {
+          super()
+          images.push(this)
+        }
+      },
+    )
+
+    const { rerender } = render(<ChipArtwork project={imageProject('data:image/png;base64,AAA')} />)
+    expect(document.querySelector('[data-konva="Image"]')).not.toBeInTheDocument()
+
+    act(() => images[0].load())
+    expect(document.querySelector('[data-konva="Image"]')).toBeInTheDocument()
+
+    rerender(<ChipArtwork project={imageProject('data:image/png;base64,BBB')} />)
+
+    expect(document.querySelector('[data-konva="Image"]')).not.toBeInTheDocument()
   })
 })

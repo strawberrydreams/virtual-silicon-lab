@@ -42,7 +42,12 @@ export function GalleryDetailPage({
   if (loadedSlug !== slug) {
     setLoadedSlug(slug)
     setChip('loading')
+    setLikeState(null)
+    setReported(false)
+    setActionError(null)
+    setComments([])
     setLineage(null)
+    setDraft('')
   }
 
   useEffect(() => {

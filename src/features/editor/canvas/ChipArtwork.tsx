@@ -1430,17 +1430,20 @@ export function BlockArtwork({
 }
 
 function BlockImageOverlay({ block }: { block: Block }) {
-  const [image, setImage] = useState<HTMLImageElement | null>(null)
+  const [loadedImage, setLoadedImage] = useState<{
+    src: string
+    image: HTMLImageElement
+  } | null>(null)
 
   useEffect(() => {
     // The parent only mounts this overlay when block.imageDataUrl is truthy
-    // (BlockArtwork guards on it), so the loader never needs to reset to null
-    // synchronously — it just loads the data URL and swaps the image in once ready.
+    // (BlockArtwork guards on it). Keep the loaded image keyed by source so a
+    // new URL never renders the previous image while the replacement is loading.
     if (!block.imageDataUrl) return
     let cancelled = false
     const nextImage = new window.Image()
     const handleLoad = () => {
-      if (!cancelled) setImage(nextImage)
+      if (!cancelled) setLoadedImage({ src: block.imageDataUrl!, image: nextImage })
     }
     nextImage.addEventListener('load', handleLoad)
     nextImage.src = block.imageDataUrl
@@ -1450,10 +1453,10 @@ function BlockImageOverlay({ block }: { block: Block }) {
     }
   }, [block.imageDataUrl])
 
-  if (!image) return null
+  if (!block.imageDataUrl || loadedImage?.src !== block.imageDataUrl) return null
   return (
     <KonvaImage
-      image={image}
+      image={loadedImage.image}
       x={6}
       y={6}
       width={Math.max(1, block.w - 12)}

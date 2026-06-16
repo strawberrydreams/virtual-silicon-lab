@@ -24,6 +24,25 @@ function seed(db: ReturnType<typeof openDatabase>) {
   ).run('chip1', 'u1', 'p1', 'slug-1', 'Chip One', '{}', '', '', 1, 1, 1)
 }
 
+function seedChip(
+  db: ReturnType<typeof openDatabase>,
+  id: string,
+  opts: { isPublic?: boolean; moderationStatus?: 'visible' | 'hidden' } = {},
+) {
+  db.prepare(
+    `INSERT INTO published_chips (id, owner_user_id, source_project_id, slug, title, project_json, die_image_data_url, poster_image_data_url, is_public, moderation_status, created_at, updated_at, published_at)
+     VALUES (?,?,?,?,?,'{}','','',?,?,1,1,1)`,
+  ).run(
+    id,
+    'u1',
+    `p-${id}`,
+    `slug-${id}`,
+    id,
+    opts.isPublic === false ? 0 : 1,
+    opts.moderationStatus ?? 'visible',
+  )
+}
+
 describe('moderation service', () => {
   it('creates a report and lists it in the open queue', () => {
     const db = openDatabase(':memory:')
@@ -46,6 +65,29 @@ describe('moderation service', () => {
     seed(db)
     expect(
       createReport(db, { publishedChipId: 'nope', reporterUserId: 'u1', reason: null }, () => 5),
+    ).toBe('chip-not-found')
+  })
+
+  it('returns chip-not-found when reporting a hidden or private chip', () => {
+    const db = openDatabase(':memory:')
+    runMigrations(db, migrations)
+    seed(db)
+    seedChip(db, 'hidden-chip', { moderationStatus: 'hidden' })
+    seedChip(db, 'private-chip', { isPublic: false })
+
+    expect(
+      createReport(
+        db,
+        { publishedChipId: 'hidden-chip', reporterUserId: 'u1', reason: null },
+        () => 5,
+      ),
+    ).toBe('chip-not-found')
+    expect(
+      createReport(
+        db,
+        { publishedChipId: 'private-chip', reporterUserId: 'u1', reason: null },
+        () => 5,
+      ),
     ).toBe('chip-not-found')
   })
 

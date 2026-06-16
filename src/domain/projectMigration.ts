@@ -1,4 +1,4 @@
-import { CURRENT_SCHEMA_VERSION, type Project } from './project'
+import { CURRENT_SCHEMA_VERSION, type Project, type RemixOrigin } from './project'
 import { cloneStudioState, createDefaultStudioState } from './studioDefaults'
 
 const SUPPORTED_SCHEMA_VERSIONS = new Set([1, 2, 3, 4, CURRENT_SCHEMA_VERSION])
@@ -33,13 +33,19 @@ export function migrateProject(value: unknown): Project {
   // Schema 1 predates studio data; everything from schema 2 onward carries a
   // studio object, which cloneStudioState normalizes (e.g. defaulting spray blend).
   if (candidate.schemaVersion === 1) {
-    return { ...project, schemaVersion: CURRENT_SCHEMA_VERSION, studio: createDefaultStudioState() }
+    return withNormalizedRemixOrigin(
+      { ...project, schemaVersion: CURRENT_SCHEMA_VERSION, studio: createDefaultStudioState() },
+      candidate.remixedFrom,
+    )
   }
 
   const studio = validateStudio(candidate.studio)
     ? cloneStudioState(candidate.studio)
     : createDefaultStudioState()
-  return { ...project, schemaVersion: CURRENT_SCHEMA_VERSION, studio }
+  return withNormalizedRemixOrigin(
+    { ...project, schemaVersion: CURRENT_SCHEMA_VERSION, studio },
+    candidate.remixedFrom,
+  )
 }
 
 function validateStudio(value: unknown): value is Project['studio'] {
@@ -59,6 +65,29 @@ function validateStudio(value: unknown): value is Project['studio'] {
     Array.isArray(studio.sprays) &&
     Array.isArray(studio.stickers)
   )
+}
+
+function validateRemixOrigin(value: unknown): RemixOrigin | undefined {
+  if (typeof value !== 'object' || value === null) return undefined
+  const origin = value as Record<string, unknown>
+  if (
+    typeof origin.chipId !== 'string' ||
+    typeof origin.slug !== 'string' ||
+    typeof origin.title !== 'string'
+  ) {
+    return undefined
+  }
+  return { chipId: origin.chipId, slug: origin.slug, title: origin.title }
+}
+
+function withNormalizedRemixOrigin(project: Project, value: unknown): Project {
+  const remixedFrom = validateRemixOrigin(value)
+  if (remixedFrom === undefined) {
+    const normalized = { ...project }
+    delete normalized.remixedFrom
+    return normalized
+  }
+  return { ...project, remixedFrom }
 }
 
 // Tolerant batch migration for repository `list()`: one unreadable record must

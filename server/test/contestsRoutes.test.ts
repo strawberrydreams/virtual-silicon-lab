@@ -97,6 +97,31 @@ describe('contest routes — admin', () => {
     expect((await app.request(`/api/contests/${id}`)).status).toBe(200)
   })
 
+  it('admin list includes draft contests while public list hides them', async () => {
+    const { app } = createTestApp(now, opts())
+    const adminCookie = await signup(app, 'admin@test.com')
+    const userCookie = await signup(app, 'user@test.com')
+    await app.request(
+      '/api/admin/contests',
+      jsonRequest('POST', { title: 'Draft Jam', theme: 't' }, adminCookie),
+    )
+
+    const adminList = (await (
+      await app.request('/api/admin/contests', { headers: { cookie: adminCookie } })
+    ).json()) as { contests: { title: string; status: string }[] }
+
+    expect(adminList.contests).toEqual([
+      expect.objectContaining({ title: 'Draft Jam', status: 'draft' }),
+    ])
+    expect(
+      ((await (await app.request('/api/contests')).json()) as { contests: unknown[] }).contests,
+    ).toEqual([])
+    expect(
+      (await app.request('/api/admin/contests', { headers: { cookie: userCookie } })).status,
+    ).toBe(403)
+    expect((await app.request('/api/admin/contests')).status).toBe(401)
+  })
+
   it('rejects an invalid status on PATCH', async () => {
     const { app } = createTestApp(now, opts())
     const adminCookie = await signup(app, 'admin@test.com')
@@ -224,5 +249,56 @@ describe('contest routes — entries and votes', () => {
     expect(
       (await app.request(`/api/contests/${id}/vote`, jsonRequest('DELETE', {}, bCookie))).status,
     ).toBe(200)
+  })
+
+  it('returns 404 when voting for an entry whose chip was hidden or made private', async () => {
+    const { app, db } = createTestApp(now, opts())
+    const adminCookie = await signup(app, 'admin@test.com')
+    const aCookie = await signup(app, 'a@test.com')
+    const bCookie = await signup(app, 'b@test.com')
+    const voterCookie = await signup(app, 'voter@test.com')
+    publishChip(db, 'a@test.com', 'chipA')
+    publishChip(db, 'b@test.com', 'chipB')
+    const id = await makeContest(app, adminCookie, 'submission')
+    const entryA = (
+      (await (
+        await app.request(
+          `/api/contests/${id}/entries`,
+          jsonRequest('POST', { publishedChipId: 'chipA' }, aCookie),
+        )
+      ).json()) as { entry: { entryId: string } }
+    ).entry.entryId
+    const entryB = (
+      (await (
+        await app.request(
+          `/api/contests/${id}/entries`,
+          jsonRequest('POST', { publishedChipId: 'chipB' }, bCookie),
+        )
+      ).json()) as { entry: { entryId: string } }
+    ).entry.entryId
+
+    db.prepare("UPDATE published_chips SET moderation_status = 'hidden' WHERE id = 'chipA'").run()
+    db.prepare("UPDATE published_chips SET is_public = 0 WHERE id = 'chipB'").run()
+    await app.request(
+      `/api/admin/contests/${id}`,
+      jsonRequest('PATCH', { status: 'voting' }, adminCookie),
+    )
+
+    expect(
+      (
+        await app.request(
+          `/api/contests/${id}/vote`,
+          jsonRequest('POST', { entryId: entryA }, voterCookie),
+        )
+      ).status,
+    ).toBe(404)
+    expect(
+      (
+        await app.request(
+          `/api/contests/${id}/vote`,
+          jsonRequest('POST', { entryId: entryB }, voterCookie),
+        )
+      ).status,
+    ).toBe(404)
   })
 })

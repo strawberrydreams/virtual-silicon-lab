@@ -187,6 +187,17 @@ describe('migrateProject', () => {
     expect(migrated.remixedFrom).toEqual({ chipId: 'c1', slug: 's1', title: 'Parent' })
   })
 
+  it('drops invalid remixedFrom metadata when migrating a current-version project', () => {
+    const migrated = migrateProject({
+      ...validProject('bad-origin'),
+      schemaVersion: CURRENT_SCHEMA_VERSION,
+      studio: undefined,
+      remixedFrom: { chipId: 42, slug: 's1', title: 'Parent' },
+    })
+
+    expect(migrated.remixedFrom).toBeUndefined()
+  })
+
   it('migrates a schema version 3 project to current version, preserving studio settings', () => {
     const project = migrateProject({
       ...validProject('v3-project'),
