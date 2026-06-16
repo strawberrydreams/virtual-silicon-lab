@@ -26,6 +26,7 @@ export function ProjectDashboard({
   removeProject,
 }: Props) {
   const navigate = useNavigate()
+  const starterPresets = presets.filter((preset) => preset.featured).slice(0, 3)
 
   async function startProject() {
     const project = await createProject('Untitled Dream Chip')
@@ -113,6 +114,21 @@ export function ProjectDashboard({
                 Start from a curated preset above or create a blank chip layout. Projects are saved
                 locally in this browser.
               </p>
+              <section aria-label="Starter templates">
+                <h3>Start from a template</h3>
+                <div className="v2-action-row">
+                  {starterPresets.map((preset) => (
+                    <button
+                      className="v2-button v2-button--muted"
+                      key={preset.id}
+                      onClick={() => void startRemix(preset.id)}
+                      type="button"
+                    >
+                      Start with {preset.name}
+                    </button>
+                  ))}
+                </div>
+              </section>
               <button className="v2-button" onClick={startProject}>
                 Start Blank Project
               </button>

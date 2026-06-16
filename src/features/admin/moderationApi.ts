@@ -28,6 +28,8 @@ export type ModerationApi = {
   hideChip: (id: string, reason?: string) => Promise<void>
   unhideChip: (id: string) => Promise<void>
   deleteChip: (id: string) => Promise<void>
+  featureChip: (id: string) => Promise<void>
+  unfeatureChip: (id: string) => Promise<void>
 }
 
 async function ok(res: Response): Promise<Response> {
@@ -67,5 +69,11 @@ export const liveModerationApi: ModerationApi = {
   },
   async deleteChip(id) {
     await ok(await fetch(`/api/admin/published-chips/${id}`, { method: 'DELETE' }))
+  },
+  async featureChip(id) {
+    await ok(await fetch(`/api/admin/published-chips/${id}/feature`, { method: 'POST' }))
+  },
+  async unfeatureChip(id) {
+    await ok(await fetch(`/api/admin/published-chips/${id}/unfeature`, { method: 'POST' }))
   },
 }

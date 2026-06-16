@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import type { AuthApi, AuthUser } from '../account/authApi'
 import type { ContestsApi } from '../contests/contestsApi'
@@ -38,6 +39,8 @@ function moderationApi(): ModerationApi {
     hideChip: vi.fn(),
     unhideChip: vi.fn(),
     deleteChip: vi.fn(),
+    featureChip: vi.fn().mockResolvedValue(undefined),
+    unfeatureChip: vi.fn().mockResolvedValue(undefined),
   }
 }
 
@@ -95,5 +98,32 @@ describe('AdminPage', () => {
     expect(await screen.findByText('Draft Jam')).toBeInTheDocument()
     expect(adminList).toHaveBeenCalledTimes(1)
     expect(publicList).not.toHaveBeenCalled()
+  })
+
+  it('offers feature and unfeature actions for published chips', async () => {
+    const api = moderationApi()
+    vi.mocked(api.listChips).mockResolvedValue([
+      {
+        id: 'chip1',
+        slug: 'slug-1',
+        title: 'Launch Chip',
+        ownerDisplayName: 'Ada',
+        isPublic: true,
+        moderationStatus: 'visible',
+        updatedAt: 1,
+      },
+    ])
+
+    render(
+      <AuthStoreProvider api={authApi()}>
+        <AdminPage api={api} contestsApi={contestsApi()} />
+      </AuthStoreProvider>,
+    )
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Feature Launch Chip' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Unfeature Launch Chip' }))
+
+    expect(api.featureChip).toHaveBeenCalledWith('chip1')
+    expect(api.unfeatureChip).toHaveBeenCalledWith('chip1')
   })
 })

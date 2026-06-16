@@ -2679,11 +2679,80 @@ button {
   margin-bottom: 0.9rem;
 }
 
+.gallery-featured {
+  width: min(1180px, calc(100vw - 2rem));
+  margin: 0 auto 1.5rem;
+}
+
+.gallery-featured__row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+}
+
+.editor-stage-wrap {
+  position: relative;
+}
+
+.editor-coachmarks {
+  pointer-events: none;
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  z-index: 8;
+  max-width: min(360px, calc(100% - 2rem));
+}
+
+.editor-coachmarks__panel {
+  pointer-events: auto;
+  border: 1px solid var(--v2-border);
+  background: color-mix(in srgb, var(--v2-panel) 94%, transparent);
+  box-shadow: 0 18px 42px var(--v2-shadow);
+  padding: 1rem;
+}
+
+.editor-coachmarks__panel h2 {
+  margin: 0.25rem 0 0.7rem;
+  font-size: 1rem;
+  letter-spacing: 0;
+}
+
+.editor-coachmarks__panel ol {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+  padding-left: 1.1rem;
+  color: var(--v2-muted);
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.editor-coachmarks__actions {
+  display: flex;
+  gap: 0.6rem;
+  justify-content: flex-end;
+  margin-top: 0.9rem;
+}
+
+.editor-coachmarks__actions button {
+  min-height: 2.25rem;
+  border: 1px solid var(--v2-border);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--v2-text);
+  padding: 0.35rem 0.7rem;
+}
+
 @media (max-width: 760px) {
   .contest-podium,
   .contest-detail__enter li,
   .admin-contest-create,
   .admin-contest-list li {
     grid-template-columns: 1fr;
+  }
+
+  .editor-coachmarks {
+    position: static;
+    max-width: none;
+    margin: 0.75rem;
   }
 }

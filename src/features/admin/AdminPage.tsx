@@ -199,6 +199,18 @@ export function AdminPage({
               ) : (
                 <button onClick={() => act(api.unhideChip(chip.id))}>Unhide</button>
               )}{' '}
+              <button
+                aria-label={`Feature ${chip.title}`}
+                onClick={() => act(api.featureChip(chip.id))}
+              >
+                Feature
+              </button>{' '}
+              <button
+                aria-label={`Unfeature ${chip.title}`}
+                onClick={() => act(api.unfeatureChip(chip.id))}
+              >
+                Unfeature
+              </button>{' '}
               <button onClick={() => act(api.deleteChip(chip.id))}>Delete</button>
             </li>
           ))}

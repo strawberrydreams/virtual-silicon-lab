@@ -1263,3 +1263,24 @@ M2는 먼저 서버 보안 계약을 끝냈다. Client verify/reset 페이지와
   src/stores/authStore.test.ts src/stores/authStoreContext.test.tsx src/app/App.test.tsx
   src/features/publish/PublishPanel.test.tsx src/features/gallery/GalleryDetailPage.test.tsx
   src/features/admin/AdminPage.test.tsx` 7파일/51테스트 통과.
+
+## V5-M3 Onboarding & First-Run (2026-06-17)
+
+신규 사용자 첫 실행과 curated gallery entry point를 구현했다. 서버 featured slice와 클라이언트 onboarding/empty-state slice는
+각각 별도 커밋 단위로 나눴다.
+
+- **Featured curation.** `011_featured` migration으로 `published_chips.featured_at`과 DESC index를 추가했다.
+  `setFeatured()`/`listFeaturedChips()`는 public+visible chip만 노출하고 newest-featured 순서로 정렬한다. Admin
+  `feature`/`unfeature` route는 `audit_log`에 `feature_chip`/`unfeature_chip`을 기록한다.
+- **Featured UI.** Gallery는 `/api/gallery/featured`를 별도로 읽어 non-empty일 때만 Featured row를 표시한다. Public gallery
+  list sort와 독립 fetch로 두어 featured failure가 전체 gallery를 막지 않게 했다.
+- **First-run state.** `vsl.onboarding` localStorage key와 vanilla Zustand store로 editor coachmark dismissal을 per-device
+  저장한다. 서버 user flag로 동기화하지 않는 결정은 v5 launch 범위와 local-first 원칙에 맞췄다.
+- **Editor coachmark.** DOM overlay는 editor UI 전용이며 export stage와 project JSON에는 영향을 주지 않는다. Overlay wrapper는
+  pointer-events를 끄고 panel만 클릭 가능하게 해 canvas interaction을 불필요하게 막지 않는다.
+- **Starter chips.** Dashboard empty state에 featured preset 3개를 직접 시작하는 CTA를 추가했다. 기존 preset grid도 유지하므로
+  신규 사용자와 기존 사용자의 흐름을 분기시키지 않는다.
+- **검증.** RED: `featuredMigration featuredService galleryRoutes moderationRoutes` 및 client
+  `onboardingStore GalleryPage ProjectDashboard AdminPage` targeted tests가 부재 기능으로 실패. GREEN:
+  server targeted 4파일/20테스트 통과, client targeted
+  `onboardingStore GalleryPage galleryApi GalleryDetailPage ProjectDashboard AdminPage moderationApi App` 8파일/42테스트 통과.

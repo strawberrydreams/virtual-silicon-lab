@@ -43,6 +43,7 @@ const detail: GalleryChipDetail = {
 function fakeApi(overrides: Partial<GalleryApi> = {}): GalleryApi {
   return {
     list: vi.fn(),
+    featured: vi.fn().mockResolvedValue([]),
     get: vi.fn().mockResolvedValue(detail),
     getLineage: vi.fn().mockResolvedValue({ ancestors: [], children: [], childCount: 0 }),
     ...overrides,
