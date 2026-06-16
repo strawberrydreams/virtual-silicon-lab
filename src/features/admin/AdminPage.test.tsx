@@ -13,6 +13,7 @@ const user: AuthUser = {
   displayName: 'Admin',
   createdAt: 0,
   emailVerified: true,
+  handle: null,
 }
 
 function authApi(): AuthApi {
@@ -28,6 +29,7 @@ function authApi(): AuthApi {
     verifyEmail: vi.fn(),
     forgotPassword: vi.fn(),
     resetPassword: vi.fn(),
+    setHandle: vi.fn(),
   }
 }
 

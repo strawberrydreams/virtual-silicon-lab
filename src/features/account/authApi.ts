@@ -4,6 +4,7 @@ export type AuthUser = {
   displayName: string
   createdAt: number
   emailVerified: boolean
+  handle: string | null
 }
 export type AccessMode = 'closed' | 'invite' | 'open'
 
@@ -41,6 +42,7 @@ export type AuthApi = {
   verifyEmail: (token: string) => Promise<AuthUser>
   forgotPassword: (email: string) => Promise<void>
   resetPassword: (input: { token: string; newPassword: string }) => Promise<void>
+  setHandle: (handle: string) => Promise<AuthUser>
 }
 
 // A proxy in front of a down API server (Vite dev proxy, nginx) answers with a
@@ -130,5 +132,8 @@ export const liveAuthApi: AuthApi = {
   },
   async resetPassword(input) {
     await expectOk(await request('/api/auth/reset-password', jsonInit('POST', input)))
+  },
+  async setHandle(handle) {
+    return expectUser(await request('/api/me/handle', jsonInit('PATCH', { handle })))
   },
 }

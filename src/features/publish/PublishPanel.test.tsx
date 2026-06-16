@@ -15,6 +15,7 @@ const user: AuthUser = {
   displayName: 'Ada',
   createdAt: 1_000,
   emailVerified: true,
+  handle: null,
 }
 const project = createProject('Ada Chip', 'project-1', 1_000)
 const images = {
@@ -50,6 +51,7 @@ function fakeAuthApi(overrides: Partial<AuthApi> = {}): AuthApi {
     verifyEmail: vi.fn(),
     forgotPassword: vi.fn(),
     resetPassword: vi.fn(),
+    setHandle: vi.fn(),
     ...overrides,
   }
 }

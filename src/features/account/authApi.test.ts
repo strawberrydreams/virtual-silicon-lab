@@ -1,7 +1,14 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { liveAuthApi, ServerUnreachableError } from './authApi'
 
-const user = { id: 'u1', email: 'ada@example.com', displayName: 'Ada', createdAt: 1000 }
+const user = {
+  id: 'u1',
+  email: 'ada@example.com',
+  displayName: 'Ada',
+  createdAt: 1000,
+  emailVerified: true,
+  handle: null,
+}
 
 function jsonResponse(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {

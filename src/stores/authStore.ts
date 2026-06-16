@@ -29,6 +29,7 @@ type AuthState = {
   verifyEmail: (token: string) => Promise<void>
   forgotPassword: (email: string) => Promise<void>
   resetPassword: (input: { token: string; newPassword: string }) => Promise<void>
+  setHandle: (handle: string) => Promise<void>
 }
 
 export function createAuthStore(api: AuthApi = liveAuthApi) {
@@ -116,6 +117,10 @@ export function createAuthStore(api: AuthApi = liveAuthApi) {
       async resetPassword(input) {
         await api.resetPassword(input)
         set({ status: 'anonymous', user: null, isAdmin: false })
+      },
+      async setHandle(handle) {
+        const user = await api.setHandle(handle)
+        set({ user })
       },
     }
   })

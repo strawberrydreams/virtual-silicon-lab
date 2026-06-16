@@ -1284,3 +1284,22 @@ M2는 먼저 서버 보안 계약을 끝냈다. Client verify/reset 페이지와
   `onboardingStore GalleryPage ProjectDashboard AdminPage` targeted tests가 부재 기능으로 실패. GREEN:
   server targeted 4파일/20테스트 통과, client targeted
   `onboardingStore GalleryPage galleryApi GalleryDetailPage ProjectDashboard AdminPage moderationApi App` 8파일/42테스트 통과.
+
+## V5-M4 Discovery, SEO & Profiles (2026-06-17)
+
+공개 사용자 identity surface와 crawler-facing endpoint를 추가했다. Handle은 signup 필수가 아니라 account page에서 선택하는
+optional profile id로 유지했다.
+
+- **Handle schema.** `012_profiles_seo` migration으로 `users.handle`과 partial unique index를 추가했다. 여러 NULL handle은
+  허용하고 non-null handle만 unique enforcement한다.
+- **Validation.** Handle은 lowercase normalize, `^[a-z0-9_]{3,24}$`, reserved word denylist로 제한한다. Reserved list에는
+  route namespace(`admin`, `api`, `gallery`, `s`, `u`, `account`, `contests`, `uploads`, `sitemap`, `robots`, `profiles`,
+  `published-chips`, `health`)를 포함했다.
+- **Profile API.** `PATCH /api/me/handle`은 auth required, taken handle은 `409 HANDLE_TAKEN`. `GET /api/profiles/:handle`은
+  banned user와 private/hidden chips를 제외하고 public+visible chips만 반환한다.
+- **SEO.** `robots.txt`는 sitemap URL을 노출하고, `sitemap.xml`은 public+visible `/s/:slug`와 non-banned `/u/:handle`만 per-request
+  생성한다. 초기 규모가 작아 캐시/배치 생성은 넣지 않았다.
+- **Client.** `/u/:handle` route, `ProfilePage`, `profileApi`를 추가했다. AccountPage에는 public handle picker와 handle 설정 후
+  public profile link를 추가했다. `AuthUser`는 server payload와 맞춰 `handle: string | null`을 가진다.
+- **검증.** RED: server `profilesMigration profileHandle profilesRoutes seoRoutes`, client `profileApi ProfilePage AccountPage App`
+  tests가 부재 기능으로 실패. GREEN: server targeted 4파일/5테스트 통과, client targeted 9파일/58테스트 통과.

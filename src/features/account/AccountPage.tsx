@@ -362,6 +362,7 @@ function SignupForm() {
 function ProfilePanel() {
   const auth = useAuthStore()
   const [displayName, setDisplayName] = useState(auth.user?.displayName ?? '')
+  const [handle, setHandle] = useState(auth.user?.handle ?? '')
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [deletePassword, setDeletePassword] = useState('')
@@ -389,6 +390,32 @@ function ProfilePanel() {
           created.
         </p>
       )}
+
+      <form
+        className="mt-6 border-t border-[var(--v2-border)] pt-6"
+        onSubmit={(e) => {
+          e.preventDefault()
+          void run(() => auth.setHandle(handle), 'Handle updated.')
+        }}
+      >
+        <label className={labelClass} htmlFor="profile-handle">
+          Public Handle
+        </label>
+        <input
+          className={fieldClass}
+          id="profile-handle"
+          value={handle}
+          onChange={(e) => setHandle(e.target.value)}
+        />
+        <button className={buttonClass} type="submit">
+          Save Handle
+        </button>
+        {auth.user?.handle !== null && auth.user?.handle !== undefined && (
+          <Link className={`${buttonClass} ml-3 inline-block`} to={`/u/${auth.user.handle}`}>
+            View public profile
+          </Link>
+        )}
+      </form>
 
       <form
         className="mt-6"

@@ -13,6 +13,7 @@ export const testUser: AuthUser = {
   displayName: 'Ada',
   createdAt: 1000,
   emailVerified: true,
+  handle: null,
 }
 
 export function fakeApi(overrides: Partial<AuthApi> = {}): AuthApi {
@@ -28,6 +29,7 @@ export function fakeApi(overrides: Partial<AuthApi> = {}): AuthApi {
     verifyEmail: vi.fn().mockResolvedValue(testUser),
     forgotPassword: vi.fn().mockResolvedValue(undefined),
     resetPassword: vi.fn().mockResolvedValue(undefined),
+    setHandle: vi.fn().mockResolvedValue({ ...testUser, handle: 'ada_lab' }),
     ...overrides,
   }
 }
@@ -166,6 +168,20 @@ describe('AccountPage profile management', () => {
     )
 
     expect(await screen.findByText(/verify your email before publishing/i)).toBeInTheDocument()
+  })
+
+  it('sets a public profile handle from the account page', async () => {
+    const api = authedApi()
+    renderAccountPage(api)
+
+    await userEvent.type(await screen.findByLabelText('Public Handle'), 'Ada_Lab')
+    await userEvent.click(screen.getByRole('button', { name: 'Save Handle' }))
+
+    expect(await screen.findByRole('link', { name: 'View public profile' })).toHaveAttribute(
+      'href',
+      '/u/ada_lab',
+    )
+    expect(api.setHandle).toHaveBeenCalledWith('Ada_Lab')
   })
 
   it('changes the password and reports success', async () => {

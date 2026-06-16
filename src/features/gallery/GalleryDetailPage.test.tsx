@@ -63,6 +63,7 @@ function fakeAuthApi(): AuthApi {
     verifyEmail: vi.fn(),
     forgotPassword: vi.fn(),
     resetPassword: vi.fn(),
+    setHandle: vi.fn(),
   }
 }
 

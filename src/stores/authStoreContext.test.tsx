@@ -9,6 +9,7 @@ const user: AuthUser = {
   displayName: 'Ada',
   createdAt: 1000,
   emailVerified: true,
+  handle: null,
 }
 
 function api(me: AuthApi['me']): AuthApi {
@@ -25,6 +26,7 @@ function api(me: AuthApi['me']): AuthApi {
     verifyEmail: reject,
     forgotPassword: reject,
     resetPassword: reject,
+    setHandle: reject,
   }
 }
 

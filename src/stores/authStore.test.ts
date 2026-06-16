@@ -13,6 +13,7 @@ const user: AuthUser = {
   displayName: 'Ada',
   createdAt: 1000,
   emailVerified: true,
+  handle: null,
 }
 
 function fakeApi(overrides: Partial<AuthApi> = {}): AuthApi {
@@ -28,6 +29,7 @@ function fakeApi(overrides: Partial<AuthApi> = {}): AuthApi {
     verifyEmail: vi.fn().mockResolvedValue(user),
     forgotPassword: vi.fn().mockResolvedValue(undefined),
     resetPassword: vi.fn().mockResolvedValue(undefined),
+    setHandle: vi.fn().mockResolvedValue({ ...user, handle: 'ada_lab' }),
     ...overrides,
   }
 }
