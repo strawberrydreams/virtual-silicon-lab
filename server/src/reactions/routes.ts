@@ -2,7 +2,7 @@ import { Hono } from 'hono'
 import type { Context } from 'hono'
 import { getSignedCookie } from 'hono/cookie'
 import type { AppDeps } from '../app'
-import { getSessionUser, type AccountUser } from '../accounts/service'
+import { getSessionUserWithStatus, type AccountUser } from '../accounts/service'
 import { isAdminEmail } from '../moderation/adminAuth'
 import {
   createComment,
@@ -29,12 +29,26 @@ export function reactionsRoutes({ db, sessionSecret, now = Date.now, adminEmails
   async function readUser(c: Context): Promise<AccountUser | null> {
     const token = await getSignedCookie(c, sessionSecret, SESSION_COOKIE)
     if (typeof token !== 'string' || token === '') return null
-    return getSessionUser(db, token, now)
+    const user = getSessionUserWithStatus(db, token, now)
+    return user === null || user.bannedAt !== null ? null : user
+  }
+
+  async function requireActiveUser(c: Context): Promise<AccountUser | Response> {
+    const token = await getSignedCookie(c, sessionSecret, SESSION_COOKIE)
+    if (typeof token !== 'string' || token === '') {
+      return fail(c, 401, 'UNAUTHORIZED', 'Sign in required.')
+    }
+    const user = getSessionUserWithStatus(db, token, now)
+    if (user === null) return fail(c, 401, 'UNAUTHORIZED', 'Sign in required.')
+    if (user.bannedAt !== null) {
+      return fail(c, 403, 'ACCOUNT_BANNED', 'This account is banned.')
+    }
+    return user
   }
 
   routes.post('/published-chips/:id/like', async (c) => {
-    const user = await readUser(c)
-    if (user === null) return fail(c, 401, 'UNAUTHORIZED', 'Sign in required.')
+    const user = await requireActiveUser(c)
+    if (user instanceof Response) return user
     const chipId = c.req.param('id')
     if (!isChipReactable(db, chipId)) return fail(c, 404, 'NOT_FOUND', 'Published chip not found.')
     likeChip(db, chipId, user.id, now)
@@ -42,8 +56,8 @@ export function reactionsRoutes({ db, sessionSecret, now = Date.now, adminEmails
   })
 
   routes.delete('/published-chips/:id/like', async (c) => {
-    const user = await readUser(c)
-    if (user === null) return fail(c, 401, 'UNAUTHORIZED', 'Sign in required.')
+    const user = await requireActiveUser(c)
+    if (user instanceof Response) return user
     const chipId = c.req.param('id')
     if (!isChipReactable(db, chipId)) return fail(c, 404, 'NOT_FOUND', 'Published chip not found.')
     unlikeChip(db, chipId, user.id)
@@ -57,8 +71,8 @@ export function reactionsRoutes({ db, sessionSecret, now = Date.now, adminEmails
   })
 
   routes.post('/published-chips/:id/comments', async (c) => {
-    const user = await readUser(c)
-    if (user === null) return fail(c, 401, 'UNAUTHORIZED', 'Sign in required.')
+    const user = await requireActiveUser(c)
+    if (user instanceof Response) return user
     const chipId = c.req.param('id')
     if (!isChipReactable(db, chipId)) return fail(c, 404, 'NOT_FOUND', 'Published chip not found.')
     const body = (await c.req.json().catch(() => null)) as Record<string, unknown> | null

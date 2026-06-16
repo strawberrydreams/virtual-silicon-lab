@@ -4,12 +4,17 @@ import { migrations } from '../src/migrations'
 import {
   adminDeleteChip,
   createReport,
+  createCommentReport,
   hideChip,
+  hideComment,
   listChipsForModeration,
+  listCommentReports,
   listReports,
   resolveReport,
   unhideChip,
+  unhideComment,
 } from '../src/moderation/service'
+import { createComment } from '../src/reactions/service'
 
 function seed(db: ReturnType<typeof openDatabase>) {
   db.prepare(
@@ -150,5 +155,38 @@ describe('moderation service', () => {
     expect(chips).toHaveLength(1)
     expect(chips[0].ownerDisplayName).toBe('Ada')
     expect(chips[0].moderationStatus).toBe('visible')
+  })
+
+  it('creates comment reports, lists the queue, and hides comments from public threads', () => {
+    const db = openDatabase(':memory:')
+    runMigrations(db, migrations)
+    seed(db)
+    const comment = createComment(
+      db,
+      { publishedChipId: 'chip1', authorUserId: 'u1', body: 'bad comment' },
+      () => 10,
+    )
+
+    const report = createCommentReport(
+      db,
+      { commentId: comment.id, reporterUserId: 'u1', reason: 'abuse' },
+      () => 11,
+    )
+    expect(report).not.toBe('comment-not-found')
+    if (report === 'comment-not-found') throw new Error('unreachable')
+    expect(report.publishedChipId).toBe('chip1')
+
+    const queue = listCommentReports(db)
+    expect(queue).toEqual([
+      expect.objectContaining({
+        id: report.id,
+        commentId: comment.id,
+        commentBody: 'bad comment',
+        chipSlug: 'slug-1',
+      }),
+    ])
+
+    expect(hideComment(db, comment.id, 'admin', () => 12)).toBe(true)
+    expect(unhideComment(db, comment.id)).toBe(true)
   })
 })

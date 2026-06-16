@@ -89,4 +89,27 @@ describe('reactions service — comments', () => {
     expect(listComments(db, 'c1')).toHaveLength(1)
     expect(deleteComment(db, first.id)).toBe(false)
   })
+
+  it('excludes hidden comments from the public list', () => {
+    const db = openDatabase(':memory:')
+    runMigrations(db, migrations)
+    seed(db)
+    const visible = createComment(
+      db,
+      { publishedChipId: 'c1', authorUserId: 'u1', body: 'visible' },
+      () => 10,
+    )
+    const hidden = createComment(
+      db,
+      { publishedChipId: 'c1', authorUserId: 'u2', body: 'hidden' },
+      () => 20,
+    )
+    db.prepare('UPDATE comments SET hidden_at = ?, hidden_by = ? WHERE id = ?').run(
+      30,
+      'admin',
+      hidden.id,
+    )
+
+    expect(listComments(db, 'c1').map((comment) => comment.id)).toEqual([visible.id])
+  })
 })

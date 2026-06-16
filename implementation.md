@@ -1198,3 +1198,23 @@ write-action 차단, comment report/hide queue, admin route audit wiring, client
   `npm test` 통과(client 74파일/380테스트, server 45파일/205테스트), `npm run build` 통과(기존 Vite 500kB chunk warning),
   `npm run typecheck:server` 통과. lint에서 unused future-parameter 2건을 발견해 `void` 처리했고, `npm run lint` 및
   `git diff --check` 통과.
+
+## V5-M1 Safety & Moderation — Server Completion (2026-06-17)
+
+M1의 남은 서버 surface를 구현했다. Client admin UI와 browser QA는 아직 남아 있지만, 서버 acceptance의 핵심인
+ban write-block, comment moderation, audit logging은 API/서비스 테스트로 고정됐다.
+
+- **Banned write guard.** `getSessionUserWithStatus()`를 추가해 일반 auth read는 기존처럼 banned user를 null 처리하되,
+  write routes는 stale signed session이 남은 race에서도 `403 ACCOUNT_BANNED`를 반환할 수 있게 했다. `publishRoutes`와
+  `reactionsRoutes`의 publish/visibility/delete/like/comment write path가 `requireActiveUser()`를 사용한다.
+- **Comment moderation.** `reports.comment_id`를 활용해 `createCommentReport()`, `listCommentReports()`,
+  `hideComment()`, `unhideComment()`를 추가했다. Public `listComments()`는 `hidden_at IS NULL`만 반환한다.
+- **Admin routes + audit.** `/api/admin/users/:id/ban|unban`, `/api/admin/comment-reports`,
+  `/api/admin/comments/:id/hide`, `/api/admin/audit-log`를 추가했다. chip hide/unhide/delete, report resolve/dismiss,
+  comment hide, ban/unban은 모두 `audit_log`에 actor/action/target/detail을 기록한다.
+- **Fixture correction.** Route tests에서 stale session을 검증할 때 raw token cookie를 넣으면 Hono signed-cookie 검증을
+  통과하지 못한다. 실제 signup cookie를 유지한 채 user row만 banned로 바꾸는 방식으로 race/stale-session 경로를 테스트했다.
+- **검증.** RED: publish/reactions/moderation targeted suite가 새 route/service 부재와 hidden-comment 누출로 실패.
+  GREEN: `npm run test --workspace server -- publishRoutes reactionsRoutes reactionsService moderationService moderationRoutes`
+  5파일/43테스트 통과. 서버 전체 `npm run test --workspace server` 45파일/213테스트 통과, `npm run typecheck:server`
+  통과, `npm run lint` 통과.

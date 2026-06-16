@@ -4,6 +4,7 @@ import { hashPassword, verifyPassword } from './passwords'
 import type { SignupInput } from './validation'
 
 export type AccountUser = { id: string; email: string; displayName: string; createdAt: number }
+export type AccountSessionUser = AccountUser & { bannedAt: number | null }
 
 export const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000
 
@@ -12,6 +13,10 @@ type UserAuthRow = UserRow & { banned_at: number | null }
 
 function toUser(row: UserRow): AccountUser {
   return { id: row.id, email: row.email, displayName: row.display_name, createdAt: row.created_at }
+}
+
+function toSessionUser(row: UserAuthRow): AccountSessionUser {
+  return { ...toUser(row), bannedAt: row.banned_at }
 }
 
 function hashToken(token: string): string {
@@ -83,6 +88,15 @@ export function getSessionUser(
   token: string,
   now: () => number,
 ): AccountUser | null {
+  const user = getSessionUserWithStatus(db, token, now)
+  return user === null || user.bannedAt !== null ? null : user
+}
+
+export function getSessionUserWithStatus(
+  db: Database.Database,
+  token: string,
+  now: () => number,
+): AccountSessionUser | null {
   const tokenHash = hashToken(token)
   const row = db
     .prepare(
@@ -92,12 +106,11 @@ export function getSessionUser(
     )
     .get(tokenHash) as (UserAuthRow & { expires_at: number }) | undefined
   if (row === undefined) return null
-  if (row.banned_at !== null) return null
   if (row.expires_at <= now()) {
     db.prepare('DELETE FROM sessions WHERE token_hash = ?').run(tokenHash)
     return null
   }
-  return toUser(row)
+  return toSessionUser(row)
 }
 
 export function deleteSession(db: Database.Database, token: string): void {
