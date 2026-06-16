@@ -1242,3 +1242,24 @@ M2는 먼저 서버 보안 계약을 끝냈다. Client verify/reset 페이지와
   suite가 모듈/migration/soft-gate 부재로 실패. GREEN: 같은 targeted suite 7파일/28테스트 통과. 서버 전체
   `npm run test --workspace server` 50파일/221테스트 통과, `npm run typecheck:server` 통과, `npm run lint` 통과,
   `npm run build` 통과(기존 Vite 500kB chunk warning).
+
+## V5-M2 Account Security — Client Completion (2026-06-17)
+
+서버 계정 보안 계약을 클라이언트에 연결했다. 새 화면은 기존 `AccountPage` visual language를 재사용하고, local-first
+편집 경로와 분리했다.
+
+- **Auth contract.** `AuthUser.emailVerified`를 필수 필드로 승격하고 `verifyEmail`/`forgotPassword`/`resetPassword`를
+  `authApi`와 `authStore`에 추가했다. `resetPassword` 성공 후에는 기존 세션이 서버에서 revoke되므로 클라이언트도 anonymous
+  state로 돌린다.
+- **Routes.** `/verify-email`, `/forgot-password`, `/reset-password`를 추가했다. 토큰은 query string에서 읽고, missing token은
+  error panel로 처리한다.
+- **Account UI.** Sign-in panel에서 reset mail 요청을 직접 보낼 수 있게 했다. 서버가 enumeration 방지를 위해 항상 성공 응답을
+  주므로 UI도 "존재하면 발송" 메시지만 보여준다. 미인증 사용자는 profile panel 상단에 publish 전 email verification 필요 banner를
+  본다.
+- **Trade-off.** Verification mail 재발송 endpoint는 spec의 최소 launch gate에는 없어서 추가하지 않았다. 재발송은 운영자가
+  필요성을 확인한 뒤 별도 endpoint로 넣는 편이 낫다.
+- **검증.** RED: targeted client tests가 API method/page/banner/reset button 부재로 실패. GREEN:
+  `npm run test:client -- src/features/account/authApi.test.ts src/features/account/AccountPage.test.tsx
+  src/stores/authStore.test.ts src/stores/authStoreContext.test.tsx src/app/App.test.tsx
+  src/features/publish/PublishPanel.test.tsx src/features/gallery/GalleryDetailPage.test.tsx
+  src/features/admin/AdminPage.test.tsx` 7파일/51테스트 통과.

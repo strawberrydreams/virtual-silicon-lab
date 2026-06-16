@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, Navigate, Route, Routes, useNavigate, useParams } from 'react-router-dom'
 import type { Project, RemixOrigin } from '../domain/project'
-import { AccountPage } from '../features/account/AccountPage'
+import {
+  AccountPage,
+  ForgotPasswordPage,
+  ResetPasswordPage,
+  VerifyEmailPage,
+} from '../features/account/AccountPage'
 import { AdminPage } from '../features/admin/AdminPage'
 import { ContestDetailPage } from '../features/contests/ContestDetailPage'
 import { ContestsPage } from '../features/contests/ContestsPage'
@@ -174,6 +179,9 @@ export function App() {
               <Route path="/dashboard" element={<DashboardRoute />} />
               <Route path="/editor/:projectId" element={<EditorRoute />} />
               <Route path="/account" element={<AccountPage />} />
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
+              <Route path="/verify-email" element={<VerifyEmailPage />} />
               <Route path="/admin" element={<AdminPage />} />
               <Route path="/gallery" element={<GalleryPage />} />
               <Route path="/gallery/:slug" element={<GalleryDetailRoute />} />

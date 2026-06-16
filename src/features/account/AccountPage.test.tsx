@@ -5,13 +5,14 @@ import { describe, expect, it, vi } from 'vitest'
 import type { AuthApi, AuthUser } from './authApi'
 import { AuthApiError, ServerUnreachableError } from './authApi'
 import { AuthStoreProvider } from '../../stores/authStoreContext'
-import { AccountPage } from './AccountPage'
+import { AccountPage, ResetPasswordPage, VerifyEmailPage } from './AccountPage'
 
 export const testUser: AuthUser = {
   id: 'u1',
   email: 'ada@example.com',
   displayName: 'Ada',
   createdAt: 1000,
+  emailVerified: true,
 }
 
 export function fakeApi(overrides: Partial<AuthApi> = {}): AuthApi {
@@ -24,6 +25,9 @@ export function fakeApi(overrides: Partial<AuthApi> = {}): AuthApi {
     updateDisplayName: vi.fn().mockResolvedValue(testUser),
     changePassword: vi.fn().mockResolvedValue(undefined),
     deleteAccount: vi.fn().mockResolvedValue(undefined),
+    verifyEmail: vi.fn().mockResolvedValue(testUser),
+    forgotPassword: vi.fn().mockResolvedValue(undefined),
+    resetPassword: vi.fn().mockResolvedValue(undefined),
     ...overrides,
   }
 }
@@ -100,6 +104,17 @@ describe('AccountPage anonymous forms', () => {
     expect(await screen.findByText('ada@example.com')).toBeInTheDocument()
   })
 
+  it('requests a reset email from the sign-in panel', async () => {
+    const api = fakeApi()
+    renderAccountPage(api)
+
+    await userEvent.type(await screen.findByLabelText('Email'), 'ada@example.com')
+    await userEvent.click(screen.getByRole('button', { name: 'Send Reset Link' }))
+
+    expect(await screen.findByText(/reset link has been sent/i)).toBeInTheDocument()
+    expect(api.forgotPassword).toHaveBeenCalledWith('ada@example.com')
+  })
+
   it('shows the server error message when login fails', async () => {
     const api = fakeApi({
       login: vi
@@ -139,6 +154,18 @@ describe('AccountPage profile management', () => {
 
     expect(await screen.findByRole('heading', { name: 'Lady Lovelace' })).toBeInTheDocument()
     expect(api.updateDisplayName).toHaveBeenCalledWith('Lady Lovelace')
+  })
+
+  it('shows an email verification banner for unverified users', async () => {
+    renderAccountPage(
+      authedApi({
+        me: vi
+          .fn()
+          .mockResolvedValue({ user: { ...testUser, emailVerified: false }, isAdmin: false }),
+      }),
+    )
+
+    expect(await screen.findByText(/verify your email before publishing/i)).toBeInTheDocument()
   })
 
   it('changes the password and reports success', async () => {
@@ -186,5 +213,41 @@ describe('AccountPage profile management', () => {
 
     expect(await screen.findByText('Password is incorrect.')).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Ada' })).toBeInTheDocument()
+  })
+})
+
+describe('Account recovery routes', () => {
+  it('verifies an email token from the URL', async () => {
+    const api = fakeApi()
+    render(
+      <MemoryRouter initialEntries={['/verify-email?token=token-123']}>
+        <AuthStoreProvider api={api}>
+          <VerifyEmailPage />
+        </AuthStoreProvider>
+      </MemoryRouter>,
+    )
+
+    expect(await screen.findByText(/email verified/i)).toBeInTheDocument()
+    expect(api.verifyEmail).toHaveBeenCalledWith('token-123')
+  })
+
+  it('resets a password with the URL token', async () => {
+    const api = fakeApi()
+    render(
+      <MemoryRouter initialEntries={['/reset-password?token=reset-token']}>
+        <AuthStoreProvider api={api}>
+          <ResetPasswordPage />
+        </AuthStoreProvider>
+      </MemoryRouter>,
+    )
+
+    await userEvent.type(await screen.findByLabelText('New Password'), 'new-password-99')
+    await userEvent.click(screen.getByRole('button', { name: 'Reset Password' }))
+
+    expect(await screen.findByText(/password has been reset/i)).toBeInTheDocument()
+    expect(api.resetPassword).toHaveBeenCalledWith({
+      token: 'reset-token',
+      newPassword: 'new-password-99',
+    })
   })
 })

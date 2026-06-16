@@ -3,7 +3,13 @@ import { describe, expect, it, vi } from 'vitest'
 import type { AuthApi, AuthUser } from '../features/account/authApi'
 import { AuthStoreProvider, useAuthStore } from './authStoreContext'
 
-const user: AuthUser = { id: 'u1', email: 'ada@example.com', displayName: 'Ada', createdAt: 1000 }
+const user: AuthUser = {
+  id: 'u1',
+  email: 'ada@example.com',
+  displayName: 'Ada',
+  createdAt: 1000,
+  emailVerified: true,
+}
 
 function api(me: AuthApi['me']): AuthApi {
   const reject = () => Promise.reject(new Error('not under test'))
@@ -16,6 +22,9 @@ function api(me: AuthApi['me']): AuthApi {
     updateDisplayName: reject,
     changePassword: reject,
     deleteAccount: reject,
+    verifyEmail: reject,
+    forgotPassword: reject,
+    resetPassword: reject,
   }
 }
 

@@ -7,7 +7,13 @@ import {
 } from '../features/account/authApi'
 import { createAuthStore } from './authStore'
 
-const user: AuthUser = { id: 'u1', email: 'ada@example.com', displayName: 'Ada', createdAt: 1000 }
+const user: AuthUser = {
+  id: 'u1',
+  email: 'ada@example.com',
+  displayName: 'Ada',
+  createdAt: 1000,
+  emailVerified: true,
+}
 
 function fakeApi(overrides: Partial<AuthApi> = {}): AuthApi {
   return {
@@ -19,6 +25,9 @@ function fakeApi(overrides: Partial<AuthApi> = {}): AuthApi {
     updateDisplayName: vi.fn().mockResolvedValue({ ...user, displayName: 'Lady Lovelace' }),
     changePassword: vi.fn().mockResolvedValue(undefined),
     deleteAccount: vi.fn().mockResolvedValue(undefined),
+    verifyEmail: vi.fn().mockResolvedValue(user),
+    forgotPassword: vi.fn().mockResolvedValue(undefined),
+    resetPassword: vi.fn().mockResolvedValue(undefined),
     ...overrides,
   }
 }

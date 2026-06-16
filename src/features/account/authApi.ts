@@ -1,4 +1,10 @@
-export type AuthUser = { id: string; email: string; displayName: string; createdAt: number }
+export type AuthUser = {
+  id: string
+  email: string
+  displayName: string
+  createdAt: number
+  emailVerified: boolean
+}
 export type AccessMode = 'closed' | 'invite' | 'open'
 
 export class AuthApiError extends Error {
@@ -32,6 +38,9 @@ export type AuthApi = {
   updateDisplayName: (displayName: string) => Promise<AuthUser>
   changePassword: (input: { currentPassword: string; newPassword: string }) => Promise<void>
   deleteAccount: (password: string) => Promise<void>
+  verifyEmail: (token: string) => Promise<AuthUser>
+  forgotPassword: (email: string) => Promise<void>
+  resetPassword: (input: { token: string; newPassword: string }) => Promise<void>
 }
 
 // A proxy in front of a down API server (Vite dev proxy, nginx) answers with a
@@ -112,5 +121,14 @@ export const liveAuthApi: AuthApi = {
   },
   async deleteAccount(password) {
     await expectOk(await request('/api/me', jsonInit('DELETE', { password })))
+  },
+  async verifyEmail(token) {
+    return expectUser(await request('/api/auth/verify-email', jsonInit('POST', { token })))
+  },
+  async forgotPassword(email) {
+    await expectOk(await request('/api/auth/forgot-password', jsonInit('POST', { email })))
+  },
+  async resetPassword(input) {
+    await expectOk(await request('/api/auth/reset-password', jsonInit('POST', input)))
   },
 }

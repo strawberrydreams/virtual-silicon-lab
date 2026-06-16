@@ -11,6 +11,7 @@ const user: AuthUser = {
   email: 'admin@test.com',
   displayName: 'Admin',
   createdAt: 0,
+  emailVerified: true,
 }
 
 function authApi(): AuthApi {
@@ -23,6 +24,9 @@ function authApi(): AuthApi {
     updateDisplayName: vi.fn(),
     changePassword: vi.fn(),
     deleteAccount: vi.fn(),
+    verifyEmail: vi.fn(),
+    forgotPassword: vi.fn(),
+    resetPassword: vi.fn(),
   }
 }
 

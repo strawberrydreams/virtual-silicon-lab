@@ -1,4 +1,5 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
+import { Link, useLocation } from 'react-router-dom'
 import { useAuthStore } from '../../stores/authStoreContext'
 import { AuthApiError, ServerUnreachableError } from './authApi'
 
@@ -46,6 +47,140 @@ export function AccountPage() {
   )
 }
 
+export function VerifyEmailPage() {
+  const auth = useAuthStore()
+  const verifyEmail = auth.verifyEmail
+  const token = useQueryParam('token')
+  const [status, setStatus] = useState<'loading' | 'done' | 'error'>(token ? 'loading' : 'error')
+  const [error, setError] = useState<string | null>(token ? null : 'Verification token is missing.')
+
+  useEffect(() => {
+    if (!token) return
+    let active = true
+    verifyEmail(token)
+      .then(() => {
+        if (active) setStatus('done')
+      })
+      .catch((caught) => {
+        if (!active) return
+        setError(describeAuthError(caught))
+        setStatus('error')
+      })
+    return () => {
+      active = false
+    }
+  }, [token, verifyEmail])
+
+  return (
+    <AccountShell eyebrow="Share Core" title="Verify Email">
+      {status === 'loading' && <p className="mt-8 text-sm text-[var(--v2-muted)]">Verifying...</p>}
+      {status === 'done' && (
+        <section className={`${panelClass} mt-8`}>
+          <h2 className="text-sm uppercase tracking-[0.18em]">Email Verified</h2>
+          <p className="mt-3 text-sm text-[var(--v2-muted)]">
+            Your publishing account is ready.
+          </p>
+          <Link className={buttonClass} to="/account">
+            Account
+          </Link>
+        </section>
+      )}
+      {status === 'error' && (
+        <section className={`${panelClass} mt-8`}>
+          <h2 className="text-sm uppercase tracking-[0.18em]">Verification Failed</h2>
+          <p className="mt-3 text-sm text-red-400">{error}</p>
+        </section>
+      )}
+    </AccountShell>
+  )
+}
+
+export function ForgotPasswordPage() {
+  return (
+    <AccountShell eyebrow="Share Core" title="Reset Password">
+      <section className={`${panelClass} mt-8`}>
+        <h2 className="text-sm uppercase tracking-[0.18em]">Email Reset Link</h2>
+        <ForgotPasswordForm />
+      </section>
+    </AccountShell>
+  )
+}
+
+export function ResetPasswordPage() {
+  const auth = useAuthStore()
+  const token = useQueryParam('token')
+  const [newPassword, setNewPassword] = useState('')
+  const [message, setMessage] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(token ? null : 'Reset token is missing.')
+  const [busy, setBusy] = useState(false)
+
+  async function submit(event: FormEvent) {
+    event.preventDefault()
+    if (!token) return
+    setBusy(true)
+    setMessage(null)
+    setError(null)
+    try {
+      await auth.resetPassword({ token, newPassword })
+      setNewPassword('')
+      setMessage('Password has been reset. Sign in with the new password.')
+    } catch (caught) {
+      setError(describeAuthError(caught))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <AccountShell eyebrow="Share Core" title="Reset Password">
+      <section className={`${panelClass} mt-8`}>
+        <h2 className="text-sm uppercase tracking-[0.18em]">Set New Password</h2>
+        <form className="mt-4" onSubmit={submit}>
+          <label className={labelClass} htmlFor="reset-new-password">
+            New Password
+          </label>
+          <input
+            className={fieldClass}
+            disabled={!token}
+            id="reset-new-password"
+            type="password"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+          />
+          <button className={buttonClass} disabled={busy || !token} type="submit">
+            Reset Password
+          </button>
+        </form>
+        {message !== null && <p className="mt-4 text-sm text-[var(--v2-accent)]">{message}</p>}
+        {error !== null && <p className="mt-4 text-sm text-red-400">{error}</p>}
+      </section>
+    </AccountShell>
+  )
+}
+
+function AccountShell({
+  eyebrow,
+  title,
+  children,
+}: {
+  eyebrow: string
+  title: string
+  children: ReactNode
+}) {
+  return (
+    <main className="mx-auto max-w-3xl px-6 py-10 text-[var(--v2-text)]">
+      <p className="text-xs uppercase tracking-[0.45em] text-[var(--v2-accent)]">{eyebrow}</p>
+      <h1 className="mt-2 text-2xl uppercase tracking-[0.18em]">{title}</h1>
+      {children}
+    </main>
+  )
+}
+
+function useQueryParam(name: string) {
+  const location = useLocation()
+  return new URLSearchParams(location.search).get(name)
+}
+
 function AnonymousPanels() {
   const auth = useAuthStore()
   return (
@@ -70,6 +205,7 @@ function SignInForm() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [message, setMessage] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
   async function submit(event: FormEvent) {
@@ -78,6 +214,20 @@ function SignInForm() {
     setError(null)
     try {
       await auth.login({ email, password })
+    } catch (caught) {
+      setError(describeAuthError(caught))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function requestReset() {
+    setBusy(true)
+    setError(null)
+    setMessage(null)
+    try {
+      await auth.forgotPassword(email)
+      setMessage('If the account exists, a reset link has been sent.')
     } catch (caught) {
       setError(describeAuthError(caught))
     } finally {
@@ -109,9 +259,18 @@ function SignInForm() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
+        {message !== null && <p className="mt-3 text-sm text-[var(--v2-accent)]">{message}</p>}
         {error !== null && <p className="mt-3 text-sm text-red-400">{error}</p>}
         <button className={buttonClass} disabled={busy} type="submit">
           Sign In
+        </button>
+        <button
+          className={`${buttonClass} ml-3 border-[var(--v2-border)] text-[var(--v2-muted)] hover:border-[var(--v2-accent)]`}
+          disabled={busy}
+          onClick={() => void requestReset()}
+          type="button"
+        >
+          Send Reset Link
         </button>
       </form>
     </section>
@@ -224,6 +383,12 @@ function ProfilePanel() {
     <section className={`${panelClass} mt-8`}>
       <h2 className="text-sm uppercase tracking-[0.18em]">{auth.user?.displayName}</h2>
       <p className="mt-2 text-sm text-[var(--v2-muted)]">{auth.user?.email}</p>
+      {auth.user?.emailVerified === false && (
+        <p className="mt-4 rounded border border-amber-300/40 bg-amber-300/10 p-3 text-sm text-amber-200">
+          Verify your email before publishing. The verification link was sent when this account was
+          created.
+        </p>
+      )}
 
       <form
         className="mt-6"

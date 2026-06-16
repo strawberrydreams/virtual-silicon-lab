@@ -26,6 +26,9 @@ type AuthState = {
   updateDisplayName: (displayName: string) => Promise<void>
   changePassword: (input: { currentPassword: string; newPassword: string }) => Promise<void>
   deleteAccount: (password: string) => Promise<void>
+  verifyEmail: (token: string) => Promise<void>
+  forgotPassword: (email: string) => Promise<void>
+  resetPassword: (input: { token: string; newPassword: string }) => Promise<void>
 }
 
 export function createAuthStore(api: AuthApi = liveAuthApi) {
@@ -101,6 +104,17 @@ export function createAuthStore(api: AuthApi = liveAuthApi) {
       },
       async deleteAccount(password) {
         await api.deleteAccount(password)
+        set({ status: 'anonymous', user: null, isAdmin: false })
+      },
+      async verifyEmail(token) {
+        const user = await api.verifyEmail(token)
+        set(await authenticatedState(user))
+      },
+      async forgotPassword(email) {
+        await api.forgotPassword(email)
+      },
+      async resetPassword(input) {
+        await api.resetPassword(input)
         set({ status: 'anonymous', user: null, isAdmin: false })
       },
     }
