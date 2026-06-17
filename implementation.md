@@ -1441,7 +1441,7 @@ v6 "Mobile/Responsive"의 첫 마일스톤. 데스크톱 전용 뷰포트 바닥
   (`.grid` 1열, `.wrap` 패딩 축소, h1 26px, `.cta` 세로 스택) — `renderViewerHtml`/`renderNotFoundHtml` 공통
   적용, OG/`poster.png` 동작 불변. emitted HTML에 `@media` 포함을 `shareHelpers.test.ts`로 문자열 assert(TDD).
 - **게이트.** `npm test`(client 80 files/414 tests + server 62 files/242 tests), `npm run build`(알려진 청크
-  경고만), `npm run typecheck --workspace server`, `npm run lint` 모두 green. 모바일 시각 확인은 V6-M4 QA로 이월.
+  경고만), `npm run typecheck --workspace server`, `npm run lint` 모두 green. 모바일 시각 확인은 V6-M4 QA로 이월. (M1)
 
 ## V6-M2 Account & Dashboard (2026-06-18)
 
@@ -1460,4 +1460,27 @@ v6 "Mobile/Responsive"의 첫 마일스톤. 데스크톱 전용 뷰포트 바닥
   static 배치로 리플로우됨(styles.css:2872). 모바일 에디터(V6-M3)는 coachmark를 렌더하지 않음. 대시보드/계정의
   first-run 안내 텍스트는 Task 1/2로 리플로우 → M2에 신규 온보딩 코드 불필요(확인만).
 - **게이트.** `npm test`(client 80 files/414 tests + server 62 files/242 tests), `npm run build`(알려진 청크
-  경고만), `npm run typecheck --workspace server`, `npm run lint` 모두 green. 모바일 시각 확인은 V6-M4 QA로 이월.
+  경고만), `npm run typecheck --workspace server`, `npm run lint` 모두 green. 모바일 시각 확인은 V6-M4 QA로 이월. (M2)
+
+## V6-M3 Editor Read-Only Mobile Preview (2026-06-18)
+
+모바일에서 `/editor/:id`가 Konva 저작 셸 대신 **읽기 전용 미리보기**(공유 artwork 렌더 + fake spec + die/poster
+export + share link + "Edit on desktop" CTA)를 렌더. 데스크톱 저작은 불변. v6의 유일한 구조적 마일스톤.
+
+- **분기 위치.** `App.tsx`의 `EditorRoute`에서 `useIsMobile()`로 분기 — `EditorPage` **mount 전에** 결정해
+  에디터의 stateful 훅(`useAutosave`/`useEditorShortcuts`/editor store)이 모바일에서 mount되지 않게 함(Rules of
+  Hooks 준수). spec 문구는 "EditorPage가 분기를 렌더"였으나, EditorPage가 훅을 먼저 호출하므로 조기 return이
+  불가 → 라우트에서 분기하는 것이 올바른 React 구조(효과는 동일).
+- **`MobileChipPreview`.** `DieExportStage`와 동일한 `ChipArtwork project renderMode="die-only"` 경로를 재사용하되
+  컨테이너 폭에 맞춰 `scale = width / die.width`로 표시 전용 Stage 렌더(`ResizeObserver`로 폭 측정). **export
+  stage가 아님** — die `pixelRatio:4`/poster `3200x1800` raster 계약은 `ExportPanel`의 오프스크린 stage에 그대로.
+  jsdom canvas 부재로 컨벤션대로 유닛테스트 제외(별도 파일이라 상위 테스트가 mock).
+- **`MobileEditorPreview`.** 미리보기 + fake spec 섹션 + `PublishPanel`(게시 시 share link 복사) + `ExportPanel`
+  (die/poster PNG) + "Edit on desktop" CTA 조합. `{ project }`만 받고 `persist` 미수신 → 로컬 JSON 읽기 전용,
+  **로컬-퍼스트/비변형 보존**, DOM 스크레이프 없음. 컴포넌트 테스트는 Konva child·두 패널을 mock하고 spec/CTA 구조 assert(TDD).
+- **App 레벨 테스트.** `App.test.tsx`는 `EditorPage`를 모듈 mock하므로, `MobileEditorPreview`도 모듈 mock하고
+  "Remix N1 GREEN HORIZON"으로 프로젝트 seed + mobile `matchMedia` stub → `/editor/<id>`가 "Chip preview"를
+  렌더하고 "Chip editor workspace"는 렌더하지 않음을 확인(데스크톱 기본 테스트들은 그대로 EditorPage mock 사용).
+- **CSS.** `.mobile-editor-preview*`(1열·중앙·여유 패딩). 정의상 모바일 전용 표면이라 미디어쿼리 밖 기본 스타일.
+- **게이트.** `npm test`(client 81 files/416 tests + server 62 files/242 tests), `npm run build`(알려진 청크
+  경고만), `npm run typecheck --workspace server`, `npm run lint` 모두 green. Konva 표시/시각 확인은 V6-M4 QA로 이월. (M3)
