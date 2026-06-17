@@ -164,6 +164,28 @@ export function resolveReport(
   return toReport(db.prepare('SELECT * FROM reports WHERE id = ?').get(id) as ReportRow)
 }
 
+export function resolveOpenReportsForComment(
+  db: Database.Database,
+  commentId: string,
+  adminUserId: string,
+  now: () => number,
+): Report[] {
+  const timestamp = now()
+  const rows = db
+    .prepare("SELECT * FROM reports WHERE comment_id = ? AND status = 'open'")
+    .all(commentId) as ReportRow[]
+  if (rows.length === 0) return []
+  db.prepare(
+    "UPDATE reports SET status = 'resolved', resolved_at = ?, resolved_by = ? WHERE comment_id = ? AND status = 'open'",
+  ).run(timestamp, adminUserId, commentId)
+  return rows.map((row) => ({
+    ...toReport(row),
+    status: 'resolved',
+    resolvedAt: timestamp,
+    resolvedBy: adminUserId,
+  }))
+}
+
 export function hideChip(
   db: Database.Database,
   chipId: string,

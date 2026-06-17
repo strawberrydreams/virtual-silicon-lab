@@ -16,6 +16,7 @@ import {
   listChipsForModeration,
   listCommentReports,
   listReports,
+  resolveOpenReportsForComment,
   resolveReport,
   unhideChip,
   type ReportStatus,
@@ -230,6 +231,12 @@ export function moderationRoutes({
     if (!hideComment(db, c.req.param('id'), c.get('adminUser').id, now)) {
       return fail(c, 404, 'NOT_FOUND', 'Comment not found.')
     }
+    const resolvedReports = resolveOpenReportsForComment(
+      db,
+      c.req.param('id'),
+      c.get('adminUser').id,
+      now,
+    )
     recordAudit(
       db,
       {
@@ -241,6 +248,19 @@ export function moderationRoutes({
       },
       now,
     )
+    for (const report of resolvedReports) {
+      recordAudit(
+        db,
+        {
+          adminUserId: c.get('adminUser').id,
+          action: 'report_resolved',
+          targetType: 'report',
+          targetId: report.id,
+          detail: report.commentId,
+        },
+        now,
+      )
+    }
     return c.json({ ok: true })
   })
 
