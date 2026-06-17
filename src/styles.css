@@ -323,6 +323,35 @@ button {
   box-shadow: 0 28px 110px rgba(0, 0, 0, 0.38);
 }
 
+@media (max-width: 767px) {
+  .v2-landing__hero {
+    grid-template-columns: 1fr;
+    min-height: auto;
+    gap: 1.75rem;
+    padding: 2.25rem 1.25rem 2rem;
+  }
+
+  .v2-landing__title {
+    font-size: clamp(2.1rem, 9vw, 3.35rem);
+  }
+
+  .v2-hero-preview__frame {
+    min-height: 360px;
+  }
+
+  .v2-featured-presets__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .v2-featured-card {
+    grid-template-columns: 1fr;
+  }
+
+  .v2-landing__copy .v2-action-row .v2-button {
+    flex: 1 1 100%;
+  }
+}
+
 .v2-hero-chip {
   position: absolute;
   inset: 4.4rem 3rem 3rem;
