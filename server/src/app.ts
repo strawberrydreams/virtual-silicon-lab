@@ -3,7 +3,7 @@ import { Hono } from 'hono'
 import { CURRENT_SCHEMA_VERSION } from '@domain/project'
 import { accountRoutes } from './accounts/routes'
 import { contestRoutes } from './contests/routes'
-import type { AccessMode } from './config'
+import type { AccessMode, RuntimeConfig } from './config'
 import type { EmailProvider } from './email/provider'
 import type { PublishedImageStore } from './images/fileImageStore'
 import { inviteRoutes } from './invites/routes'
@@ -30,6 +30,30 @@ export type AppDeps = {
   requireVerifiedPublish?: boolean
   adminEmails?: string[]
   galleryLockdown?: boolean
+}
+
+// Single source of truth for turning validated runtime config into app deps. The server
+// entry point must route every config field through here so a new RuntimeConfig knob can't be
+// silently dropped on the way into createApp (as galleryLockdown was). Runtime-only
+// collaborators (db, image store, email provider) are passed separately.
+export function buildAppDeps(
+  config: RuntimeConfig,
+  runtime: { db: Database.Database; imageStore?: PublishedImageStore; emailProvider?: EmailProvider },
+): AppDeps {
+  return {
+    db: runtime.db,
+    imageStore: runtime.imageStore,
+    emailProvider: runtime.emailProvider,
+    sessionSecret: config.sessionSecret,
+    publicBaseUrl: config.publicBaseUrl,
+    secureCookies: config.secureCookies,
+    uploadMaxBytes: config.uploadMaxBytes,
+    rateLimit: config.rateLimit,
+    accessMode: config.accessMode,
+    requireVerifiedPublish: config.requireVerifiedPublish,
+    adminEmails: config.adminEmails,
+    galleryLockdown: config.galleryLockdown,
+  }
 }
 
 export function resolveAccessMode(deps: Pick<AppDeps, 'accessMode' | 'signupsOpen'>): AccessMode {

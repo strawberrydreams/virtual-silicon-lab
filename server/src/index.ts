@@ -1,7 +1,7 @@
 import { fileURLToPath } from 'node:url'
 import { join } from 'node:path'
 import { serve } from '@hono/node-server'
-import { createApp } from './app'
+import { buildAppDeps, createApp } from './app'
 import { loadRuntimeConfig } from './config'
 import { openDatabase, runMigrations } from './db'
 import { ConsoleEmailProvider } from './email/provider'
@@ -27,19 +27,13 @@ if (runtimeConfig.usedInsecureDevelopmentSecret) {
 const port = Number(process.env.PORT ?? 8787)
 serve(
   {
-    fetch: createApp({
-      db,
-      sessionSecret: runtimeConfig.sessionSecret,
-      publicBaseUrl: runtimeConfig.publicBaseUrl,
-      secureCookies: runtimeConfig.secureCookies,
-      uploadMaxBytes: runtimeConfig.uploadMaxBytes,
-      rateLimit: runtimeConfig.rateLimit,
-      imageStore,
-      accessMode: runtimeConfig.accessMode,
-      emailProvider: new ConsoleEmailProvider(),
-      requireVerifiedPublish: runtimeConfig.requireVerifiedPublish,
-      adminEmails: runtimeConfig.adminEmails,
-    }).fetch,
+    fetch: createApp(
+      buildAppDeps(runtimeConfig, {
+        db,
+        imageStore,
+        emailProvider: new ConsoleEmailProvider(),
+      }),
+    ).fetch,
     port,
   },
   (info) => {
