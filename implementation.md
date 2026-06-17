@@ -1352,3 +1352,25 @@ M6는 코드/운영 게이트를 invite launch 직전까지 완료하고, 실제
 - **남은 체크포인트.** Browser 도구가 현재 세션에 노출되지 않아 manual browser QA는 문서 checklist에 pending으로 남겼다.
   실제 production gate flip(`VSL_ACCESS_MODE=invite`), live `/api/health` 확인, 첫 invite batch mint는 사용자 명시
   go/no-go 이후 수행한다.
+
+## V5-M6 Admin Operations — Browser QA (2026-06-17)
+
+이전 체크포인트에서 pending이던 admin operations UI(초대코드/댓글/유저/감사 로그)의 manual browser QA를 Playwright로
+완료했다. `VSL_ADMIN_EMAILS=admin@vsl.test`, `VSL_ACCESS_MODE=open`으로 dev:server + client를 띄우고 admin 계정으로
+검증했다.
+
+- **Admin 접근.** admin 이메일로 가입하면 헤더에 `/admin` 링크가 노출되고 `/admin`이 Moderation 페이지를 렌더한다.
+  비-admin은 기존대로 차단(코드/테스트 유지). nav의 "Admin" 라벨 2개는 버그가 아니라 `AccountNavLink`가 로그인 시
+  displayName("Admin")을 표시한 우연이며 첫 링크는 `/account`, 둘째가 `/admin`이다.
+- **초대코드.** max uses 5 / expiry 7d / note로 생성 → 목록에 `0/5 used · note · expires` 표기, 폼 리셋, Revoke 시
+  목록에서 사라짐("No invite codes yet")을 확인.
+- **유저 밴.** ban reason 입력 후 owner 밴 → "owner banned" 표기 + 버튼 "Unban owner" 토글, Unban으로 원복.
+  서버 service에 추가한 `ownerUserId`/`ownerBannedAt`이 올바른 대상에 적용됨을 확인.
+- **칩 모더레이션.** Hide → "hidden" + "Unhide" 토글, Unhide로 원복.
+- **감사 로그.** 위 액션들이 newest-first로 즉시 기록됨: `hide_chip` → `ban_user`(detail에 사유 "QA: spam content"
+  포함) → `unban_user` → `unhide_chip`. 각 항목에 targetType/targetId/timestamp 표기. invite revoke는 moderation
+  route가 아니라 audit 미기록(설계대로).
+- **댓글 신고 큐.** dev DB에 신고된 댓글이 없어 빈 상태("No reported comments")만 확인. hide/ban-author 동작은
+  `AdminPage.test.tsx` + `launchFlow.test.ts`가 커버한다.
+- **상태 원복.** QA로 변경한 dev DB 상태(PANTHER SCALE chip, M2 Browser owner)는 모두 visible/unbanned로 복구하고
+  테스트 invite는 revoke했다. 콘솔 에러는 미로그인 `/api/me` 401과 favicon 404뿐(무해).
