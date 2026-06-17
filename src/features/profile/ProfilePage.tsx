@@ -8,25 +8,27 @@ type Props = {
 
 export function ProfilePage({ api = liveProfileApi }: Props) {
   const { handle = '' } = useParams()
-  const [profile, setProfile] = useState<PublicProfile | 'loading' | 'missing' | 'error'>(
-    'loading',
-  )
+  const [profileState, setProfileState] = useState<{
+    handle: string
+    profile: PublicProfile | 'missing' | 'error'
+  } | null>(null)
 
   useEffect(() => {
     let active = true
-    setProfile('loading')
     api
       .get(handle)
       .then((nextProfile) => {
-        if (active) setProfile(nextProfile ?? 'missing')
+        if (active) setProfileState({ handle, profile: nextProfile ?? 'missing' })
       })
       .catch(() => {
-        if (active) setProfile('error')
+        if (active) setProfileState({ handle, profile: 'error' })
       })
     return () => {
       active = false
     }
   }, [api, handle])
+
+  const profile = profileState?.handle === handle ? profileState.profile : 'loading'
 
   return (
     <main className="v2-page profile-page">

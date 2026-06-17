@@ -181,6 +181,49 @@ function useQueryParam(name: string) {
   return new URLSearchParams(location.search).get(name)
 }
 
+function ForgotPasswordForm() {
+  const auth = useAuthStore()
+  const [email, setEmail] = useState('')
+  const [message, setMessage] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+
+  async function submit(event: FormEvent) {
+    event.preventDefault()
+    setBusy(true)
+    setMessage(null)
+    setError(null)
+    try {
+      await auth.forgotPassword(email)
+      setMessage('If the account exists, a reset link has been sent.')
+    } catch (caught) {
+      setError(describeAuthError(caught))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <form className="mt-4" onSubmit={submit}>
+      <label className={labelClass} htmlFor="forgot-email">
+        Email
+      </label>
+      <input
+        className={fieldClass}
+        id="forgot-email"
+        type="email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+      />
+      <button className={buttonClass} disabled={busy} type="submit">
+        Send Reset Link
+      </button>
+      {message !== null && <p className="mt-4 text-sm text-[var(--v2-accent)]">{message}</p>}
+      {error !== null && <p className="mt-4 text-sm text-red-400">{error}</p>}
+    </form>
+  )
+}
+
 function AnonymousPanels() {
   const auth = useAuthStore()
   return (

@@ -144,7 +144,6 @@ export function upsertPublishedChip(
     const existing = getByOwnerProject(db, ownerUserId, input.project.id)
     existingForCleanup = existing
     const id = existing?.id ?? randomUUID()
-    const version = existing === undefined ? 1 : existing.version + 1
     const timestamp = now()
     const projectJson = JSON.stringify(input.project)
     const publishedAt = input.isPublic ? timestamp : (existing?.published_at ?? 0)

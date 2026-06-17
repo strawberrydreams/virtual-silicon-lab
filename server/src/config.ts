@@ -13,6 +13,7 @@ export type RuntimeConfig = {
   rateLimit?: {
     windowMs: number
     max: number
+    overrides?: Record<string, { windowMs: number; max: number }>
   }
 }
 

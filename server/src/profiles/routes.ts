@@ -8,7 +8,7 @@ import { getProfileByHandle, setHandle, type PublicProfile } from './service'
 import { validateHandle } from './validation'
 
 const SESSION_COOKIE = 'vsl_session'
-type ErrorStatus = 400 | 401 | 404 | 409
+type ErrorStatus = 400 | 401 | 404 | 409 | 410
 
 function resolveImageUrl(baseUrl: string, imagePath: string | null, legacyDataUrl: string) {
   return imagePath === null ? legacyDataUrl : `${baseUrl}${imagePath}`

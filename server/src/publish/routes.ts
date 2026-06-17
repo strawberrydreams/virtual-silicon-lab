@@ -24,7 +24,7 @@ import { buildShareUrl, resolvePublicBaseUrl } from '../share/baseUrl'
 
 const SESSION_COOKIE = 'vsl_session'
 
-type ErrorStatus = 400 | 401 | 403 | 404
+type ErrorStatus = 400 | 401 | 403 | 404 | 410
 
 function parseGallerySort(raw: string | undefined): GallerySort {
   return raw === 'top' || raw === 'newest' || raw === 'trending' ? raw : 'trending'
