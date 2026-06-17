@@ -120,6 +120,17 @@ describe('renderViewerHtml', () => {
 
     expect(html).not.toContain('Remixed from')
   })
+
+  it('emits a mobile media query so the share page reflows on phones', () => {
+    const html = renderViewerHtml({
+      title: 'Ada Chip',
+      ownerDisplayName: 'Ada',
+      slug: 'ada-chip-deadbeef',
+      project,
+      baseUrl: 'https://chips.example.com',
+    })
+    expect(html).toContain('@media (max-width: 767px)')
+  })
 })
 
 describe('renderNotFoundHtml', () => {
