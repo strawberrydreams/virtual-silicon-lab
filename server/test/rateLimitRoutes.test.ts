@@ -34,4 +34,33 @@ describe('mutating API rate limit', () => {
     )
     expect(afterWindow.status).toBe(401)
   })
+
+  it('uses tighter per-endpoint limits for sensitive paths', async () => {
+    const { app } = createTestApp(() => 1_000, {
+      rateLimit: {
+        windowMs: 1_000,
+        max: 10,
+        overrides: {
+          'POST:/api/auth/login': { windowMs: 1_000, max: 1 },
+        },
+      },
+    })
+
+    expect(
+      (
+        await app.request(
+          '/api/auth/login',
+          jsonRequest('POST', { email: VALID_SIGNUP.email, password: VALID_SIGNUP.password }),
+        )
+      ).status,
+    ).toBe(401)
+    expect(
+      (
+        await app.request(
+          '/api/auth/login',
+          jsonRequest('POST', { email: VALID_SIGNUP.email, password: VALID_SIGNUP.password }),
+        )
+      ).status,
+    ).toBe(429)
+  })
 })

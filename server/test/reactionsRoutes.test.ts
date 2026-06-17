@@ -46,6 +46,43 @@ describe('reactions routes — likes', () => {
     expect(await unliked.json()).toEqual({ likeCount: 0, likedByMe: false })
   })
 
+  it('blocks a banned account from liking even if a stale session exists', async () => {
+    const { app, db } = createTestApp(Date.now, OPTS)
+    seedChip(db, 'c1', 's1')
+    const cookie = await signIn(app, VALID_SIGNUP)
+    const user = db.prepare('SELECT id FROM users WHERE email = ?').get(VALID_SIGNUP.email) as {
+      id: string
+    }
+    db.prepare('UPDATE users SET banned_at = ?, banned_reason = ? WHERE id = ?').run(
+      100,
+      'abuse',
+      user.id,
+    )
+
+    const res = await app.request('/api/published-chips/c1/like', {
+      method: 'POST',
+      headers: { cookie },
+    })
+
+    expect(res.status).toBe(403)
+    expect(((await res.json()) as { error: { code: string } }).error.code).toBe('ACCOUNT_BANNED')
+  })
+
+  it('soft-gates likes with a reaction-specific message until email is verified', async () => {
+    const { app, db } = createTestApp(Date.now, { ...OPTS, requireVerifiedPublish: true })
+    seedChip(db, 'c1', 's1')
+    const cookie = await signIn(app, VALID_SIGNUP)
+
+    const blocked = await app.request('/api/published-chips/c1/like', {
+      method: 'POST',
+      headers: { cookie },
+    })
+    expect(blocked.status).toBe(403)
+    const body = (await blocked.json()) as { error: { code: string; message: string } }
+    expect(body.error.code).toBe('EMAIL_UNVERIFIED')
+    expect(body.error.message).toBe('Verify your email before reacting.')
+  })
+
   it('returns 404 when liking a hidden or missing chip', async () => {
     const { app, db } = createTestApp(Date.now, OPTS)
     seedChip(db, 'hidden1', 'sh', true)
@@ -116,6 +153,50 @@ describe('reactions routes — comments', () => {
     }
     expect(list.comments).toHaveLength(1)
     expect(list.comments[0].body).toBe('great chip')
+  })
+
+  it('blocks a banned account from commenting even if a stale session exists', async () => {
+    const { app, db } = createTestApp(Date.now, OPTS)
+    seedChip(db, 'c1', 's1')
+    const cookie = await signIn(app, VALID_SIGNUP)
+    const user = db.prepare('SELECT id FROM users WHERE email = ?').get(VALID_SIGNUP.email) as {
+      id: string
+    }
+    db.prepare('UPDATE users SET banned_at = ?, banned_reason = ? WHERE id = ?').run(
+      100,
+      'abuse',
+      user.id,
+    )
+
+    const res = await app.request(
+      '/api/published-chips/c1/comments',
+      jsonRequest('POST', { body: 'blocked' }, cookie),
+    )
+
+    expect(res.status).toBe(403)
+    expect(((await res.json()) as { error: { code: string } }).error.code).toBe('ACCOUNT_BANNED')
+  })
+
+  it('soft-gates comments until email is verified when required', async () => {
+    const { app, db } = createTestApp(Date.now, { ...OPTS, requireVerifiedPublish: true })
+    seedChip(db, 'c1', 's1')
+    const cookie = await signIn(app, VALID_SIGNUP)
+
+    const blocked = await app.request(
+      '/api/published-chips/c1/comments',
+      jsonRequest('POST', { body: 'blocked' }, cookie),
+    )
+    expect(blocked.status).toBe(403)
+    const blockedBody = (await blocked.json()) as { error: { code: string; message: string } }
+    expect(blockedBody.error.code).toBe('EMAIL_UNVERIFIED')
+    expect(blockedBody.error.message).toBe('Verify your email before commenting.')
+
+    db.prepare('UPDATE users SET email_verified_at = ? WHERE email = ?').run(100, VALID_SIGNUP.email)
+    const ok = await app.request(
+      '/api/published-chips/c1/comments',
+      jsonRequest('POST', { body: 'verified' }, cookie),
+    )
+    expect(ok.status).toBe(201)
   })
 
   it('lets the author delete, blocks other non-admins (403), allows admin', async () => {

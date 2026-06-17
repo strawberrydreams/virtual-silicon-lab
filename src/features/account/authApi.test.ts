@@ -1,7 +1,14 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { liveAuthApi, ServerUnreachableError } from './authApi'
 
-const user = { id: 'u1', email: 'ada@example.com', displayName: 'Ada', createdAt: 1000 }
+const user = {
+  id: 'u1',
+  email: 'ada@example.com',
+  displayName: 'Ada',
+  createdAt: 1000,
+  emailVerified: true,
+  handle: null,
+}
 
 function jsonResponse(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
@@ -37,14 +44,14 @@ describe('liveAuthApi', () => {
     expect(await liveAuthApi.me()).toBeNull()
   })
 
-  it('serverConfig() returns signupsOpen from /api/health', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(200, { signupsOpen: false })))
-    expect(await liveAuthApi.serverConfig()).toEqual({ signupsOpen: false })
+  it('serverConfig() returns accessMode from /api/health', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(200, { accessMode: 'invite' })))
+    expect(await liveAuthApi.serverConfig()).toEqual({ accessMode: 'invite' })
   })
 
-  it('serverConfig() defaults signupsOpen to true when the server omits it', async () => {
+  it('serverConfig() defaults accessMode to open when the server omits it', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(200, {})))
-    expect(await liveAuthApi.serverConfig()).toEqual({ signupsOpen: true })
+    expect(await liveAuthApi.serverConfig()).toEqual({ accessMode: 'open' })
   })
 
   it('maps server error bodies to AuthApiError with code and message', async () => {
@@ -83,6 +90,45 @@ describe('liveAuthApi', () => {
     expect(fetchMock).toHaveBeenCalledWith(
       '/api/auth/login',
       expect.objectContaining({ method: 'POST', headers: { 'content-type': 'application/json' } }),
+    )
+  })
+
+  it('verifyEmail posts the token and returns the verified user', async () => {
+    const verified = { ...user, emailVerified: true }
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(200, { user: verified }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(liveAuthApi.verifyEmail('token-123')).resolves.toEqual(verified)
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/auth/verify-email',
+      expect.objectContaining({ method: 'POST', body: JSON.stringify({ token: 'token-123' }) }),
+    )
+  })
+
+  it('forgotPassword and resetPassword post account recovery payloads', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(liveAuthApi.forgotPassword('ada@example.com')).resolves.toBeUndefined()
+    await expect(
+      liveAuthApi.resetPassword({ token: 'reset-token', newPassword: 'new-password-99' }),
+    ).resolves.toBeUndefined()
+
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      1,
+      '/api/auth/forgot-password',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ email: 'ada@example.com' }),
+      }),
+    )
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      '/api/auth/reset-password',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ token: 'reset-token', newPassword: 'new-password-99' }),
+      }),
     )
   })
 

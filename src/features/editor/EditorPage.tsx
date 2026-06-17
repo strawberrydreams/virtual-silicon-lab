@@ -12,6 +12,7 @@ import { DEFAULT_LAYER_VISIBILITY, type ChipLayerId } from './layerVisibility'
 import { chipFinishLabel } from '../../visual/themeFinish'
 import { useAutosave } from './useAutosave'
 import { useEditorShortcuts } from './useEditorShortcuts'
+import { FirstRunCoachmarks } from './FirstRunCoachmarks'
 
 type Props = {
   project: Project
@@ -134,6 +135,7 @@ export function EditorPage({ project, persist }: Props) {
           />
 
           <div className="editor-stage-wrap">
+            <FirstRunCoachmarks />
             <ChipStage
               project={state.project}
               selectedBlockId={state.selectedBlockId}

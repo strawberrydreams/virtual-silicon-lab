@@ -43,6 +43,7 @@ const detail: GalleryChipDetail = {
 function fakeApi(overrides: Partial<GalleryApi> = {}): GalleryApi {
   return {
     list: vi.fn(),
+    featured: vi.fn().mockResolvedValue([]),
     get: vi.fn().mockResolvedValue(detail),
     getLineage: vi.fn().mockResolvedValue({ ancestors: [], children: [], childCount: 0 }),
     ...overrides,
@@ -52,13 +53,17 @@ function fakeApi(overrides: Partial<GalleryApi> = {}): GalleryApi {
 function fakeAuthApi(): AuthApi {
   return {
     me: vi.fn().mockResolvedValue(null),
-    serverConfig: vi.fn().mockResolvedValue({ signupsOpen: true }),
+    serverConfig: vi.fn().mockResolvedValue({ accessMode: 'open' }),
     signup: vi.fn(),
     login: vi.fn(),
     logout: vi.fn(),
     updateDisplayName: vi.fn(),
     changePassword: vi.fn(),
     deleteAccount: vi.fn(),
+    verifyEmail: vi.fn(),
+    forgotPassword: vi.fn(),
+    resetPassword: vi.fn(),
+    setHandle: vi.fn(),
   }
 }
 

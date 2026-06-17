@@ -1,6 +1,11 @@
 export type ValidationResult<T> = { ok: true; value: T } | { ok: false; message: string }
 
-export type SignupInput = { email: string; displayName: string; password: string }
+export type SignupInput = {
+  email: string
+  displayName: string
+  password: string
+  inviteCode?: string
+}
 export type LoginInput = { email: string; password: string }
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -46,7 +51,12 @@ export function validateSignupInput(body: unknown): ValidationResult<SignupInput
   if (!password.ok) return password
   return {
     ok: true,
-    value: { email: email.value, displayName: displayName.value, password: password.value },
+    value: {
+      email: email.value,
+      displayName: displayName.value,
+      password: password.value,
+      ...(typeof record.inviteCode === 'string' ? { inviteCode: record.inviteCode.trim() } : {}),
+    },
   }
 }
 

@@ -3,13 +3,20 @@ import type { Context } from 'hono'
 import { getSignedCookie } from 'hono/cookie'
 import type { AppDeps } from '../app'
 import { getSessionUser, type AccountUser } from '../accounts/service'
+import { listAudit, recordAudit } from './auditLog'
 import { isAdminEmail } from './adminAuth'
+import { banUser, unbanUser } from './bans'
+import { setFeatured } from '../publish/service'
 import {
   adminDeleteChip,
+  createCommentReport,
   createReport,
+  hideComment,
   hideChip,
   listChipsForModeration,
+  listCommentReports,
   listReports,
+  resolveOpenReportsForComment,
   resolveReport,
   unhideChip,
   type ReportStatus,
@@ -59,8 +66,12 @@ export function moderationRoutes({
     const user = await readUser(c)
     if (user === null) return fail(c, 401, 'UNAUTHORIZED', 'Sign in required.')
     const body = (await c.req.json().catch(() => null)) as Record<string, unknown> | null
-    if (body === null || typeof body.publishedChipId !== 'string' || body.publishedChipId === '') {
-      return fail(c, 400, 'INVALID_INPUT', 'publishedChipId is required.')
+    if (body === null) return fail(c, 400, 'INVALID_INPUT', 'Expected a JSON object.')
+    if (
+      (typeof body.publishedChipId !== 'string' || body.publishedChipId === '') &&
+      (typeof body.commentId !== 'string' || body.commentId === '')
+    ) {
+      return fail(c, 400, 'INVALID_INPUT', 'publishedChipId or commentId is required.')
     }
     let reason: string | null = null
     if (body.reason !== undefined) {
@@ -74,11 +85,15 @@ export function moderationRoutes({
       }
       reason = body.reason
     }
-    const report = createReport(
-      db,
-      { publishedChipId: body.publishedChipId, reporterUserId: user.id, reason },
-      now,
-    )
+    const report =
+      typeof body.commentId === 'string' && body.commentId !== ''
+        ? createCommentReport(db, { commentId: body.commentId, reporterUserId: user.id, reason }, now)
+        : createReport(
+            db,
+            { publishedChipId: body.publishedChipId as string, reporterUserId: user.id, reason },
+            now,
+          )
+    if (report === 'comment-not-found') return fail(c, 404, 'NOT_FOUND', 'Comment not found.')
     if (report === 'chip-not-found') return fail(c, 404, 'NOT_FOUND', 'Published chip not found.')
     return c.json({ report }, 201)
   })
@@ -98,6 +113,17 @@ export function moderationRoutes({
     }
     const report = resolveReport(db, c.req.param('id'), body.status, c.get('adminUser').id, now)
     if (report === null) return fail(c, 404, 'NOT_FOUND', 'Report not found.')
+    recordAudit(
+      db,
+      {
+        adminUserId: c.get('adminUser').id,
+        action: `report_${body.status}`,
+        targetType: 'report',
+        targetId: report.id,
+        detail: report.commentId ?? null,
+      },
+      now,
+    )
     return c.json({ report })
   })
 
@@ -111,6 +137,17 @@ export function moderationRoutes({
     if (!hideChip(db, c.req.param('id'), c.get('adminUser').id, reason, now)) {
       return fail(c, 404, 'NOT_FOUND', 'Published chip not found.')
     }
+    recordAudit(
+      db,
+      {
+        adminUserId: c.get('adminUser').id,
+        action: 'hide_chip',
+        targetType: 'chip',
+        targetId: c.req.param('id'),
+        detail: reason,
+      },
+      now,
+    )
     return c.json({ ok: true })
   })
 
@@ -118,6 +155,53 @@ export function moderationRoutes({
     if (!unhideChip(db, c.req.param('id'), now)) {
       return fail(c, 404, 'NOT_FOUND', 'Published chip not found.')
     }
+    recordAudit(
+      db,
+      {
+        adminUserId: c.get('adminUser').id,
+        action: 'unhide_chip',
+        targetType: 'chip',
+        targetId: c.req.param('id'),
+        detail: null,
+      },
+      now,
+    )
+    return c.json({ ok: true })
+  })
+
+  routes.post('/admin/published-chips/:id/feature', (c) => {
+    if (!setFeatured(db, c.req.param('id'), true, now)) {
+      return fail(c, 404, 'NOT_FOUND', 'Published chip not found.')
+    }
+    recordAudit(
+      db,
+      {
+        adminUserId: c.get('adminUser').id,
+        action: 'feature_chip',
+        targetType: 'chip',
+        targetId: c.req.param('id'),
+        detail: null,
+      },
+      now,
+    )
+    return c.json({ ok: true })
+  })
+
+  routes.post('/admin/published-chips/:id/unfeature', (c) => {
+    if (!setFeatured(db, c.req.param('id'), false, now)) {
+      return fail(c, 404, 'NOT_FOUND', 'Published chip not found.')
+    }
+    recordAudit(
+      db,
+      {
+        adminUserId: c.get('adminUser').id,
+        action: 'unfeature_chip',
+        targetType: 'chip',
+        targetId: c.req.param('id'),
+        detail: null,
+      },
+      now,
+    )
     return c.json({ ok: true })
   })
 
@@ -125,7 +209,101 @@ export function moderationRoutes({
     if (!adminDeleteChip(db, c.req.param('id'), imageStore)) {
       return fail(c, 404, 'NOT_FOUND', 'Published chip not found.')
     }
+    recordAudit(
+      db,
+      {
+        adminUserId: c.get('adminUser').id,
+        action: 'delete_chip',
+        targetType: 'chip',
+        targetId: c.req.param('id'),
+        detail: null,
+      },
+      now,
+    )
     return c.body(null, 204)
+  })
+
+  routes.get('/admin/comment-reports', (c) => {
+    return c.json({ reports: listCommentReports(db) })
+  })
+
+  routes.post('/admin/comments/:id/hide', (c) => {
+    if (!hideComment(db, c.req.param('id'), c.get('adminUser').id, now)) {
+      return fail(c, 404, 'NOT_FOUND', 'Comment not found.')
+    }
+    const resolvedReports = resolveOpenReportsForComment(
+      db,
+      c.req.param('id'),
+      c.get('adminUser').id,
+      now,
+    )
+    recordAudit(
+      db,
+      {
+        adminUserId: c.get('adminUser').id,
+        action: 'hide_comment',
+        targetType: 'comment',
+        targetId: c.req.param('id'),
+        detail: null,
+      },
+      now,
+    )
+    for (const report of resolvedReports) {
+      recordAudit(
+        db,
+        {
+          adminUserId: c.get('adminUser').id,
+          action: 'report_resolved',
+          targetType: 'report',
+          targetId: report.id,
+          detail: report.commentId,
+        },
+        now,
+      )
+    }
+    return c.json({ ok: true })
+  })
+
+  routes.post('/admin/users/:id/ban', async (c) => {
+    const body = (await c.req.json().catch(() => null)) as Record<string, unknown> | null
+    const reason = typeof body?.reason === 'string' ? body.reason.slice(0, MAX_REASON_LENGTH) : null
+    if (!banUser(db, c.req.param('id'), c.get('adminUser').id, reason, now)) {
+      return fail(c, 404, 'NOT_FOUND', 'User not found or already banned.')
+    }
+    recordAudit(
+      db,
+      {
+        adminUserId: c.get('adminUser').id,
+        action: 'ban_user',
+        targetType: 'user',
+        targetId: c.req.param('id'),
+        detail: reason,
+      },
+      now,
+    )
+    return c.json({ ok: true })
+  })
+
+  routes.post('/admin/users/:id/unban', (c) => {
+    if (!unbanUser(db, c.req.param('id'), c.get('adminUser').id, now)) {
+      return fail(c, 404, 'NOT_FOUND', 'User not found.')
+    }
+    recordAudit(
+      db,
+      {
+        adminUserId: c.get('adminUser').id,
+        action: 'unban_user',
+        targetType: 'user',
+        targetId: c.req.param('id'),
+        detail: null,
+      },
+      now,
+    )
+    return c.json({ ok: true })
+  })
+
+  routes.get('/admin/audit-log', (c) => {
+    return c.json({ entries: listAudit(db) })
   })
 
   return routes

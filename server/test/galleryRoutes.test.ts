@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { createProject } from '@domain/projectFactory'
 import { createTestApp, jsonRequest, sessionCookie, VALID_SIGNUP } from './helpers'
-import { upsertPublishedChip } from '../src/publish/service'
+import { setFeatured, upsertPublishedChip } from '../src/publish/service'
 
 const pngA = 'data:image/png;base64,AAAA'
 const pngB = 'data:image/png;base64,BBBB'
@@ -69,7 +69,7 @@ function publishFixture() {
     },
     () => 4_000,
   )
-  return { app, publicOld, privateChip, publicNew }
+  return { app, db, publicOld, privateChip, publicNew }
 }
 
 describe('public gallery routes', () => {
@@ -129,6 +129,22 @@ describe('public gallery routes', () => {
 
     expect((await app.request(`/api/gallery/${privateChip.slug}`)).status).toBe(404)
     expect((await app.request('/api/gallery/not-a-real-slug')).status).toBe(404)
+  })
+
+  it('lists featured public chips only', async () => {
+    const { app, db, publicOld, privateChip, publicNew } = publishFixture()
+    setFeatured(db, publicOld.id, true, () => 1_000)
+    setFeatured(db, privateChip.id, true, () => 2_000)
+    setFeatured(db, publicNew.id, true, () => 3_000)
+
+    const res = await app.request('/api/gallery/featured')
+
+    expect(res.status).toBe(200)
+    const body = (await res.json()) as { chips: { slug: string }[] }
+    expect(body.chips).toEqual([
+      expect.objectContaining({ slug: publicNew.slug }),
+      expect.objectContaining({ slug: publicOld.slug }),
+    ])
   })
 
   it('returns remix lineage with serialized poster URLs', async () => {

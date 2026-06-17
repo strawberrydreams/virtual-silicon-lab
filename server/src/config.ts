@@ -1,14 +1,19 @@
+export type AccessMode = 'closed' | 'invite' | 'open'
+
 export type RuntimeConfig = {
   sessionSecret: string
   usedInsecureDevelopmentSecret: boolean
   secureCookies: boolean
   publicBaseUrl?: string
   uploadMaxBytes: number
-  signupsOpen: boolean
+  accessMode: AccessMode
+  requireVerifiedPublish: boolean
+  galleryLockdown: boolean
   adminEmails: string[]
   rateLimit?: {
     windowMs: number
     max: number
+    overrides?: Record<string, { windowMs: number; max: number }>
   }
 }
 
@@ -18,6 +23,12 @@ const DEVELOPMENT_SESSION_SECRET = 'dev-insecure-session-secret'
 const DEFAULT_UPLOAD_MAX_BYTES = 8 * 1024 * 1024
 const DEFAULT_RATE_LIMIT_WINDOW_MS = 60_000
 const DEFAULT_RATE_LIMIT_MAX = 120
+const SENSITIVE_RATE_LIMIT_OVERRIDES = {
+  'POST:/api/auth/login': { windowMs: DEFAULT_RATE_LIMIT_WINDOW_MS, max: 20 },
+  'POST:/api/auth/signup': { windowMs: DEFAULT_RATE_LIMIT_WINDOW_MS, max: 10 },
+  'POST:/api/auth/forgot-password': { windowMs: DEFAULT_RATE_LIMIT_WINDOW_MS, max: 5 },
+  'POST:/api/reports': { windowMs: DEFAULT_RATE_LIMIT_WINDOW_MS, max: 10 },
+}
 
 function parseBaseUrl(value: string, field: string): string {
   let url: URL
@@ -51,6 +62,15 @@ function parseBoolean(env: RuntimeEnv, key: string, fallback: boolean): boolean 
   throw new Error(`${key} must be true or false.`)
 }
 
+function parseAccessMode(env: RuntimeEnv): AccessMode {
+  const raw = env.VSL_ACCESS_MODE?.trim().toLowerCase()
+  if (raw === 'closed' || raw === 'invite' || raw === 'open') return raw
+  if (raw !== undefined && raw !== '') {
+    throw new Error('VSL_ACCESS_MODE must be closed, invite, or open.')
+  }
+  return parseBoolean(env, 'VSL_SIGNUPS_OPEN', false) ? 'open' : 'closed'
+}
+
 function parseAdminEmails(env: RuntimeEnv): string[] {
   const raw = env.VSL_ADMIN_EMAILS
   if (raw === undefined) return []
@@ -63,7 +83,9 @@ function parseAdminEmails(env: RuntimeEnv): string[] {
 export function loadRuntimeConfig(env: RuntimeEnv = process.env): RuntimeConfig {
   const isProduction = env.NODE_ENV === 'production'
   const uploadMaxBytes = readPositiveInteger(env, 'VSL_UPLOAD_MAX_BYTES', DEFAULT_UPLOAD_MAX_BYTES)
-  const signupsOpen = parseBoolean(env, 'VSL_SIGNUPS_OPEN', false)
+  const accessMode = parseAccessMode(env)
+  const requireVerifiedPublish = parseBoolean(env, 'VSL_REQUIRE_VERIFIED_PUBLISH', isProduction)
+  const galleryLockdown = parseBoolean(env, 'VSL_GALLERY_LOCKDOWN', false)
   const adminEmails = parseAdminEmails(env)
 
   const sessionSecret = env.VSL_SESSION_SECRET
@@ -84,7 +106,9 @@ export function loadRuntimeConfig(env: RuntimeEnv = process.env): RuntimeConfig 
       secureCookies: true,
       publicBaseUrl: parseBaseUrl(env.VSL_PUBLIC_BASE_URL, 'VSL_PUBLIC_BASE_URL'),
       uploadMaxBytes,
-      signupsOpen,
+      accessMode,
+      requireVerifiedPublish,
+      galleryLockdown,
       adminEmails,
       rateLimit: {
         windowMs: readPositiveInteger(
@@ -93,6 +117,7 @@ export function loadRuntimeConfig(env: RuntimeEnv = process.env): RuntimeConfig 
           DEFAULT_RATE_LIMIT_WINDOW_MS,
         ),
         max: readPositiveInteger(env, 'VSL_RATE_LIMIT_MAX', DEFAULT_RATE_LIMIT_MAX),
+        overrides: SENSITIVE_RATE_LIMIT_OVERRIDES,
       },
     }
   }
@@ -106,7 +131,9 @@ export function loadRuntimeConfig(env: RuntimeEnv = process.env): RuntimeConfig 
         ? undefined
         : parseBaseUrl(env.VSL_PUBLIC_BASE_URL, 'VSL_PUBLIC_BASE_URL'),
     uploadMaxBytes,
-    signupsOpen,
+    accessMode,
+    requireVerifiedPublish,
+    galleryLockdown,
     adminEmails,
   }
 }

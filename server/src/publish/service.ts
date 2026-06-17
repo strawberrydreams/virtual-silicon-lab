@@ -139,19 +139,15 @@ export function upsertPublishedChip(
   now: () => number,
   imageStore?: PublishedImageStore,
 ): PublishedChip {
-  return db.transaction(() => {
+  let existingForCleanup: PublishedChipRow | undefined
+  const committed = db.transaction(() => {
     const existing = getByOwnerProject(db, ownerUserId, input.project.id)
+    existingForCleanup = existing
     const id = existing?.id ?? randomUUID()
-    const version = existing === undefined ? 1 : existing.version + 1
     const timestamp = now()
     const projectJson = JSON.stringify(input.project)
     const publishedAt = input.isPublic ? timestamp : (existing?.published_at ?? 0)
     const remixedFromChipId = resolveRemixParentId(db, input.project.remixedFrom?.chipId)
-    // Republishing overwrites both images at a new version; clear the prior
-    // version's files first so superseded PNGs are not orphaned on disk.
-    if (imageStore !== undefined && existing !== undefined) {
-      imageStore.deletePublishedImages(id)
-    }
     const images =
       imageStore === undefined
         ? {
@@ -161,20 +157,10 @@ export function upsertPublishedChip(
             posterImagePath: existing?.poster_image_path ?? null,
           }
         : {
-            dieImageDataUrl: '',
-            posterImageDataUrl: '',
-            dieImagePath: imageStore.savePublishedImage({
-              chipId: id,
-              version,
-              kind: 'die',
-              dataUrl: input.dieImageDataUrl,
-            }),
-            posterImagePath: imageStore.savePublishedImage({
-              chipId: id,
-              version,
-              kind: 'poster',
-              dataUrl: input.posterImageDataUrl,
-            }),
+            dieImageDataUrl: input.dieImageDataUrl,
+            posterImageDataUrl: input.posterImageDataUrl,
+            dieImagePath: null,
+            posterImagePath: null,
           }
 
     if (existing === undefined) {
@@ -231,6 +217,31 @@ export function upsertPublishedChip(
 
     return toPublishedChip(getByOwnerProject(db, ownerUserId, input.project.id) as PublishedChipRow)
   })()
+
+  if (imageStore === undefined) return committed
+
+  if (existingForCleanup !== undefined) imageStore.deletePublishedImages(committed.id)
+  const dieImagePath = imageStore.savePublishedImage({
+    chipId: committed.id,
+    version: committed.version,
+    kind: 'die',
+    dataUrl: input.dieImageDataUrl,
+  })
+  const posterImagePath = imageStore.savePublishedImage({
+    chipId: committed.id,
+    version: committed.version,
+    kind: 'poster',
+    dataUrl: input.posterImageDataUrl,
+  })
+  db.prepare(
+    `UPDATE published_chips
+     SET die_image_data_url = '', poster_image_data_url = '', die_image_path = ?, poster_image_path = ?
+     WHERE id = ?`,
+  ).run(dieImagePath, posterImagePath, committed.id)
+  const row = db.prepare('SELECT * FROM published_chips WHERE id = ?').get(committed.id) as
+    | PublishedChipRow
+    | undefined
+  return row === undefined ? committed : toPublishedChip(row)
 }
 
 export function setPublishedChipVisibility(
@@ -282,20 +293,66 @@ export function listPublicPublishedChips(
   const cutoff = now() - WEEK_MS
   const rows = db
     .prepare(
-      `SELECT p.*, u.display_name AS owner_display_name,
-              (SELECT COUNT(*) FROM likes l WHERE l.published_chip_id = p.id) AS like_count,
-              (SELECT COUNT(*) FROM comments cm WHERE cm.published_chip_id = p.id) AS comment_count,
-              (SELECT COUNT(*) FROM likes l WHERE l.published_chip_id = p.id)
-                + (SELECT COUNT(*) FROM comments cm WHERE cm.published_chip_id = p.id) AS total_score,
-              (SELECT COUNT(*) FROM likes l WHERE l.published_chip_id = p.id AND l.created_at >= @cutoff)
-                + (SELECT COUNT(*) FROM comments cm WHERE cm.published_chip_id = p.id AND cm.created_at >= @cutoff) AS weekly_score
+      `WITH like_counts AS (
+         SELECT published_chip_id,
+                COUNT(*) AS like_count,
+                SUM(CASE WHEN created_at >= @cutoff THEN 1 ELSE 0 END) AS weekly_like_count
+         FROM likes
+         GROUP BY published_chip_id
+       ),
+       comment_counts AS (
+         SELECT published_chip_id,
+                COUNT(*) AS comment_count,
+                SUM(CASE WHEN created_at >= @cutoff THEN 1 ELSE 0 END) AS weekly_comment_count
+         FROM comments
+         GROUP BY published_chip_id
+       )
+       SELECT p.*, u.display_name AS owner_display_name,
+              COALESCE(lc.like_count, 0) AS like_count,
+              COALESCE(cc.comment_count, 0) AS comment_count,
+              COALESCE(lc.like_count, 0) + COALESCE(cc.comment_count, 0) AS total_score,
+              COALESCE(lc.weekly_like_count, 0) + COALESCE(cc.weekly_comment_count, 0) AS weekly_score
        FROM published_chips p
        JOIN users u ON u.id = p.owner_user_id
+       LEFT JOIN like_counts lc ON lc.published_chip_id = p.id
+       LEFT JOIN comment_counts cc ON cc.published_chip_id = p.id
        WHERE p.is_public = 1 AND p.moderation_status = 'visible'
        ORDER BY ${GALLERY_ORDER_BY[sort]}
        LIMIT @limit`,
     )
     .all({ cutoff, limit }) as PublicGalleryChipRow[]
+  return rows.map(toPublicGalleryChip)
+}
+
+export function setFeatured(
+  db: Database.Database,
+  chipId: string,
+  featured: boolean,
+  now: () => number,
+): boolean {
+  return db
+    .prepare('UPDATE published_chips SET featured_at = ? WHERE id = ?')
+    .run(featured ? now() : null, chipId).changes > 0
+}
+
+export function listFeaturedChips(
+  db: Database.Database,
+  limit = 8,
+): PublicGalleryChip[] {
+  const rows = db
+    .prepare(
+      `SELECT p.*, u.display_name AS owner_display_name,
+              (SELECT COUNT(*) FROM likes l WHERE l.published_chip_id = p.id) AS like_count,
+              (SELECT COUNT(*) FROM comments cm WHERE cm.published_chip_id = p.id) AS comment_count
+       FROM published_chips p
+       JOIN users u ON u.id = p.owner_user_id
+       WHERE p.featured_at IS NOT NULL
+         AND p.is_public = 1
+         AND p.moderation_status = 'visible'
+       ORDER BY p.featured_at DESC
+       LIMIT ?`,
+    )
+    .all(limit) as PublicGalleryChipRow[]
   return rows.map(toPublicGalleryChip)
 }
 

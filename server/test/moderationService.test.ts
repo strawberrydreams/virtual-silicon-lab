@@ -4,12 +4,17 @@ import { migrations } from '../src/migrations'
 import {
   adminDeleteChip,
   createReport,
+  createCommentReport,
   hideChip,
+  hideComment,
   listChipsForModeration,
+  listCommentReports,
   listReports,
   resolveReport,
   unhideChip,
+  unhideComment,
 } from '../src/moderation/service'
+import { createComment } from '../src/reactions/service'
 
 function seed(db: ReturnType<typeof openDatabase>) {
   db.prepare(
@@ -142,13 +147,53 @@ describe('moderation service', () => {
     expect(adminDeleteChip(db, 'chip1')).toBe(false)
   })
 
-  it('lists chips for moderation with owner and status', () => {
+  it('lists chips for moderation with owner identity, ban status, and moderation status', () => {
     const db = openDatabase(':memory:')
     runMigrations(db, migrations)
     seed(db)
     const chips = listChipsForModeration(db)
     expect(chips).toHaveLength(1)
     expect(chips[0].ownerDisplayName).toBe('Ada')
+    expect(chips[0].ownerUserId).toBe('u1')
+    expect(chips[0].ownerBannedAt).toBeNull()
     expect(chips[0].moderationStatus).toBe('visible')
+
+    db.prepare('UPDATE users SET banned_at = ? WHERE id = ?').run(42, 'u1')
+    expect(listChipsForModeration(db)[0].ownerBannedAt).toBe(42)
+  })
+
+  it('creates comment reports, lists the queue, and hides comments from public threads', () => {
+    const db = openDatabase(':memory:')
+    runMigrations(db, migrations)
+    seed(db)
+    const comment = createComment(
+      db,
+      { publishedChipId: 'chip1', authorUserId: 'u1', body: 'bad comment' },
+      () => 10,
+    )
+
+    const report = createCommentReport(
+      db,
+      { commentId: comment.id, reporterUserId: 'u1', reason: 'abuse' },
+      () => 11,
+    )
+    expect(report).not.toBe('comment-not-found')
+    if (report === 'comment-not-found') throw new Error('unreachable')
+    expect(report.publishedChipId).toBe('chip1')
+
+    const queue = listCommentReports(db)
+    expect(queue).toEqual([
+      expect.objectContaining({
+        id: report.id,
+        commentId: comment.id,
+        commentBody: 'bad comment',
+        commentAuthorDisplayName: 'Ada',
+        commentAuthorUserId: 'u1',
+        chipSlug: 'slug-1',
+      }),
+    ])
+
+    expect(hideComment(db, comment.id, 'admin', () => 12)).toBe(true)
+    expect(unhideComment(db, comment.id)).toBe(true)
   })
 })

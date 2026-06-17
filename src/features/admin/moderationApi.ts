@@ -16,9 +16,33 @@ export type ModerationChip = {
   slug: string
   title: string
   ownerDisplayName: string
+  ownerUserId: string
+  ownerBannedAt: number | null
   isPublic: boolean
   moderationStatus: 'visible' | 'hidden'
   updatedAt: number
+}
+
+export type CommentReport = {
+  id: string
+  commentId: string
+  commentBody: string
+  commentAuthorDisplayName: string
+  commentAuthorUserId: string
+  chipSlug: string
+  chipTitle: string
+  reason: string | null
+  createdAt: number
+}
+
+export type AuditEntry = {
+  id: string
+  adminUserId: string | null
+  action: string
+  targetType: string
+  targetId: string
+  detail: string | null
+  createdAt: number
 }
 
 export type ModerationApi = {
@@ -28,6 +52,13 @@ export type ModerationApi = {
   hideChip: (id: string, reason?: string) => Promise<void>
   unhideChip: (id: string) => Promise<void>
   deleteChip: (id: string) => Promise<void>
+  featureChip: (id: string) => Promise<void>
+  unfeatureChip: (id: string) => Promise<void>
+  listCommentReports: () => Promise<CommentReport[]>
+  hideComment: (id: string) => Promise<void>
+  banUser: (id: string, reason?: string) => Promise<void>
+  unbanUser: (id: string) => Promise<void>
+  listAudit: () => Promise<AuditEntry[]>
 }
 
 async function ok(res: Response): Promise<Response> {
@@ -67,5 +98,28 @@ export const liveModerationApi: ModerationApi = {
   },
   async deleteChip(id) {
     await ok(await fetch(`/api/admin/published-chips/${id}`, { method: 'DELETE' }))
+  },
+  async featureChip(id) {
+    await ok(await fetch(`/api/admin/published-chips/${id}/feature`, { method: 'POST' }))
+  },
+  async unfeatureChip(id) {
+    await ok(await fetch(`/api/admin/published-chips/${id}/unfeature`, { method: 'POST' }))
+  },
+  async listCommentReports() {
+    const res = await ok(await fetch('/api/admin/comment-reports', { method: 'GET' }))
+    return ((await res.json()) as { reports: CommentReport[] }).reports
+  },
+  async hideComment(id) {
+    await ok(await fetch(`/api/admin/comments/${id}/hide`, { method: 'POST' }))
+  },
+  async banUser(id, reason) {
+    await ok(await fetch(`/api/admin/users/${id}/ban`, jsonInit('POST', { reason: reason ?? null })))
+  },
+  async unbanUser(id) {
+    await ok(await fetch(`/api/admin/users/${id}/unban`, { method: 'POST' }))
+  },
+  async listAudit() {
+    const res = await ok(await fetch('/api/admin/audit-log', { method: 'GET' }))
+    return ((await res.json()) as { entries: AuditEntry[] }).entries
   },
 }

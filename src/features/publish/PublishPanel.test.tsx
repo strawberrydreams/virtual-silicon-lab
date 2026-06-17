@@ -9,7 +9,14 @@ import type { PublishApi, PublishedChip } from './publishApi'
 import { ServerUnreachableError } from './publishApi'
 import { PublishPanel } from './PublishPanel'
 
-const user: AuthUser = { id: 'u1', email: 'ada@example.com', displayName: 'Ada', createdAt: 1_000 }
+const user: AuthUser = {
+  id: 'u1',
+  email: 'ada@example.com',
+  displayName: 'Ada',
+  createdAt: 1_000,
+  emailVerified: true,
+  handle: null,
+}
 const project = createProject('Ada Chip', 'project-1', 1_000)
 const images = {
   dieImageDataUrl: 'data:image/png;base64,AAAA',
@@ -34,13 +41,17 @@ const chip: PublishedChip = {
 function fakeAuthApi(overrides: Partial<AuthApi> = {}): AuthApi {
   return {
     me: vi.fn().mockResolvedValue({ user, isAdmin: false }),
-    serverConfig: vi.fn().mockResolvedValue({ signupsOpen: true }),
+    serverConfig: vi.fn().mockResolvedValue({ accessMode: 'open' }),
     signup: vi.fn(),
     login: vi.fn(),
     logout: vi.fn(),
     updateDisplayName: vi.fn(),
     changePassword: vi.fn(),
     deleteAccount: vi.fn(),
+    verifyEmail: vi.fn(),
+    forgotPassword: vi.fn(),
+    resetPassword: vi.fn(),
+    setHandle: vi.fn(),
     ...overrides,
   }
 }

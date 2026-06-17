@@ -22,6 +22,7 @@ const chip: GalleryChipSummary = {
 function fakeApi(overrides: Partial<GalleryApi> = {}): GalleryApi {
   return {
     list: vi.fn().mockResolvedValue([chip]),
+    featured: vi.fn().mockResolvedValue([]),
     get: vi.fn(),
     getLineage: vi.fn(),
     ...overrides,
@@ -75,5 +76,15 @@ describe('GalleryPage', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'Top' }))
     expect(list).toHaveBeenCalledWith('top')
+  })
+
+  it('renders a featured row when curated chips exist', async () => {
+    renderPage(fakeApi({ featured: vi.fn().mockResolvedValue([{ ...chip, id: 'featured' }]) }))
+
+    expect(await screen.findByRole('region', { name: 'Featured chips' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Open featured Ada Chip' })).toHaveAttribute(
+      'href',
+      '/gallery/ada-chip-deadbeef',
+    )
   })
 })

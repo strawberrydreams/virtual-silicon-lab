@@ -103,4 +103,119 @@ describe('moderation routes', () => {
     const after = await app.request('/api/gallery/slug-1')
     expect(after.status).toBe(404)
   })
+
+  it('audit-logs admin chip mutations and exposes the audit list', async () => {
+    let timestamp = 1_000
+    const { app, db } = createTestApp(() => timestamp++, ADMIN_OPTS)
+    seedChip(db, 'chip1', 'slug-1')
+    const adminCookie = await signIn(app, VALID_SIGNUP)
+
+    await app.request('/api/admin/published-chips/chip1/hide', jsonRequest('POST', {}, adminCookie))
+    await app.request('/api/admin/published-chips/chip1/unhide', jsonRequest('POST', {}, adminCookie))
+
+    const audit = await app.request('/api/admin/audit-log', { headers: { cookie: adminCookie } })
+    expect(audit.status).toBe(200)
+    const body = (await audit.json()) as { entries: { action: string; targetId: string }[] }
+    expect(body.entries.map((entry) => entry.action)).toEqual(['unhide_chip', 'hide_chip'])
+    expect(body.entries[0].targetId).toBe('chip1')
+  })
+
+  it('lets an admin feature and unfeature a chip with audit entries', async () => {
+    let timestamp = 1_000
+    const { app, db } = createTestApp(() => timestamp++, ADMIN_OPTS)
+    seedChip(db, 'chip1', 'slug-1')
+    const adminCookie = await signIn(app, VALID_SIGNUP)
+
+    const featured = await app.request('/api/admin/published-chips/chip1/feature', {
+      method: 'POST',
+      headers: { cookie: adminCookie },
+    })
+    expect(featured.status).toBe(200)
+    expect(
+      (
+        (await (await app.request('/api/gallery/featured')).json()) as {
+          chips: { slug: string }[]
+        }
+      ).chips,
+    ).toEqual([expect.objectContaining({ slug: 'slug-1' })])
+
+    const unfeatured = await app.request('/api/admin/published-chips/chip1/unfeature', {
+      method: 'POST',
+      headers: { cookie: adminCookie },
+    })
+    expect(unfeatured.status).toBe(200)
+    expect(
+      ((await (await app.request('/api/gallery/featured')).json()) as { chips: unknown[] }).chips,
+    ).toEqual([])
+
+    const audit = (await (
+      await app.request('/api/admin/audit-log', { headers: { cookie: adminCookie } })
+    ).json()) as { entries: { action: string; targetId: string }[] }
+    expect(audit.entries.map((entry) => entry.action)).toEqual(['unfeature_chip', 'feature_chip'])
+  })
+
+  it('ban endpoint revokes sessions and audit-logs the action', async () => {
+    const { app, db } = createTestApp(() => 1_000, ADMIN_OPTS)
+    const adminCookie = await signIn(app, VALID_SIGNUP)
+    const userCookie = await signIn(app, NON_ADMIN)
+    const user = db.prepare('SELECT id FROM users WHERE email = ?').get(NON_ADMIN.email) as {
+      id: string
+    }
+
+    const banned = await app.request(
+      `/api/admin/users/${user.id}/ban`,
+      jsonRequest('POST', { reason: 'spam' }, adminCookie),
+    )
+
+    expect(banned.status).toBe(200)
+    expect((await app.request('/api/me', { headers: { cookie: userCookie } })).status).toBe(401)
+    const audit = (await (
+      await app.request('/api/admin/audit-log', { headers: { cookie: adminCookie } })
+    ).json()) as { entries: { action: string; targetId: string; detail: string | null }[] }
+    expect(audit.entries[0]).toMatchObject({
+      action: 'ban_user',
+      targetId: user.id,
+      detail: 'spam',
+    })
+
+    const unbanned = await app.request(`/api/admin/users/${user.id}/unban`, {
+      method: 'POST',
+      headers: { cookie: adminCookie },
+    })
+    expect(unbanned.status).toBe(200)
+  })
+
+  it('lets admins hide a reported comment and removes it from public comments', async () => {
+    const { app, db } = createTestApp(() => 1_000, ADMIN_OPTS)
+    seedChip(db, 'chip1', 'slug-1')
+    const adminCookie = await signIn(app, VALID_SIGNUP)
+    const eveCookie = await signIn(app, NON_ADMIN)
+    const created = await app.request(
+      '/api/published-chips/chip1/comments',
+      jsonRequest('POST', { body: 'bad comment' }, eveCookie),
+    )
+    const comment = ((await created.json()) as { comment: { id: string } }).comment
+    const report = await app.request(
+      '/api/reports',
+      jsonRequest('POST', { commentId: comment.id, reason: 'abuse' }, eveCookie),
+    )
+    expect(report.status).toBe(201)
+
+    const queue = (await (
+      await app.request('/api/admin/comment-reports', { headers: { cookie: adminCookie } })
+    ).json()) as { reports: { commentId: string; commentBody: string }[] }
+    expect(queue.reports).toEqual([
+      expect.objectContaining({ commentId: comment.id, commentBody: 'bad comment' }),
+    ])
+
+    const hide = await app.request(`/api/admin/comments/${comment.id}/hide`, {
+      method: 'POST',
+      headers: { cookie: adminCookie },
+    })
+    expect(hide.status).toBe(200)
+    const comments = (await (await app.request('/api/published-chips/chip1/comments')).json()) as {
+      comments: unknown[]
+    }
+    expect(comments.comments).toEqual([])
+  })
 })

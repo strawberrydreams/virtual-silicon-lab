@@ -6,10 +6,11 @@ import { resolvePublicBaseUrl } from './baseUrl'
 import { decodePngDataUrl } from './poster'
 import { renderNotFoundHtml, renderViewerHtml } from './viewer'
 
-export function shareRoutes({ db, publicBaseUrl, imageStore }: AppDeps) {
+export function shareRoutes({ db, publicBaseUrl, imageStore, galleryLockdown = false }: AppDeps) {
   const routes = new Hono()
 
   routes.get('/s/:slug/poster.png', (c) => {
+    if (galleryLockdown) return c.body(null, 410)
     const chip = getPublicPublishedChipBySlug(db, c.req.param('slug'))
     const bytes =
       chip === null
@@ -25,6 +26,7 @@ export function shareRoutes({ db, publicBaseUrl, imageStore }: AppDeps) {
   })
 
   routes.get('/s/:slug', (c) => {
+    if (galleryLockdown) return c.html(renderNotFoundHtml({ baseUrl: resolvePublicBaseUrl(c.req.url, publicBaseUrl) }), 410)
     const baseUrl = resolvePublicBaseUrl(c.req.url, publicBaseUrl)
     const chip = getPublicPublishedChipBySlug(db, c.req.param('slug'))
     if (chip === null) return c.html(renderNotFoundHtml({ baseUrl }), 404)

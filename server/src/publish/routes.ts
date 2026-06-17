@@ -2,10 +2,11 @@ import { Hono } from 'hono'
 import type { Context } from 'hono'
 import { getSignedCookie } from 'hono/cookie'
 import type { AppDeps } from '../app'
-import { getSessionUser, type AccountUser } from '../accounts/service'
+import { getSessionUserWithStatus, type AccountUser } from '../accounts/service'
 import {
   deletePublishedChip,
   getChipLineage,
+  listFeaturedChips,
   getPublicPublishedChipBySlug,
   getPublishedChipForOwnerProject,
   listOwnerPublicChips,
@@ -23,7 +24,7 @@ import { buildShareUrl, resolvePublicBaseUrl } from '../share/baseUrl'
 
 const SESSION_COOKIE = 'vsl_session'
 
-type ErrorStatus = 400 | 401 | 404
+type ErrorStatus = 400 | 401 | 403 | 404 | 410
 
 function parseGallerySort(raw: string | undefined): GallerySort {
   return raw === 'top' || raw === 'newest' || raw === 'trending' ? raw : 'trending'
@@ -94,6 +95,8 @@ export function publishRoutes({
   publicBaseUrl,
   uploadMaxBytes,
   imageStore,
+  requireVerifiedPublish = false,
+  galleryLockdown = false,
 }: AppDeps) {
   const routes = new Hono()
 
@@ -104,12 +107,29 @@ export function publishRoutes({
   async function readUser(c: Context): Promise<AccountUser | null> {
     const token = await getSignedCookie(c, sessionSecret, SESSION_COOKIE)
     if (typeof token !== 'string' || token === '') return null
-    return getSessionUser(db, token, now)
+    const user = getSessionUserWithStatus(db, token, now)
+    return user === null || user.bannedAt !== null ? null : user
+  }
+
+  async function requireActiveUser(c: Context): Promise<AccountUser | Response> {
+    const token = await getSignedCookie(c, sessionSecret, SESSION_COOKIE)
+    if (typeof token !== 'string' || token === '') {
+      return fail(c, 401, 'UNAUTHORIZED', 'Sign in required.')
+    }
+    const user = getSessionUserWithStatus(db, token, now)
+    if (user === null) return fail(c, 401, 'UNAUTHORIZED', 'Sign in required.')
+    if (user.bannedAt !== null) {
+      return fail(c, 403, 'ACCOUNT_BANNED', 'This account is banned.')
+    }
+    if (requireVerifiedPublish && !user.emailVerified) {
+      return fail(c, 403, 'EMAIL_UNVERIFIED', 'Verify your email before publishing.')
+    }
+    return user
   }
 
   routes.post('/published-chips', async (c) => {
-    const user = await readUser(c)
-    if (user === null) return fail(c, 401, 'UNAUTHORIZED', 'Sign in required.')
+    const user = await requireActiveUser(c)
+    if (user instanceof Response) return user
     const input = validatePublishInput(await c.req.json().catch(() => null), {
       maxPngBytes: uploadMaxBytes,
     })
@@ -146,8 +166,8 @@ export function publishRoutes({
   })
 
   routes.patch('/published-chips/source/:sourceProjectId', async (c) => {
-    const user = await readUser(c)
-    if (user === null) return fail(c, 401, 'UNAUTHORIZED', 'Sign in required.')
+    const user = await requireActiveUser(c)
+    if (user instanceof Response) return user
     const body = (await c.req.json().catch(() => null)) as Record<string, unknown> | null
     if (body === null || typeof body.isPublic !== 'boolean') {
       return fail(c, 400, 'INVALID_INPUT', 'isPublic must be a boolean.')
@@ -166,8 +186,8 @@ export function publishRoutes({
   })
 
   routes.delete('/published-chips/source/:sourceProjectId', async (c) => {
-    const user = await readUser(c)
-    if (user === null) return fail(c, 401, 'UNAUTHORIZED', 'Sign in required.')
+    const user = await requireActiveUser(c)
+    if (user instanceof Response) return user
     if (!deletePublishedChip(db, user.id, c.req.param('sourceProjectId'), imageStore)) {
       return fail(c, 404, 'NOT_FOUND', 'Published chip not found.')
     }
@@ -177,6 +197,7 @@ export function publishRoutes({
   routes.get('/gallery', (c) => {
     const baseUrl = resolvePublicBaseUrl(c.req.url, publicBaseUrl)
     const sort = parseGallerySort(c.req.query('sort'))
+    if (galleryLockdown) return c.json({ chips: [] })
     return c.json({
       chips: listPublicPublishedChips(db, { sort, now }).map((chip) =>
         serializeGallerySummary(chip, baseUrl),
@@ -184,7 +205,16 @@ export function publishRoutes({
     })
   })
 
+  routes.get('/gallery/featured', (c) => {
+    const baseUrl = resolvePublicBaseUrl(c.req.url, publicBaseUrl)
+    if (galleryLockdown) return c.json({ chips: [] })
+    return c.json({
+      chips: listFeaturedChips(db).map((chip) => serializeGallerySummary(chip, baseUrl)),
+    })
+  })
+
   routes.get('/gallery/:slug', async (c) => {
+    if (galleryLockdown) return fail(c, 410, 'GALLERY_LOCKED', 'Gallery is temporarily locked.')
     const chip = getPublicPublishedChipBySlug(db, c.req.param('slug'))
     if (chip === null) return fail(c, 404, 'NOT_FOUND', 'Published chip not found.')
     const user = await readUser(c)

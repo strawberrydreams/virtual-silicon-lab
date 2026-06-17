@@ -1,4 +1,12 @@
-export type AuthUser = { id: string; email: string; displayName: string; createdAt: number }
+export type AuthUser = {
+  id: string
+  email: string
+  displayName: string
+  createdAt: number
+  emailVerified: boolean
+  handle: string | null
+}
+export type AccessMode = 'closed' | 'invite' | 'open'
 
 export class AuthApiError extends Error {
   constructor(
@@ -19,13 +27,22 @@ export class ServerUnreachableError extends Error {
 
 export type AuthApi = {
   me: () => Promise<{ user: AuthUser; isAdmin: boolean } | null>
-  serverConfig: () => Promise<{ signupsOpen: boolean }>
-  signup: (input: { email: string; displayName: string; password: string }) => Promise<AuthUser>
+  serverConfig: () => Promise<{ accessMode: AccessMode }>
+  signup: (input: {
+    email: string
+    displayName: string
+    password: string
+    inviteCode?: string
+  }) => Promise<AuthUser>
   login: (input: { email: string; password: string }) => Promise<AuthUser>
   logout: () => Promise<void>
   updateDisplayName: (displayName: string) => Promise<AuthUser>
   changePassword: (input: { currentPassword: string; newPassword: string }) => Promise<void>
   deleteAccount: (password: string) => Promise<void>
+  verifyEmail: (token: string) => Promise<AuthUser>
+  forgotPassword: (email: string) => Promise<void>
+  resetPassword: (input: { token: string; newPassword: string }) => Promise<void>
+  setHandle: (handle: string) => Promise<AuthUser>
 }
 
 // A proxy in front of a down API server (Vite dev proxy, nginx) answers with a
@@ -81,8 +98,13 @@ export const liveAuthApi: AuthApi = {
   async serverConfig() {
     const res = await request('/api/health')
     if (!res.ok) throw await toApiError(res)
-    const body = (await res.json()) as { signupsOpen?: boolean }
-    return { signupsOpen: body.signupsOpen !== false }
+    const body = (await res.json()) as { accessMode?: unknown }
+    return {
+      accessMode:
+        body.accessMode === 'closed' || body.accessMode === 'invite' || body.accessMode === 'open'
+          ? body.accessMode
+          : 'open',
+    }
   },
   async signup(input) {
     return expectUser(await request('/api/auth/signup', jsonInit('POST', input)))
@@ -101,5 +123,17 @@ export const liveAuthApi: AuthApi = {
   },
   async deleteAccount(password) {
     await expectOk(await request('/api/me', jsonInit('DELETE', { password })))
+  },
+  async verifyEmail(token) {
+    return expectUser(await request('/api/auth/verify-email', jsonInit('POST', { token })))
+  },
+  async forgotPassword(email) {
+    await expectOk(await request('/api/auth/forgot-password', jsonInit('POST', { email })))
+  },
+  async resetPassword(input) {
+    await expectOk(await request('/api/auth/reset-password', jsonInit('POST', input)))
+  },
+  async setHandle(handle) {
+    return expectUser(await request('/api/me/handle', jsonInit('PATCH', { handle })))
   },
 }

@@ -98,6 +98,25 @@ describe('App', () => {
     expect(screen.getByRole('link', { name: 'Gallery' })).toBeInTheDocument()
   })
 
+  it('renders the public profile route', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ profile: { handle: 'ada_lab', displayName: 'Ada', chips: [] } }), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        }),
+      ),
+    )
+    render(
+      <MemoryRouter initialEntries={['/u/ada_lab']}>
+        <App />
+      </MemoryRouter>,
+    )
+
+    expect(await screen.findByRole('heading', { name: 'Ada' })).toBeInTheDocument()
+  })
+
   it('remixes a gallery chip into a new local project and opens the editor', async () => {
     const project = {
       ...(await import('../domain/projectFactory')).createProject(

@@ -23,9 +23,31 @@ describe('ProjectDashboard', () => {
     )
 
     expect(screen.getByText('No local projects yet')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Start from a template' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Lab Home' })).toHaveAttribute('href', '/')
     expect(screen.getByRole('region', { name: 'Preset remix surface' })).toBeInTheDocument()
     expect(screen.getByRole('region', { name: 'Local project surface' })).toBeInTheDocument()
+  })
+
+  it('starts a first-run template directly from the empty state', async () => {
+    const remixPreset = vi.fn().mockResolvedValue(createProject('Starter', 'starter-1', 100))
+    render(
+      <MemoryRouter>
+        <ProjectDashboard
+          projects={[]}
+          presets={PRESET_CATALOG}
+          createProject={vi.fn()}
+          createRandomProject={vi.fn()}
+          remixPreset={remixPreset}
+          duplicateProject={vi.fn()}
+          removeProject={vi.fn()}
+        />
+      </MemoryRouter>,
+    )
+
+    await userEvent.click(screen.getByRole('button', { name: 'Start with AURORA M5' }))
+
+    expect(remixPreset).toHaveBeenCalledWith('aurora-m5')
   })
 
   it('creates a blank project from the dashboard', async () => {

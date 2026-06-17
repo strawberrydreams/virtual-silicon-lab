@@ -147,4 +147,84 @@ export const migrations: Migration[] = [
       `)
     },
   },
+  {
+    id: '008_invite_codes',
+    up: (db) => {
+      db.exec(`
+        CREATE TABLE invite_codes (
+          code TEXT PRIMARY KEY,
+          created_by TEXT REFERENCES users(id) ON DELETE SET NULL,
+          max_uses INTEGER NOT NULL,
+          used_count INTEGER NOT NULL DEFAULT 0,
+          expires_at INTEGER,
+          note TEXT,
+          created_at INTEGER NOT NULL
+        );
+        CREATE INDEX idx_invite_codes_created_at ON invite_codes(created_at DESC);
+        ALTER TABLE users ADD COLUMN invited_via_code TEXT;
+      `)
+    },
+  },
+  {
+    id: '009_safety',
+    up: (db) => {
+      db.exec(`
+        ALTER TABLE users ADD COLUMN banned_at INTEGER;
+        ALTER TABLE users ADD COLUMN banned_reason TEXT;
+        ALTER TABLE comments ADD COLUMN hidden_at INTEGER;
+        ALTER TABLE comments ADD COLUMN hidden_by TEXT;
+        ALTER TABLE reports ADD COLUMN comment_id TEXT REFERENCES comments(id) ON DELETE CASCADE;
+        CREATE TABLE audit_log (
+          id TEXT PRIMARY KEY,
+          admin_user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+          action TEXT NOT NULL,
+          target_type TEXT NOT NULL,
+          target_id TEXT NOT NULL,
+          detail TEXT,
+          created_at INTEGER NOT NULL
+        );
+        CREATE INDEX idx_audit_log_created ON audit_log(created_at DESC);
+      `)
+    },
+  },
+  {
+    id: '010_account_security',
+    up: (db) => {
+      db.exec(`
+        ALTER TABLE users ADD COLUMN email_verified_at INTEGER;
+        CREATE TABLE email_verification_tokens (
+          token_hash TEXT PRIMARY KEY,
+          user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          expires_at INTEGER NOT NULL,
+          created_at INTEGER NOT NULL
+        );
+        CREATE INDEX idx_email_verification_tokens_user ON email_verification_tokens(user_id);
+        CREATE TABLE password_reset_tokens (
+          token_hash TEXT PRIMARY KEY,
+          user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          expires_at INTEGER NOT NULL,
+          created_at INTEGER NOT NULL
+        );
+        CREATE INDEX idx_password_reset_tokens_user ON password_reset_tokens(user_id);
+      `)
+    },
+  },
+  {
+    id: '011_featured',
+    up: (db) => {
+      db.exec(`
+        ALTER TABLE published_chips ADD COLUMN featured_at INTEGER;
+        CREATE INDEX idx_published_chips_featured ON published_chips(featured_at DESC);
+      `)
+    },
+  },
+  {
+    id: '012_profiles_seo',
+    up: (db) => {
+      db.exec(`
+        ALTER TABLE users ADD COLUMN handle TEXT;
+        CREATE UNIQUE INDEX idx_users_handle ON users(handle) WHERE handle IS NOT NULL;
+      `)
+    },
+  },
 ]

@@ -23,6 +23,7 @@ export function GalleryPage({ api = liveGalleryApi }: Props) {
   const [chips, setChips] = useState<GalleryChipSummary[] | 'loading' | 'offline' | 'error'>(
     'loading',
   )
+  const [featured, setFeatured] = useState<GalleryChipSummary[]>([])
   // Reset to loading when the sort changes, derived during render so the effect
   // only owns the async fetch.
   const [loadedSort, setLoadedSort] = useState(sort)
@@ -47,6 +48,21 @@ export function GalleryPage({ api = liveGalleryApi }: Props) {
     }
   }, [api, sort])
 
+  useEffect(() => {
+    let active = true
+    api
+      .featured()
+      .then((nextChips) => {
+        if (active) setFeatured(nextChips)
+      })
+      .catch(() => {
+        if (active) setFeatured([])
+      })
+    return () => {
+      active = false
+    }
+  }, [api])
+
   return (
     <main className="v2-page gallery-page">
       <section className="gallery-page__hero" aria-label="Public gallery intro">
@@ -57,6 +73,35 @@ export function GalleryPage({ api = liveGalleryApi }: Props) {
           not live project sync.
         </p>
       </section>
+
+      {featured.length > 0 ? (
+        <section className="gallery-featured" aria-label="Featured chips">
+          <div className="v2-dashboard-section__header">
+            <div>
+              <p className="v2-kicker">Curated by the lab</p>
+              <h2>Featured</h2>
+            </div>
+          </div>
+          <div className="gallery-featured__row">
+            {featured.map((chip) => (
+              <article className="gallery-card" key={chip.id}>
+                <img
+                  alt={`${chip.title} featured poster`}
+                  className="gallery-card__poster"
+                  src={chip.posterImageUrl}
+                />
+                <div className="gallery-card__body">
+                  <p className="v2-meta">{chip.ownerDisplayName}</p>
+                  <h3>{chip.title}</h3>
+                  <Link className="v2-inline-action" to={`/gallery/${chip.slug}`}>
+                    Open featured {chip.title}
+                  </Link>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <div className="gallery-page__sort" role="group" aria-label="Sort gallery">
         {SORT_OPTIONS.map((option) => (

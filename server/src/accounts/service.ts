@@ -3,14 +3,43 @@ import type Database from 'better-sqlite3'
 import { hashPassword, verifyPassword } from './passwords'
 import type { SignupInput } from './validation'
 
-export type AccountUser = { id: string; email: string; displayName: string; createdAt: number }
+export type AccountUser = {
+  id: string
+  email: string
+  displayName: string
+  createdAt: number
+  emailVerified: boolean
+  handle: string | null
+}
+export type AccountSessionUser = AccountUser & { bannedAt: number | null }
 
 export const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000
+const DUMMY_PASSWORD_HASH =
+  '$argon2id$v=19$m=19456,t=2,p=1$KJOgFAMrTuNeFVNr2oyAYw$tHd0iec/wiQw9JgL0gRACd5OlokjdhfNNOtwAwvd4dA'
 
-type UserRow = { id: string; email: string; display_name: string; created_at: number }
+type UserRow = {
+  id: string
+  email: string
+  display_name: string
+  created_at: number
+  email_verified_at?: number | null
+  handle?: string | null
+}
+type UserAuthRow = UserRow & { banned_at: number | null }
 
 function toUser(row: UserRow): AccountUser {
-  return { id: row.id, email: row.email, displayName: row.display_name, createdAt: row.created_at }
+  return {
+    id: row.id,
+    email: row.email,
+    displayName: row.display_name,
+    createdAt: row.created_at,
+    emailVerified: row.email_verified_at != null,
+    handle: row.handle ?? null,
+  }
+}
+
+function toSessionUser(row: UserAuthRow): AccountSessionUser {
+  return { ...toUser(row), bannedAt: row.banned_at }
 }
 
 function hashToken(token: string): string {
@@ -21,6 +50,7 @@ export async function createAccount(
   db: Database.Database,
   input: SignupInput,
   now: () => number,
+  invitedViaCode: string | null = null,
 ): Promise<AccountUser | 'email-taken'> {
   const passwordHash = await hashPassword(input.password)
   const user: AccountUser = {
@@ -28,11 +58,23 @@ export async function createAccount(
     email: input.email,
     displayName: input.displayName,
     createdAt: now(),
+    emailVerified: false,
+    handle: null,
   }
   try {
     db.prepare(
-      'INSERT INTO users (id, email, display_name, password_hash, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)',
-    ).run(user.id, user.email, user.displayName, passwordHash, user.createdAt, user.createdAt)
+      `INSERT INTO users
+        (id, email, display_name, password_hash, created_at, updated_at, invited_via_code)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    ).run(
+      user.id,
+      user.email,
+      user.displayName,
+      passwordHash,
+      user.createdAt,
+      user.createdAt,
+      invitedViaCode,
+    )
   } catch (error) {
     if ((error as { code?: string }).code === 'SQLITE_CONSTRAINT_UNIQUE') return 'email-taken'
     throw error
@@ -46,9 +88,16 @@ export async function verifyCredentials(
   password: string,
 ): Promise<AccountUser | null> {
   const row = db
-    .prepare('SELECT id, email, display_name, password_hash, created_at FROM users WHERE email = ?')
-    .get(email) as (UserRow & { password_hash: string }) | undefined
-  if (row === undefined) return null
+    .prepare(
+      `SELECT id, email, display_name, password_hash, created_at, email_verified_at, handle, banned_at
+       FROM users WHERE email = ?`,
+    )
+    .get(email) as (UserAuthRow & { password_hash: string }) | undefined
+  if (row === undefined) {
+    await verifyPassword(DUMMY_PASSWORD_HASH, password)
+    return null
+  }
+  if (row.banned_at !== null) return null
   if (!(await verifyPassword(row.password_hash, password))) return null
   return toUser(row)
 }
@@ -68,20 +117,30 @@ export function getSessionUser(
   token: string,
   now: () => number,
 ): AccountUser | null {
+  const user = getSessionUserWithStatus(db, token, now)
+  return user === null || user.bannedAt !== null ? null : user
+}
+
+export function getSessionUserWithStatus(
+  db: Database.Database,
+  token: string,
+  now: () => number,
+): AccountSessionUser | null {
   const tokenHash = hashToken(token)
   const row = db
     .prepare(
-      `SELECT u.id, u.email, u.display_name, u.created_at, s.expires_at
+      `SELECT u.id, u.email, u.display_name, u.created_at, u.email_verified_at, u.handle, u.banned_at,
+              s.expires_at
        FROM sessions s JOIN users u ON u.id = s.user_id
        WHERE s.token_hash = ?`,
     )
-    .get(tokenHash) as (UserRow & { expires_at: number }) | undefined
+    .get(tokenHash) as (UserAuthRow & { expires_at: number }) | undefined
   if (row === undefined) return null
   if (row.expires_at <= now()) {
     db.prepare('DELETE FROM sessions WHERE token_hash = ?').run(tokenHash)
     return null
   }
-  return toUser(row)
+  return toSessionUser(row)
 }
 
 export function deleteSession(db: Database.Database, token: string): void {
@@ -100,7 +159,7 @@ export function updateDisplayName(
     userId,
   )
   const row = db
-    .prepare('SELECT id, email, display_name, created_at FROM users WHERE id = ?')
+    .prepare('SELECT id, email, display_name, created_at, email_verified_at, handle FROM users WHERE id = ?')
     .get(userId) as UserRow
   return toUser(row)
 }
@@ -131,6 +190,45 @@ export async function changePassword(
     hashToken(keepToken),
   )
   return 'ok'
+}
+
+export function markEmailVerified(
+  db: Database.Database,
+  userId: string,
+  now: () => number,
+): AccountUser | null {
+  const timestamp = now()
+  const result = db
+    .prepare('UPDATE users SET email_verified_at = ?, updated_at = ? WHERE id = ?')
+    .run(timestamp, timestamp, userId)
+  if (result.changes === 0) return null
+  const row = db
+    .prepare('SELECT id, email, display_name, created_at, email_verified_at, handle FROM users WHERE id = ?')
+    .get(userId) as UserRow
+  return toUser(row)
+}
+
+export function findUserIdByEmail(db: Database.Database, email: string): string | null {
+  const row = db.prepare('SELECT id FROM users WHERE email = ?').get(email) as
+    | { id: string }
+    | undefined
+  return row?.id ?? null
+}
+
+export async function resetPasswordAndRevokeSessions(
+  db: Database.Database,
+  userId: string,
+  password: string,
+  now: () => number,
+): Promise<boolean> {
+  const passwordHash = await hashPassword(password)
+  const timestamp = now()
+  const result = db
+    .prepare('UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?')
+    .run(passwordHash, timestamp, userId)
+  if (result.changes === 0) return false
+  db.prepare('DELETE FROM sessions WHERE user_id = ?').run(userId)
+  return true
 }
 
 export async function deleteAccount(

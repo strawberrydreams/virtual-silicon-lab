@@ -107,7 +107,7 @@ export function listComments(db: Database.Database, chipId: string, limit = 200)
     .prepare(
       `SELECT c.*, u.display_name AS author_display_name
        FROM comments c JOIN users u ON u.id = c.author_user_id
-       WHERE c.published_chip_id = ?
+       WHERE c.published_chip_id = ? AND c.hidden_at IS NULL
        ORDER BY c.created_at ASC
        LIMIT ?`,
     )

@@ -19,6 +19,7 @@ coverage
 *.tsbuildinfo
 npm-debug.log*
 server/data/
+backups/
 
 # local working-context / planning docs (kept locally, out of the repo)
 /CLAUDE.md

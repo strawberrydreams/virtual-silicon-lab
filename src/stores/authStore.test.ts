@@ -7,18 +7,29 @@ import {
 } from '../features/account/authApi'
 import { createAuthStore } from './authStore'
 
-const user: AuthUser = { id: 'u1', email: 'ada@example.com', displayName: 'Ada', createdAt: 1000 }
+const user: AuthUser = {
+  id: 'u1',
+  email: 'ada@example.com',
+  displayName: 'Ada',
+  createdAt: 1000,
+  emailVerified: true,
+  handle: null,
+}
 
 function fakeApi(overrides: Partial<AuthApi> = {}): AuthApi {
   return {
     me: vi.fn().mockResolvedValue(null),
-    serverConfig: vi.fn().mockResolvedValue({ signupsOpen: true }),
+    serverConfig: vi.fn().mockResolvedValue({ accessMode: 'open' }),
     signup: vi.fn().mockResolvedValue(user),
     login: vi.fn().mockResolvedValue(user),
     logout: vi.fn().mockResolvedValue(undefined),
     updateDisplayName: vi.fn().mockResolvedValue({ ...user, displayName: 'Lady Lovelace' }),
     changePassword: vi.fn().mockResolvedValue(undefined),
     deleteAccount: vi.fn().mockResolvedValue(undefined),
+    verifyEmail: vi.fn().mockResolvedValue(user),
+    forgotPassword: vi.fn().mockResolvedValue(undefined),
+    resetPassword: vi.fn().mockResolvedValue(undefined),
+    setHandle: vi.fn().mockResolvedValue({ ...user, handle: 'ada_lab' }),
     ...overrides,
   }
 }
@@ -40,16 +51,16 @@ describe('authStore', () => {
     expect(store.getState()).toMatchObject({ status: 'authenticated', user })
   })
 
-  it('captures isAdmin and signupsOpen from init', async () => {
+  it('captures isAdmin and accessMode from init', async () => {
     const store = createAuthStore(
       fakeApi({
         me: vi.fn().mockResolvedValue({ user, isAdmin: true }),
-        serverConfig: vi.fn().mockResolvedValue({ signupsOpen: false }),
+        serverConfig: vi.fn().mockResolvedValue({ accessMode: 'invite' }),
       }),
     )
     await store.getState().init()
     expect(store.getState().isAdmin).toBe(true)
-    expect(store.getState().signupsOpen).toBe(false)
+    expect(store.getState().accessMode).toBe('invite')
   })
 
   it('treats an unreachable server as the offline state, not an error', async () => {

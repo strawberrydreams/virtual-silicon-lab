@@ -55,6 +55,7 @@ export class ServerUnreachableError extends Error {
 
 export type GalleryApi = {
   list: (sort?: GallerySort) => Promise<GalleryChipSummary[]>
+  featured: () => Promise<GalleryChipSummary[]>
   get: (slug: string) => Promise<GalleryChipDetail | null>
   getLineage: (slug: string) => Promise<ChipLineage | null>
 }
@@ -87,6 +88,12 @@ async function toApiError(res: Response): Promise<GalleryApiError> {
 export const liveGalleryApi: GalleryApi = {
   async list(sort) {
     const res = await request(sort === undefined ? '/api/gallery' : `/api/gallery?sort=${sort}`)
+    if (!res.ok) throw await toApiError(res)
+    const body = (await res.json()) as { chips: GalleryChipSummary[] }
+    return body.chips
+  },
+  async featured() {
+    const res = await request('/api/gallery/featured')
     if (!res.ok) throw await toApiError(res)
     const body = (await res.json()) as { chips: GalleryChipSummary[] }
     return body.chips

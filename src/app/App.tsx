@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, Navigate, Route, Routes, useNavigate, useParams } from 'react-router-dom'
 import type { Project, RemixOrigin } from '../domain/project'
-import { AccountPage } from '../features/account/AccountPage'
+import {
+  AccountPage,
+  ForgotPasswordPage,
+  ResetPasswordPage,
+  VerifyEmailPage,
+} from '../features/account/AccountPage'
 import { AdminPage } from '../features/admin/AdminPage'
 import { ContestDetailPage } from '../features/contests/ContestDetailPage'
 import { ContestsPage } from '../features/contests/ContestsPage'
@@ -9,6 +14,7 @@ import { EditorPage } from '../features/editor/EditorPage'
 import { GalleryDetailPage } from '../features/gallery/GalleryDetailPage'
 import { GalleryPage } from '../features/gallery/GalleryPage'
 import { LandingPage } from '../features/landing/LandingPage'
+import { ProfilePage } from '../features/profile/ProfilePage'
 import { ProjectDashboard } from '../features/projects/ProjectDashboard'
 import { PRESET_CATALOG } from '../presets/presetCatalog'
 import { AuthStoreProvider, useAuthStore } from '../stores/authStoreContext'
@@ -174,9 +180,13 @@ export function App() {
               <Route path="/dashboard" element={<DashboardRoute />} />
               <Route path="/editor/:projectId" element={<EditorRoute />} />
               <Route path="/account" element={<AccountPage />} />
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
+              <Route path="/verify-email" element={<VerifyEmailPage />} />
               <Route path="/admin" element={<AdminPage />} />
               <Route path="/gallery" element={<GalleryPage />} />
               <Route path="/gallery/:slug" element={<GalleryDetailRoute />} />
+              <Route path="/u/:handle" element={<ProfilePage />} />
               <Route path="/contests" element={<ContestsPage />} />
               <Route path="/contests/:id" element={<ContestDetailRoute />} />
               <Route path="*" element={<Navigate to="/" replace />} />

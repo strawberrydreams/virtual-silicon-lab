@@ -3,19 +3,30 @@ import { describe, expect, it, vi } from 'vitest'
 import type { AuthApi, AuthUser } from '../features/account/authApi'
 import { AuthStoreProvider, useAuthStore } from './authStoreContext'
 
-const user: AuthUser = { id: 'u1', email: 'ada@example.com', displayName: 'Ada', createdAt: 1000 }
+const user: AuthUser = {
+  id: 'u1',
+  email: 'ada@example.com',
+  displayName: 'Ada',
+  createdAt: 1000,
+  emailVerified: true,
+  handle: null,
+}
 
 function api(me: AuthApi['me']): AuthApi {
   const reject = () => Promise.reject(new Error('not under test'))
   return {
     me,
-    serverConfig: vi.fn().mockResolvedValue({ signupsOpen: true }),
+    serverConfig: vi.fn().mockResolvedValue({ accessMode: 'open' }),
     signup: reject,
     login: reject,
     logout: reject,
     updateDisplayName: reject,
     changePassword: reject,
     deleteAccount: reject,
+    verifyEmail: reject,
+    forgotPassword: reject,
+    resetPassword: reject,
+    setHandle: reject,
   }
 }
 

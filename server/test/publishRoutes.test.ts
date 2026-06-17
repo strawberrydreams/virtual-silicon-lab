@@ -51,6 +51,51 @@ describe('publish routes', () => {
     expect(db.prepare('SELECT COUNT(*) AS n FROM published_chips').get()).toEqual({ n: 1 })
   })
 
+  it('blocks a banned account from publishing even if a stale session exists', async () => {
+    const { app, db } = createTestApp(() => 2_000)
+    const signup = await app.request('/api/auth/signup', jsonRequest('POST', VALID_SIGNUP))
+    const cookie = sessionCookie(signup)
+    const user = db.prepare('SELECT id FROM users WHERE email = ?').get(VALID_SIGNUP.email) as {
+      id: string
+    }
+    db.prepare('UPDATE users SET banned_at = ?, banned_reason = ? WHERE id = ?').run(
+      2_100,
+      'abuse',
+      user.id,
+    )
+
+    const res = await app.request(
+      '/api/published-chips',
+      jsonRequest('POST', publishPayload(), cookie),
+    )
+
+    expect(signup.status).toBe(201)
+    expect(res.status).toBe(403)
+    expect(((await res.json()) as { error: { code: string } }).error.code).toBe('ACCOUNT_BANNED')
+  })
+
+  it('soft-gates publish until email is verified when required', async () => {
+    const { app, db } = createTestApp(() => 2_000, { requireVerifiedPublish: true })
+    const signup = await app.request('/api/auth/signup', jsonRequest('POST', VALID_SIGNUP))
+    const cookie = sessionCookie(signup)
+
+    const blocked = await app.request(
+      '/api/published-chips',
+      jsonRequest('POST', publishPayload(), cookie),
+    )
+    expect(blocked.status).toBe(403)
+    expect(((await blocked.json()) as { error: { code: string } }).error.code).toBe(
+      'EMAIL_UNVERIFIED',
+    )
+
+    db.prepare('UPDATE users SET email_verified_at = ? WHERE email = ?').run(
+      2_100,
+      VALID_SIGNUP.email,
+    )
+    const ok = await app.request('/api/published-chips', jsonRequest('POST', publishPayload(), cookie))
+    expect(ok.status).toBe(201)
+  })
+
   it('returns the current account publish record for a source project', async () => {
     const { app, cookie } = await signedInCookie()
     await app.request('/api/published-chips', {
