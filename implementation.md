@@ -1421,3 +1421,24 @@ v6 "Mobile/Responsive"의 첫 마일스톤. 데스크톱 전용 뷰포트 바닥
 - **게이트.** `npm test`(client 80 files/412 tests + server 62 files/241 tests), `npm run build`(알려진 >500kB 청크
   경고만), `npm run lint` 모두 green. 모바일 뷰포트 시각 확인은 V6-M4 QA로 이월. 브랜치 `v6-mobile-responsive`,
   M1–M4 잔여이므로 미병합.
+
+## V6-M1 Public Read Surfaces (2026-06-18)
+
+공개 read 표면(랜딩 `/`, 갤러리 리스트 `/gallery`, 갤러리 상세 `/gallery/:slug`, 공개 프로필 `/u/:handle`,
+서버 렌더 share viewer `/s/:slug`)을 폰에서 가로 스크롤 없이 리플로우. **순수 CSS 리플로우** — 컴포넌트 구조/JS
+변경 없음, 모든 신규 모바일 규칙은 `@media (max-width: 767px)`(V6-M0 브레이크포인트와 일치). M1–M4 계획 4건을
+이번에 한꺼번에 작성(`docs/superpowers/plans/2026-06-18-v6-m1..m4-*.md`).
+
+- **랜딩.** `.v2-landing__hero`가 `minmax(430px,0.9fr) minmax(560px,1.1fr)`(≈990px 최소폭)라 폰에서 하드
+  가로 스크롤을 유발 → `<768px`에서 1열·`min-height:auto`·패딩 축소, 타이틀 `clamp(2.1rem,9vw,3.35rem)`,
+  hero preview frame `min-height:360px`, featured 그리드/카드 1열, action 버튼 full-width.
+- **갤러리 리스트 + 프로필.** 두 표면이 `gallery-grid`/`gallery-card`/`gallery-page__hero`를 공유 → 한 블록으로
+  처리. 그리드는 이미 `auto-fit minmax(280px,1fr)`로 collapse되지만 `<768px`에서 명시적 1열 + hero 상단 패딩
+  축소, featured row 1열.
+- **갤러리 상세.** 기존 `@media (max-width: 860px)`(hero 1열 + spec 2열) 아래에 `767px` 블록 추가: spec 그리드
+  1열, hero 패딩 축소, comment form 세로 스택.
+- **share viewer(서버).** `server/src/share/viewer.ts`의 `BASE_STYLE`에 `@media (max-width:767px)` 추가
+  (`.grid` 1열, `.wrap` 패딩 축소, h1 26px, `.cta` 세로 스택) — `renderViewerHtml`/`renderNotFoundHtml` 공통
+  적용, OG/`poster.png` 동작 불변. emitted HTML에 `@media` 포함을 `shareHelpers.test.ts`로 문자열 assert(TDD).
+- **게이트.** `npm test`(client 80 files/414 tests + server 62 files/242 tests), `npm run build`(알려진 청크
+  경고만), `npm run typecheck --workspace server`, `npm run lint` 모두 green. 모바일 시각 확인은 V6-M4 QA로 이월.
