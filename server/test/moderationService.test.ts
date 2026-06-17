@@ -147,14 +147,19 @@ describe('moderation service', () => {
     expect(adminDeleteChip(db, 'chip1')).toBe(false)
   })
 
-  it('lists chips for moderation with owner and status', () => {
+  it('lists chips for moderation with owner identity, ban status, and moderation status', () => {
     const db = openDatabase(':memory:')
     runMigrations(db, migrations)
     seed(db)
     const chips = listChipsForModeration(db)
     expect(chips).toHaveLength(1)
     expect(chips[0].ownerDisplayName).toBe('Ada')
+    expect(chips[0].ownerUserId).toBe('u1')
+    expect(chips[0].ownerBannedAt).toBeNull()
     expect(chips[0].moderationStatus).toBe('visible')
+
+    db.prepare('UPDATE users SET banned_at = ? WHERE id = ?').run(42, 'u1')
+    expect(listChipsForModeration(db)[0].ownerBannedAt).toBe(42)
   })
 
   it('creates comment reports, lists the queue, and hides comments from public threads', () => {
@@ -182,6 +187,8 @@ describe('moderation service', () => {
         id: report.id,
         commentId: comment.id,
         commentBody: 'bad comment',
+        commentAuthorDisplayName: 'Ada',
+        commentAuthorUserId: 'u1',
         chipSlug: 'slug-1',
       }),
     ])

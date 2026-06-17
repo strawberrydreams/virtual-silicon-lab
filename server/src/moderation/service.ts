@@ -21,6 +21,7 @@ export type CommentReportWithContext = ReportWithChip & {
   commentId: string
   commentBody: string
   commentAuthorDisplayName: string
+  commentAuthorUserId: string
 }
 
 export type ModerationChip = {
@@ -28,6 +29,8 @@ export type ModerationChip = {
   slug: string
   title: string
   ownerDisplayName: string
+  ownerUserId: string
+  ownerBannedAt: number | null
   isPublic: boolean
   moderationStatus: 'visible' | 'hidden'
   updatedAt: number
@@ -125,7 +128,8 @@ export function listCommentReports(db: Database.Database): CommentReportWithCont
   const rows = db
     .prepare(
       `SELECT r.*, p.slug AS chip_slug, p.title AS chip_title, c.id AS comment_id,
-              c.body AS comment_body, u.display_name AS comment_author_display_name
+              c.body AS comment_body, c.author_user_id AS comment_author_user_id,
+              u.display_name AS comment_author_display_name
        FROM reports r
        JOIN published_chips p ON p.id = r.published_chip_id
        JOIN comments c ON c.id = r.comment_id
@@ -138,6 +142,7 @@ export function listCommentReports(db: Database.Database): CommentReportWithCont
     chip_title: string
     comment_id: string
     comment_body: string
+    comment_author_user_id: string
     comment_author_display_name: string
   })[]
   return rows.map((row) => ({
@@ -147,6 +152,7 @@ export function listCommentReports(db: Database.Database): CommentReportWithCont
     commentId: row.comment_id,
     commentBody: row.comment_body,
     commentAuthorDisplayName: row.comment_author_display_name,
+    commentAuthorUserId: row.comment_author_user_id,
   }))
 }
 
@@ -244,7 +250,9 @@ export function adminDeleteChip(
 export function listChipsForModeration(db: Database.Database, limit = 100): ModerationChip[] {
   const rows = db
     .prepare(
-      `SELECT p.id, p.slug, p.title, p.is_public, p.moderation_status, p.updated_at, u.display_name AS owner_display_name
+      `SELECT p.id, p.slug, p.title, p.is_public, p.moderation_status, p.updated_at,
+              p.owner_user_id AS owner_user_id, u.display_name AS owner_display_name,
+              u.banned_at AS owner_banned_at
        FROM published_chips p
        JOIN users u ON u.id = p.owner_user_id
        ORDER BY p.updated_at DESC
@@ -257,13 +265,17 @@ export function listChipsForModeration(db: Database.Database, limit = 100): Mode
     is_public: 0 | 1
     moderation_status: 'visible' | 'hidden'
     updated_at: number
+    owner_user_id: string
     owner_display_name: string
+    owner_banned_at: number | null
   }[]
   return rows.map((row) => ({
     id: row.id,
     slug: row.slug,
     title: row.title,
     ownerDisplayName: row.owner_display_name,
+    ownerUserId: row.owner_user_id,
+    ownerBannedAt: row.owner_banned_at,
     isPublic: row.is_public === 1,
     moderationStatus: row.moderation_status,
     updatedAt: row.updated_at,

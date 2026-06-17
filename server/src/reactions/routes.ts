@@ -39,7 +39,12 @@ export function reactionsRoutes({
     return user === null || user.bannedAt !== null ? null : user
   }
 
-  async function requireActiveUser(c: Context): Promise<AccountUser | Response> {
+  // `action` is folded into the unverified soft-gate copy so a blocked like reads
+  // "before reacting" instead of the comment wording shared across both endpoints.
+  async function requireActiveUser(
+    c: Context,
+    action: 'reacting' | 'commenting',
+  ): Promise<AccountUser | Response> {
     const token = await getSignedCookie(c, sessionSecret, SESSION_COOKIE)
     if (typeof token !== 'string' || token === '') {
       return fail(c, 401, 'UNAUTHORIZED', 'Sign in required.')
@@ -50,13 +55,13 @@ export function reactionsRoutes({
       return fail(c, 403, 'ACCOUNT_BANNED', 'This account is banned.')
     }
     if (requireVerifiedPublish && !user.emailVerified) {
-      return fail(c, 403, 'EMAIL_UNVERIFIED', 'Verify your email before commenting.')
+      return fail(c, 403, 'EMAIL_UNVERIFIED', `Verify your email before ${action}.`)
     }
     return user
   }
 
   routes.post('/published-chips/:id/like', async (c) => {
-    const user = await requireActiveUser(c)
+    const user = await requireActiveUser(c, 'reacting')
     if (user instanceof Response) return user
     const chipId = c.req.param('id')
     if (!isChipReactable(db, chipId)) return fail(c, 404, 'NOT_FOUND', 'Published chip not found.')
@@ -65,7 +70,7 @@ export function reactionsRoutes({
   })
 
   routes.delete('/published-chips/:id/like', async (c) => {
-    const user = await requireActiveUser(c)
+    const user = await requireActiveUser(c, 'reacting')
     if (user instanceof Response) return user
     const chipId = c.req.param('id')
     if (!isChipReactable(db, chipId)) return fail(c, 404, 'NOT_FOUND', 'Published chip not found.')
@@ -80,7 +85,7 @@ export function reactionsRoutes({
   })
 
   routes.post('/published-chips/:id/comments', async (c) => {
-    const user = await requireActiveUser(c)
+    const user = await requireActiveUser(c, 'commenting')
     if (user instanceof Response) return user
     const chipId = c.req.param('id')
     if (!isChipReactable(db, chipId)) return fail(c, 404, 'NOT_FOUND', 'Published chip not found.')

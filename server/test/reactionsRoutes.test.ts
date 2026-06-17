@@ -68,6 +68,21 @@ describe('reactions routes — likes', () => {
     expect(((await res.json()) as { error: { code: string } }).error.code).toBe('ACCOUNT_BANNED')
   })
 
+  it('soft-gates likes with a reaction-specific message until email is verified', async () => {
+    const { app, db } = createTestApp(Date.now, { ...OPTS, requireVerifiedPublish: true })
+    seedChip(db, 'c1', 's1')
+    const cookie = await signIn(app, VALID_SIGNUP)
+
+    const blocked = await app.request('/api/published-chips/c1/like', {
+      method: 'POST',
+      headers: { cookie },
+    })
+    expect(blocked.status).toBe(403)
+    const body = (await blocked.json()) as { error: { code: string; message: string } }
+    expect(body.error.code).toBe('EMAIL_UNVERIFIED')
+    expect(body.error.message).toBe('Verify your email before reacting.')
+  })
+
   it('returns 404 when liking a hidden or missing chip', async () => {
     const { app, db } = createTestApp(Date.now, OPTS)
     seedChip(db, 'hidden1', 'sh', true)
@@ -172,9 +187,9 @@ describe('reactions routes — comments', () => {
       jsonRequest('POST', { body: 'blocked' }, cookie),
     )
     expect(blocked.status).toBe(403)
-    expect(((await blocked.json()) as { error: { code: string } }).error.code).toBe(
-      'EMAIL_UNVERIFIED',
-    )
+    const blockedBody = (await blocked.json()) as { error: { code: string; message: string } }
+    expect(blockedBody.error.code).toBe('EMAIL_UNVERIFIED')
+    expect(blockedBody.error.message).toBe('Verify your email before commenting.')
 
     db.prepare('UPDATE users SET email_verified_at = ? WHERE email = ?').run(100, VALID_SIGNUP.email)
     const ok = await app.request(
