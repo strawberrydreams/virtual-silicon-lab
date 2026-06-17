@@ -1303,3 +1303,24 @@ optional profile id로 유지했다.
   public profile link를 추가했다. `AuthUser`는 server payload와 맞춰 `handle: string | null`을 가진다.
 - **검증.** RED: server `profilesMigration profileHandle profilesRoutes seoRoutes`, client `profileApi ProfilePage AccountPage App`
   tests가 부재 기능으로 실패. GREEN: server targeted 4파일/5테스트 통과, client targeted 9파일/58테스트 통과.
+
+## V5-M5 Launch Hardening & Ops (2026-06-17)
+
+런치 전 서버 correctness/ops debt를 처리했다. 위험도가 큰 리팩터는 characterization test를 먼저 둔 기존 gallery ranking suite와
+새 regression tests로 방어했다.
+
+- **Gallery scoring query.** `listPublicPublishedChips()`의 per-row correlated subquery를 grouped CTE(`like_counts`,
+  `comment_counts`)로 바꿨다. `top`/`trending`/`newest` ordering과 cutoff 포함 규칙은 기존 `galleryRanking` suite로 유지 확인했다.
+- **Rate limit hardening.** Limiter bucket에 `windowMs`를 저장하고 check마다 expired bucket을 prune한다. Production config는
+  login/signup/forgot-password/report에 더 낮은 per-endpoint overrides를 기본 제공한다.
+- **Password reset contract fix.** Client가 보내는 `newPassword`를 서버가 수락하도록 고쳤고, 기존 `password` field도 호환으로 남겼다.
+- **Login timing.** Unknown email path도 고정 Argon2id dummy hash를 검증해 user-existing path와 verifier call shape를 맞췄다.
+- **Publish image I/O.** `upsertPublishedChip()`은 DB row write를 먼저 commit하고, image store write/delete는 commit 이후 수행한다.
+  DB FK/constraint 실패 시 image store는 호출되지 않는다. File image write 실패 시 DB row에는 data URL fallback이 남는다.
+- **Gallery lockdown.** `VSL_GALLERY_LOCKDOWN`/`galleryLockdown` kill switch를 추가했다. Public gallery list/featured는 empty list,
+  gallery detail/profile/share/poster reads는 410으로 단락한다. Owner-scoped editing/publish APIs는 건드리지 않는다.
+- **Backup ops.** `backupDatabase()` helper와 `server/scripts/backup.ts` CLI, `docs/ops/backup-restore.md` runbook을 추가했다.
+- **검증.** RED: `rateLimit rateLimitRoutes passwordReset galleryLockdown backup loginTiming publishService config` targeted tests가
+  부재 기능/계약 불일치로 실패. GREEN:
+  `npm run test --workspace server -- config rateLimit rateLimitRoutes passwordReset galleryRanking galleryLockdown backup loginTiming publishService`
+  10파일/32테스트 통과.

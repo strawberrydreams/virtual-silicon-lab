@@ -14,6 +14,8 @@ export type AccountUser = {
 export type AccountSessionUser = AccountUser & { bannedAt: number | null }
 
 export const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000
+const DUMMY_PASSWORD_HASH =
+  '$argon2id$v=19$m=19456,t=2,p=1$KJOgFAMrTuNeFVNr2oyAYw$tHd0iec/wiQw9JgL0gRACd5OlokjdhfNNOtwAwvd4dA'
 
 type UserRow = {
   id: string
@@ -91,7 +93,10 @@ export async function verifyCredentials(
        FROM users WHERE email = ?`,
     )
     .get(email) as (UserAuthRow & { password_hash: string }) | undefined
-  if (row === undefined) return null
+  if (row === undefined) {
+    await verifyPassword(DUMMY_PASSWORD_HASH, password)
+    return null
+  }
   if (row.banned_at !== null) return null
   if (!(await verifyPassword(row.password_hash, password))) return null
   return toUser(row)

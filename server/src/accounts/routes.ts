@@ -173,7 +173,7 @@ export function accountRoutes({
   routes.post('/auth/reset-password', async (c) => {
     const body = (await c.req.json().catch(() => null)) as Record<string, unknown> | null
     const token = typeof body?.token === 'string' ? body.token : ''
-    const password = validatePassword(body?.password)
+    const password = validatePassword(body?.newPassword ?? body?.password)
     if (!password.ok) return fail(c, 400, 'INVALID_INPUT', password.message)
     const userId = token === '' ? null : consumeToken(db, 'password_reset_tokens', token, now)
     if (userId === null) return fail(c, 400, 'INVALID_TOKEN', 'Reset link is invalid or expired.')

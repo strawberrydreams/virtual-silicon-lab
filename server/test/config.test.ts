@@ -51,7 +51,16 @@ describe('loadRuntimeConfig', () => {
     expect(config.sessionSecret).toBe('0123456789abcdef0123456789abcdef')
     expect(config.publicBaseUrl).toBe('https://vsl.example')
     expect(config.secureCookies).toBe(true)
-    expect(config.rateLimit).toEqual({ windowMs: 60_000, max: 120 })
+    expect(config.rateLimit).toMatchObject({
+      windowMs: 60_000,
+      max: 120,
+      overrides: {
+        'POST:/api/auth/login': { windowMs: 60_000, max: 20 },
+        'POST:/api/auth/signup': { windowMs: 60_000, max: 10 },
+        'POST:/api/auth/forgot-password': { windowMs: 60_000, max: 5 },
+        'POST:/api/reports': { windowMs: 60_000, max: 10 },
+      },
+    })
     expect(config.uploadMaxBytes).toBe(8 * 1024 * 1024)
   })
 
@@ -72,5 +81,10 @@ describe('loadRuntimeConfig', () => {
 
   it('rejects a non-boolean VSL_SIGNUPS_OPEN', () => {
     expect(() => loadRuntimeConfig({ VSL_SIGNUPS_OPEN: 'maybe' })).toThrow(/VSL_SIGNUPS_OPEN/)
+  })
+
+  it('parses the gallery lockdown kill switch', () => {
+    expect(loadRuntimeConfig({ VSL_GALLERY_LOCKDOWN: 'true' }).galleryLockdown).toBe(true)
+    expect(loadRuntimeConfig({}).galleryLockdown).toBe(false)
   })
 })

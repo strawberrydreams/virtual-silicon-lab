@@ -29,6 +29,7 @@ export type AppDeps = {
   emailProvider?: EmailProvider
   requireVerifiedPublish?: boolean
   adminEmails?: string[]
+  galleryLockdown?: boolean
 }
 
 export function resolveAccessMode(deps: Pick<AppDeps, 'accessMode' | 'signupsOpen'>): AccessMode {
@@ -52,7 +53,8 @@ export function createApp(deps: AppDeps) {
       const forwardedFor = c.req.header('x-forwarded-for')?.split(',')[0]?.trim()
       const ip = forwardedFor || c.req.header('cf-connecting-ip') || 'unknown'
       const path = new URL(c.req.url).pathname
-      const decision = rateLimiter.check(`${ip}:${c.req.method}:${path}`)
+      const override = deps.rateLimit?.overrides?.[`${c.req.method}:${path}`]
+      const decision = rateLimiter.check(`${ip}:${c.req.method}:${path}`, override)
       if (!decision.ok) {
         c.header('Retry-After', String(decision.retryAfterSeconds))
         return c.json(

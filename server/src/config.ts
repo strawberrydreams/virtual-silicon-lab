@@ -8,6 +8,7 @@ export type RuntimeConfig = {
   uploadMaxBytes: number
   accessMode: AccessMode
   requireVerifiedPublish: boolean
+  galleryLockdown: boolean
   adminEmails: string[]
   rateLimit?: {
     windowMs: number
@@ -21,6 +22,12 @@ const DEVELOPMENT_SESSION_SECRET = 'dev-insecure-session-secret'
 const DEFAULT_UPLOAD_MAX_BYTES = 8 * 1024 * 1024
 const DEFAULT_RATE_LIMIT_WINDOW_MS = 60_000
 const DEFAULT_RATE_LIMIT_MAX = 120
+const SENSITIVE_RATE_LIMIT_OVERRIDES = {
+  'POST:/api/auth/login': { windowMs: DEFAULT_RATE_LIMIT_WINDOW_MS, max: 20 },
+  'POST:/api/auth/signup': { windowMs: DEFAULT_RATE_LIMIT_WINDOW_MS, max: 10 },
+  'POST:/api/auth/forgot-password': { windowMs: DEFAULT_RATE_LIMIT_WINDOW_MS, max: 5 },
+  'POST:/api/reports': { windowMs: DEFAULT_RATE_LIMIT_WINDOW_MS, max: 10 },
+}
 
 function parseBaseUrl(value: string, field: string): string {
   let url: URL
@@ -77,6 +84,7 @@ export function loadRuntimeConfig(env: RuntimeEnv = process.env): RuntimeConfig 
   const uploadMaxBytes = readPositiveInteger(env, 'VSL_UPLOAD_MAX_BYTES', DEFAULT_UPLOAD_MAX_BYTES)
   const accessMode = parseAccessMode(env)
   const requireVerifiedPublish = parseBoolean(env, 'VSL_REQUIRE_VERIFIED_PUBLISH', isProduction)
+  const galleryLockdown = parseBoolean(env, 'VSL_GALLERY_LOCKDOWN', false)
   const adminEmails = parseAdminEmails(env)
 
   const sessionSecret = env.VSL_SESSION_SECRET
@@ -99,6 +107,7 @@ export function loadRuntimeConfig(env: RuntimeEnv = process.env): RuntimeConfig 
       uploadMaxBytes,
       accessMode,
       requireVerifiedPublish,
+      galleryLockdown,
       adminEmails,
       rateLimit: {
         windowMs: readPositiveInteger(
@@ -107,6 +116,7 @@ export function loadRuntimeConfig(env: RuntimeEnv = process.env): RuntimeConfig 
           DEFAULT_RATE_LIMIT_WINDOW_MS,
         ),
         max: readPositiveInteger(env, 'VSL_RATE_LIMIT_MAX', DEFAULT_RATE_LIMIT_MAX),
+        overrides: SENSITIVE_RATE_LIMIT_OVERRIDES,
       },
     }
   }
@@ -122,6 +132,7 @@ export function loadRuntimeConfig(env: RuntimeEnv = process.env): RuntimeConfig 
     uploadMaxBytes,
     accessMode,
     requireVerifiedPublish,
+    galleryLockdown,
     adminEmails,
   }
 }

@@ -12,6 +12,7 @@ import {
   setPublishedChipVisibility,
   upsertPublishedChip,
 } from '../src/publish/service'
+import type { PublishedImageStore } from '../src/images/fileImageStore'
 
 const pngA = 'data:image/png;base64,AAAA'
 const pngB = 'data:image/png;base64,BBBB'
@@ -155,6 +156,38 @@ describe('publish service', () => {
     expect(imageStore.readPublishedImage(firstDiePath)).toBeNull()
     expect(imageStore.readPublishedImage(firstPosterPath)).toBeNull()
     expect(existsSync(join(rootDir, firstDiePath.replace(/^\/uploads\//, '')))).toBe(false)
+  })
+
+  it('does not write image files when the database row write fails', () => {
+    const db = dbWithUsers()
+    const writes: string[] = []
+    const imageStore: PublishedImageStore = {
+      savePublishedImage(input) {
+        writes.push(input.kind)
+        return `/uploads/${input.kind}.png`
+      },
+      readPublishedImage() {
+        return null
+      },
+      deletePublishedImages() {},
+    }
+
+    expect(() =>
+      upsertPublishedChip(
+        db,
+        'missing-owner',
+        {
+          project: createProject('Broken Chip', 'project-broken', 1_000),
+          title: 'Broken Chip',
+          dieImageDataUrl: pngA,
+          posterImageDataUrl: pngB,
+          isPublic: true,
+        },
+        () => 2_000,
+        imageStore,
+      ),
+    ).toThrow()
+    expect(writes).toEqual([])
   })
 
   it('toggles visibility without replacing the stored snapshot or images', () => {

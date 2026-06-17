@@ -26,7 +26,13 @@ function serializeProfile(profile: PublicProfile, baseUrl: string) {
   }
 }
 
-export function profileRoutes({ db, sessionSecret, now = Date.now, publicBaseUrl }: AppDeps) {
+export function profileRoutes({
+  db,
+  sessionSecret,
+  now = Date.now,
+  publicBaseUrl,
+  galleryLockdown = false,
+}: AppDeps) {
   const routes = new Hono()
 
   function fail(c: Context, status: ErrorStatus, code: string, message: string) {
@@ -51,6 +57,7 @@ export function profileRoutes({ db, sessionSecret, now = Date.now, publicBaseUrl
   })
 
   routes.get('/profiles/:handle', (c) => {
+    if (galleryLockdown) return fail(c, 410, 'GALLERY_LOCKED', 'Gallery is temporarily locked.')
     const handle = validateHandle(c.req.param('handle'))
     if (!handle.ok) return fail(c, 404, 'NOT_FOUND', 'Profile not found.')
     const profile = getProfileByHandle(db, handle.value)

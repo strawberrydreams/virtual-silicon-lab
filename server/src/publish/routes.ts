@@ -96,6 +96,7 @@ export function publishRoutes({
   uploadMaxBytes,
   imageStore,
   requireVerifiedPublish = false,
+  galleryLockdown = false,
 }: AppDeps) {
   const routes = new Hono()
 
@@ -196,6 +197,7 @@ export function publishRoutes({
   routes.get('/gallery', (c) => {
     const baseUrl = resolvePublicBaseUrl(c.req.url, publicBaseUrl)
     const sort = parseGallerySort(c.req.query('sort'))
+    if (galleryLockdown) return c.json({ chips: [] })
     return c.json({
       chips: listPublicPublishedChips(db, { sort, now }).map((chip) =>
         serializeGallerySummary(chip, baseUrl),
@@ -205,12 +207,14 @@ export function publishRoutes({
 
   routes.get('/gallery/featured', (c) => {
     const baseUrl = resolvePublicBaseUrl(c.req.url, publicBaseUrl)
+    if (galleryLockdown) return c.json({ chips: [] })
     return c.json({
       chips: listFeaturedChips(db).map((chip) => serializeGallerySummary(chip, baseUrl)),
     })
   })
 
   routes.get('/gallery/:slug', async (c) => {
+    if (galleryLockdown) return fail(c, 410, 'GALLERY_LOCKED', 'Gallery is temporarily locked.')
     const chip = getPublicPublishedChipBySlug(db, c.req.param('slug'))
     if (chip === null) return fail(c, 404, 'NOT_FOUND', 'Published chip not found.')
     const user = await readUser(c)

@@ -31,7 +31,7 @@ describe('password reset', () => {
 
     const reset = await app.request(
       '/api/auth/reset-password',
-      jsonRequest('POST', { token, password: 'new-password-123' }),
+      jsonRequest('POST', { token, newPassword: 'new-password-123' }),
     )
     expect(reset.status).toBe(200)
     expect((await app.request('/api/me', { headers: { cookie: oldCookie } })).status).toBe(401)
@@ -45,7 +45,7 @@ describe('password reset', () => {
 
     const reused = await app.request(
       '/api/auth/reset-password',
-      jsonRequest('POST', { token, password: 'another-password-123' }),
+      jsonRequest('POST', { token, newPassword: 'another-password-123' }),
     )
     expect(reused.status).toBe(400)
   })
