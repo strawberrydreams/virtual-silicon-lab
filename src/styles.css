@@ -2817,6 +2817,63 @@ button {
   }
 }
 
+/* V6-M3 mobile editor read-only preview (mobile-only surface by definition) */
+.mobile-editor-preview {
+  min-height: calc(100vh - 128px);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent 28%), var(--v2-bg);
+  color: var(--v2-text);
+}
+
+.mobile-editor-preview__inner {
+  width: min(640px, calc(100vw - 2rem));
+  margin: 0 auto;
+  padding: 2rem 0 4rem;
+  display: grid;
+  gap: 1.5rem;
+}
+
+.mobile-editor-preview__title {
+  margin: 0.3rem 0 0;
+  font-size: clamp(1.8rem, 7vw, 2.6rem);
+  font-weight: 850;
+  line-height: 0.95;
+  text-transform: uppercase;
+}
+
+.mobile-editor-preview__stage {
+  width: 100%;
+  border: 1px solid var(--v2-border);
+  background: color-mix(in srgb, var(--v2-panel) 86%, black);
+  overflow: hidden;
+}
+
+.mobile-editor-preview__spec {
+  display: grid;
+  gap: 0.85rem;
+  border: 1px solid var(--v2-border);
+  background: rgba(255, 255, 255, 0.035);
+  padding: 1rem;
+}
+
+.mobile-editor-preview__spec h2 {
+  margin: 0;
+  font-size: 1.05rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.mobile-editor-preview__cta {
+  display: grid;
+  gap: 0.85rem;
+  border-top: 1px solid var(--v2-border);
+  padding-top: 1.25rem;
+  color: var(--v2-muted);
+}
+
+.mobile-editor-preview__cta .v2-button {
+  justify-self: start;
+}
+
 .editor-stage-wrap {
   position: relative;
 }
