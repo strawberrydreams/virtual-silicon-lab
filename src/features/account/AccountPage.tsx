@@ -23,7 +23,7 @@ export function AccountPage() {
   const auth = useAuthStore()
 
   return (
-    <main className="mx-auto max-w-3xl px-6 py-10 text-[var(--v2-text)]">
+    <main className="mx-auto max-w-3xl px-4 py-8 text-[var(--v2-text)] sm:px-6 sm:py-10">
       <p className="text-xs uppercase tracking-[0.45em] text-[var(--v2-accent)]">Share Core</p>
       <h1 className="mt-2 text-2xl uppercase tracking-[0.18em]">Account</h1>
 
@@ -168,7 +168,7 @@ function AccountShell({
   children: ReactNode
 }) {
   return (
-    <main className="mx-auto max-w-3xl px-6 py-10 text-[var(--v2-text)]">
+    <main className="mx-auto max-w-3xl px-4 py-8 text-[var(--v2-text)] sm:px-6 sm:py-10">
       <p className="text-xs uppercase tracking-[0.45em] text-[var(--v2-accent)]">{eyebrow}</p>
       <h1 className="mt-2 text-2xl uppercase tracking-[0.18em]">{title}</h1>
       {children}
