@@ -27,6 +27,7 @@ import {
   type PageThemeName,
 } from '../visual/pageThemes'
 import { usePageTheme } from '../visual/pageThemeStore'
+import { useIsMobile } from './useIsMobile'
 
 function LandingRoute() {
   const store = useProjectStore()
@@ -206,19 +207,72 @@ function SiteHeader({
   themeName: PageThemeName
   onThemeChange: (theme: PageThemeName) => void
 }) {
+  const [menuOpen, setMenuOpen] = useState(false)
+  const isMobile = useIsMobile()
+  const closeMenu = useCallback(() => setMenuOpen(false), [])
+
+  // Close the drawer when the viewport grows back to desktop, so a drawer opened
+  // on a phone does not stay stuck open after rotating/resizing.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- close the drawer in response to a viewport change (returning to desktop), so a drawer opened on a phone does not stay stuck open after rotating/resizing
+    if (!isMobile) setMenuOpen(false)
+  }, [isMobile])
+
+  // Escape closes the drawer for keyboard users.
+  useEffect(() => {
+    if (!menuOpen) return
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setMenuOpen(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [menuOpen])
+
   return (
     <header className="site-header">
-      <Link className="site-header__brand" to="/">
+      <Link className="site-header__brand" to="/" onClick={closeMenu}>
         Virtual Silicon Lab
       </Link>
       <div className="site-header__right">
-        <nav aria-label="Primary navigation" className="site-header__nav">
-          <Link to="/">Lab</Link>
-          <Link to="/dashboard">Projects</Link>
-          <Link to="/gallery">Gallery</Link>
-          <Link to="/contests">Contests</Link>
-          <AccountNavLink />
-          <AdminNavLink />
+        <button
+          type="button"
+          className="site-header__menu-toggle"
+          aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+          aria-expanded={menuOpen}
+          aria-controls="primary-nav"
+          onClick={() => setMenuOpen((open) => !open)}
+        >
+          ☰
+        </button>
+        {menuOpen && (
+          <button
+            type="button"
+            className="site-header__nav-backdrop"
+            aria-hidden="true"
+            tabIndex={-1}
+            onClick={closeMenu}
+          />
+        )}
+        <nav
+          id="primary-nav"
+          aria-label="Primary navigation"
+          className="site-header__nav"
+          data-open={menuOpen}
+        >
+          <Link to="/" onClick={closeMenu}>
+            Lab
+          </Link>
+          <Link to="/dashboard" onClick={closeMenu}>
+            Projects
+          </Link>
+          <Link to="/gallery" onClick={closeMenu}>
+            Gallery
+          </Link>
+          <Link to="/contests" onClick={closeMenu}>
+            Contests
+          </Link>
+          <AccountNavLink onNavigate={closeMenu} />
+          <AdminNavLink onNavigate={closeMenu} />
         </nav>
         <ThemeSwitcher current={themeName} onChange={onThemeChange} />
       </div>
@@ -226,17 +280,25 @@ function SiteHeader({
   )
 }
 
-function AccountNavLink() {
+function AccountNavLink({ onNavigate }: { onNavigate?: () => void }) {
   const auth = useAuthStore()
   const label =
     auth.status === 'authenticated' && auth.user !== null ? auth.user.displayName : 'Account'
-  return <Link to="/account">{label}</Link>
+  return (
+    <Link to="/account" onClick={onNavigate}>
+      {label}
+    </Link>
+  )
 }
 
-function AdminNavLink() {
+function AdminNavLink({ onNavigate }: { onNavigate?: () => void }) {
   const auth = useAuthStore()
   if (!auth.isAdmin) return null
-  return <Link to="/admin">Admin</Link>
+  return (
+    <Link to="/admin" onClick={onNavigate}>
+      Admin
+    </Link>
+  )
 }
 
 function SiteFooter() {

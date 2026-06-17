@@ -184,4 +184,39 @@ describe('App', () => {
     expect(await screen.findByRole('main', { name: 'Chip editor workspace' })).toBeInTheDocument()
     expect(screen.getByTestId('app-shell')).toHaveAttribute('data-page-theme', 'space')
   })
+
+  it('toggles the primary navigation drawer from the menu button', async () => {
+    render(
+      <MemoryRouter>
+        <App />
+      </MemoryRouter>,
+    )
+
+    const toggle = screen.getByRole('button', { name: 'Open menu' })
+    const nav = screen.getByRole('navigation', { name: 'Primary navigation' })
+    expect(toggle).toHaveAttribute('aria-expanded', 'false')
+    expect(nav).toHaveAttribute('data-open', 'false')
+
+    await userEvent.click(toggle)
+    expect(screen.getByRole('button', { name: 'Close menu' })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    )
+    expect(nav).toHaveAttribute('data-open', 'true')
+  })
+
+  it('closes the drawer when a navigation link is chosen', async () => {
+    render(
+      <MemoryRouter>
+        <App />
+      </MemoryRouter>,
+    )
+
+    await userEvent.click(screen.getByRole('button', { name: 'Open menu' }))
+    const nav = screen.getByRole('navigation', { name: 'Primary navigation' })
+    expect(nav).toHaveAttribute('data-open', 'true')
+
+    await userEvent.click(screen.getByRole('link', { name: 'Gallery' }))
+    expect(nav).toHaveAttribute('data-open', 'false')
+  })
 })

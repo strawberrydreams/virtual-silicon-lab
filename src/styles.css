@@ -94,6 +94,59 @@ button {
   color: var(--v2-accent-2);
 }
 
+.site-header__menu-toggle {
+  display: none; /* desktop: the horizontal nav is shown instead */
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  border: 1px solid var(--v2-border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--v2-text);
+  font-size: 1.1rem;
+}
+
+.site-header__nav-backdrop {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .site-header__menu-toggle {
+    display: inline-flex;
+  }
+
+  .site-header__nav {
+    position: fixed;
+    inset: 58px 0 auto 0; /* directly below the 58px header */
+    z-index: 50;
+    flex-direction: column;
+    gap: 0;
+    padding: 0.5rem 1rem 1rem;
+    background: var(--v2-panel-strong);
+    border-bottom: 1px solid var(--v2-border);
+  }
+
+  .site-header__nav[data-open='false'] {
+    display: none;
+  }
+
+  .site-header__nav a {
+    width: 100%;
+    min-height: 44px;
+    justify-content: flex-start;
+  }
+
+  .site-header__nav-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    border: 0;
+    background: rgba(0, 0, 0, 0.4);
+  }
+}
+
 .site-footer {
   min-height: 38px;
   border-top-width: 1px;

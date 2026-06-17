@@ -16,6 +16,7 @@ export function useIsMobile(): boolean {
     if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return
     const mql = window.matchMedia(MOBILE_MEDIA_QUERY)
     const onChange = (event: MediaQueryListEvent) => setIsMobile(event.matches)
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- resync to the live viewport in case it changed between the lazy initializer (render) and effect mount; subsequent updates flow through the change subscription
     setIsMobile(mql.matches)
     mql.addEventListener('change', onChange)
     return () => mql.removeEventListener('change', onChange)
