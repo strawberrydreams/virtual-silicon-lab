@@ -3,10 +3,12 @@
 Status as of 2026-06-17: automated launch gates are complete. A manual browser QA pass was run on
 2026-06-17 (dev mode, invite/closed/open + lockdown via server restarts, Playwright/Chrome). Two
 defects found in that pass were fixed the same day (gallery lockdown wiring; reaction soft-gate
-copy). **Sign-off remains pending owner review**: known remaining gaps are admin-UI-only (invite
-codes, comment moderation, user bans, audit log are API-only) plus a dev-only StrictMode artifact on
-the verify page to re-confirm on a production build. See "Manual QA Run — 2026-06-17" below. The
-production gate has not been flipped.
+copy). The previously admin-UI-only gaps (invite-code mint/list/revoke, comment hide + ban-author,
+user ban/unban, audit log) were then **implemented in `AdminPage.tsx` and browser-QA'd on 2026-06-17**
+(invite create/revoke, owner ban/unban with the reason captured in the audit log, chip hide/unhide,
+newest-first audit capture). See "Admin Operations Browser QA — 2026-06-17" below. **Sign-off remains
+pending owner review**: the remaining known item is a dev-only StrictMode artifact on the verify page
+to re-confirm on a production build. The production gate has not been flipped.
 
 ## Manual QA Run — 2026-06-17 (results)
 
@@ -21,25 +23,44 @@ Legend: ✅ pass · ⚠️ pass-with-issue · ❌ fail/blocker · ➖ not exerci
 - ✅ **FIXED — reaction soft-gate copy.** A blocked like now reads "Verify your email before reacting."
   (`requireActiveUser` in `server/src/reactions/routes.ts` takes a per-action label; comment path keeps
   "before commenting"). Covered by `server/test/reactionsRoutes.test.ts`.
-- ❌ **Admin UI gaps (API-only).** `AdminPage.tsx` surfaces chip hide/unhide/feature/unfeature/delete,
-  chip report queue, and contests — but has **no UI** for: invite-code mint/list/revoke (runbook line
-  27 claims an "admin invite-code panel"), comment report queue / comment hide, user ban/unban, or
-  audit log. These exist only as `/api/admin/*` endpoints. Operators must use raw API calls for
-  invite minting, comment moderation, and bans.
+- ✅ **FIXED (was admin-UI gap) — admin operations now have UI.** `AdminPage.tsx` now surfaces, in
+  addition to the existing chip hide/unhide/feature/unfeature/delete, chip report queue, and contests:
+  invite-code mint/list/revoke, the comment report queue with comment hide + ban-author, user ban/unban
+  on published chips (with an optional ban-reason field), and the audit log. Backed by `inviteApi.ts`
+  plus `moderationApi.ts` additions, and by `listChipsForModeration`/`listCommentReports` now exposing
+  `ownerUserId`/`ownerBannedAt`/`commentAuthorUserId`. Operators no longer need raw API calls for invite
+  minting, comment moderation, or bans. See "Admin Operations Browser QA — 2026-06-17".
 - ⚠️ **Email verification success shows a false failure in dev.** Backend verified the account
   (`email_verified_at` set; the "verify before publishing" notice cleared), but the verify page rendered
   "Verification Failed". Cause: React StrictMode double-invokes the effect in dev, so the single-use
   token is consumed by the first call and the second call 400s. Expected to render success in a
   production build (no double-invoke) — re-confirm on the prod bundle before sign-off. Reused-token
   failure is therefore also demonstrated.
-- ⚠️ **Unverified reaction soft-gate shows the wrong message.** Liking as an unverified user is
-  correctly blocked (403, like count unchanged) but the toast reads "Verify your email before
-  commenting." for a *like* — `requireActiveUser` in `server/src/reactions/routes.ts` shares one
-  message for like and comment.
-- ➖ Reset revokes-all-sessions and comment report/hide/audit were not driven through the browser
-  (no concurrent session / no comment-moderation UI); both are covered by the green
-  `server/test/launchFlow.test.ts`.
+- ✅ **FIXED — unverified reaction soft-gate message.** `requireActiveUser` now takes a per-action
+  label, so a blocked like reads "Verify your email before reacting." (see the FIXED entry above).
+- ➖ Reset revokes-all-sessions was not driven through the browser (no concurrent session); covered by
+  the green `server/test/launchFlow.test.ts`.
 - ➖ Gallery detail has no share-link control (share lives on the editor PublishPanel and `/s/:slug`).
+
+## Admin Operations Browser QA — 2026-06-17 (results)
+
+Playwright/Chrome against dev `dev:server` + client with `VSL_ADMIN_EMAILS` set and an admin account.
+
+- ✅ **Admin access.** Admin email surfaces the `/admin` nav link and renders the Moderation page;
+  non-admin remains blocked (code/tests unchanged).
+- ✅ **Invite codes.** Create (max-uses / optional expiry / optional note) → list shows `used/max ·
+  note · expires`; form resets; Revoke removes the row ("No invite codes yet").
+- ✅ **User ban.** Ban-reason field → ban owner → "owner banned" + button toggles to "Unban owner";
+  Unban restores. Correct target via `ownerUserId`/`ownerBannedAt`.
+- ✅ **Chip moderation.** Hide → "hidden" + "Unhide" toggle; Unhide restores.
+- ✅ **Audit log.** Actions recorded newest-first immediately: `hide_chip` → `ban_user` (reason in
+  detail) → `unban_user` → `unhide_chip`, each with targetType/targetId/timestamp. Invite revoke is
+  intentionally not audited (not a moderation route).
+- ➖ **Comment report queue.** Empty-state only (no reported comments in the dev DB); admin comment
+  hide + ban-author and the server path are covered by `AdminPage.test.tsx` + `launchFlow.test.ts`.
+  Note: there is still no *user-facing* comment-report button (chip report exists; comment report is
+  API-only).
+- QA-mutated dev DB state was fully restored (chip visible, owner unbanned, test invite revoked).
 
 ## Automated Gates
 
@@ -58,7 +79,7 @@ Run against local or staging with client + API servers up and `VSL_ACCESS_MODE=i
 - [x] `closed` mode: signup blocked (closed-beta notice), login still works, gallery/share reads still work. ✅
 - [x] `invite` mode: signup requires invite code (Invite Code field appears; missing/invalid blocked). ✅
 - [x] `open` mode: signup works without invite code. ✅
-- [x] Invite mint/redeem/exhaust/expire/revoke. ✅ (mint+list+revoke via API — no UI; redeem/exhaust/expire via signup form)
+- [x] Invite mint/redeem/exhaust/expire/revoke. ✅ (mint+list+revoke via admin UI; redeem/exhaust/expire via signup form)
 - [~] Email verification page success and reused-token failure. ⚠️ backend verifies; dev page shows false "Verification Failed" (StrictMode) — re-confirm on prod build.
 - [x] Unverified publish/reaction soft-gate when verification is required. ✅ (like 403; toast copy fixed to "before reacting").
 - [x] Forgot password request and reset link success. ✅ (enumeration-safe; reset + new-password login confirmed)
@@ -67,8 +88,8 @@ Run against local or staging with client + API servers up and `VSL_ACCESS_MODE=i
 - [x] Gallery detail loads poster, fake spec, reactions, comments, and share link. ✅ (poster/spec/reactions/comments) ➖ no share-link control on detail.
 - [x] Like/unlike works for verified active users. ✅
 - [x] Comment create/delete works for verified active users. ✅
-- [ ] Report comment, hide as admin, confirm public thread and admin comment queue clear. ❌ no client UI (API-only); server path covered by `launchFlow.test.ts`.
-- [x] Ban user, confirm login and reaction are blocked. ✅ (ban via API → session revoked + login blocked) ❌ no ban UI.
+- [~] Report comment, hide as admin, confirm public thread and admin comment queue clear. ⚠️ admin comment-hide + ban-author UI now exists and was browser-checked (empty queue); user-facing comment-report button is still API-only; full path covered by `launchFlow.test.ts`.
+- [x] Ban user, confirm login and reaction are blocked. ✅ (ban via API → session revoked + login blocked; ban/unban now also available in admin UI and QA'd).
 - [x] Feature/unfeature chip and confirm Featured row. ✅
 - [x] Public profile `/u/:handle` shows only public visible chips. ✅
 - [x] `robots.txt` and `sitemap.xml` include public share/profile URLs only. ✅
@@ -95,7 +116,7 @@ Run against local or staging with client + API servers up and `VSL_ACCESS_MODE=i
 
 - [ ] Owner reviewed this checklist.
 - [ ] Fresh backup taken.
-- [ ] Operator can access admin panel.
+- [x] Operator can access admin panel. ✅ (full admin UI: invite/comment/ban/audit + chip/contest, QA'd 2026-06-17).
 - [ ] First invite batch prepared.
 - [ ] Explicit go/no-go given.
 - [ ] On go: set `VSL_ACCESS_MODE=invite` in production and verify `/api/health`.
