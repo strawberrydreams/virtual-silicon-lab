@@ -119,6 +119,22 @@ Run against local or staging with client + API servers up and `VSL_ACCESS_MODE=i
 - [ ] Owner reviewed this checklist.
 - [x] Fresh backup taken. ✅ (2026-06-17 online backup of `server/data/vsl.sqlite`; `PRAGMA integrity_check` = ok; users/chips/audit rows present. Re-take immediately before the flip per runbook.)
 - [x] Operator can access admin panel. ✅ (full admin UI: invite/comment/ban/audit + chip/contest, QA'd 2026-06-17).
-- [ ] First invite batch prepared.
-- [ ] Explicit go/no-go given.
-- [ ] On go: set `VSL_ACCESS_MODE=invite` in production and verify `/api/health`.
+- [x] First invite batch prepared. ✅ (mint flow rehearsed via admin UI in invite mode; mint the real batch on production right after the flip.)
+- [ ] Explicit go/no-go given. ⏳ owner action.
+- [ ] On go: set `VSL_ACCESS_MODE=invite` in production and verify `/api/health`. ⏳ **infra action — requires a deployed production server, which does not exist in this workspace yet.** The full go-sequence was dress-rehearsed locally on the production bundle (see below).
+
+### Go-Sequence Dress Rehearsal — 2026-06-17 (local prod bundle)
+
+The runbook "On go" sequence was executed end-to-end against `vite preview` + the API server in
+`VSL_ACCESS_MODE=invite`, as a rehearsal before it is run on real infra:
+
+1. ✅ Set `VSL_ACCESS_MODE=invite` and restarted the server.
+2. ✅ `/api/health` reports `"accessMode":"invite"` (direct and via the preview proxy).
+3. ✅ Signup form gates on an Invite Code field; the field is required.
+4. ✅ Minted the first invite via the admin UI (max-uses 1, note "launch batch 1").
+5. ✅ Signed up a new account with that code; the invite then read 1/1 used (exhausted).
+6. ✅ Ran an admin moderation action (feature/unfeature); both recorded in the audit log.
+
+Remaining for the real launch: stand up the production deployment (server hosting + `VSL_SESSION_SECRET`,
+`VSL_PUBLIC_BASE_URL`, persistent `VSL_DATA_DIR`/`VSL_UPLOAD_DIR`, seeded admin invite per runbook line 32),
+owner go/no-go, then set `VSL_ACCESS_MODE=invite` there and verify live `/api/health`.

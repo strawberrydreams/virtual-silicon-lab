@@ -1374,3 +1374,23 @@ M6는 코드/운영 게이트를 invite launch 직전까지 완료하고, 실제
   `AdminPage.test.tsx` + `launchFlow.test.ts`가 커버한다.
 - **상태 원복.** QA로 변경한 dev DB 상태(PANTHER SCALE chip, M2 Browser owner)는 모두 visible/unbanned로 복구하고
   테스트 invite는 revoke했다. 콘솔 에러는 미로그인 `/api/me` 401과 favicon 404뿐(무해).
+
+## V5-M6 Production-Build Verify + Go-Sequence Dress Rehearsal (2026-06-17)
+
+런칭 게이트 flip 전 잔여 항목을 production 빌드에서 확인하고, 런북 "On go" 시퀀스를 로컬 prod 번들로 드레스
+리허설했다. **실제 production 배포 환경은 이 워크스페이스에 없으므로**, 실제 flip(런타임 `VSL_ACCESS_MODE=invite`)은
+배포 + owner go/no-go 이후의 인프라 동작으로 남는다.
+
+- **Preview proxy 추가.** `vite.config.ts`에 `preview.proxy`(`/api` → `127.0.0.1:8787`)를 추가해 `vite preview`로
+  서빙한 production 번들이 API에 닿게 했다(prod-build QA 상시 활용 목적의 영구 추가).
+- **Verify page (prod build).** dev에서 StrictMode 이중호출로 "Verification Failed"를 잘못 띄우던 항목을 prod 번들에서
+  재확인: 새 토큰 → "Email Verified", 재사용 토큰 → "Verification Failed". dev 전용 아티팩트는 prod에서 재현되지 않음.
+- **Backup.** `npx tsx server/scripts/backup.ts server/data/vsl.sqlite backups`로 라이브(WAL) DB online backup 생성,
+  `PRAGMA integrity_check`=ok, 핵심 테이블 row 확인. `backups/`는 `.gitignore`에 추가. `backup-restore.md`의 잘못된 DB
+  경로(`virtual-silicon-lab.sqlite` → 실제 `server/data/vsl.sqlite`)를 수정하고 integrity-check/WAL sidecar 제거 절차를 보강.
+- **Go-sequence 리허설(invite 모드, prod 번들).** ① `VSL_ACCESS_MODE=invite` 재시작 → ② `/api/health`가
+  `"accessMode":"invite"` 반환(직접/preview proxy 모두) → ③ 가입 폼에 Invite Code 필드 필수화 확인 → ④ admin UI로 첫
+  invite 발급(`ANXTNBS24CPI`, max 1, "launch batch 1") → ⑤ 해당 코드로 신규 가입 성공, invite 1/1 소진 확인 → ⑥ admin
+  moderation(feature/unfeature) 수행, audit에 `feature_chip`/`unfeature_chip` 기록. 칩/owner 상태는 원복.
+- **남은 것.** production 서버 호스팅(+`VSL_SESSION_SECRET`/`VSL_PUBLIC_BASE_URL`/영속 `VSL_DATA_DIR`·`VSL_UPLOAD_DIR`,
+  런북 line 32대로 admin invite seed), owner go/no-go, 그 환경에서 `VSL_ACCESS_MODE=invite` 설정 + live `/api/health` 확인.
