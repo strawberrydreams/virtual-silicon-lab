@@ -1324,3 +1324,31 @@ optional profile id로 유지했다.
   부재 기능/계약 불일치로 실패. GREEN:
   `npm run test --workspace server -- config rateLimit rateLimitRoutes passwordReset galleryRanking galleryLockdown backup loginTiming publishService`
   10파일/32테스트 통과.
+
+## V5-M6 Launch QA & Gate-Flip Checkpoint (2026-06-17)
+
+M6는 코드/운영 게이트를 invite launch 직전까지 완료하고, 실제 production `VSL_ACCESS_MODE=invite` 전환은 사용자
+명시 승인 지점으로 남겼다. 이 체크포인트는 "launch-ready, not live" 상태다.
+
+- **Launch-flow E2E.** `server/test/launchFlow.test.ts`를 추가해 invite-mode bootstrap admin signup, admin invite mint,
+  invited user verification, verified publish, gallery exposure, second user like/comment, comment report/hide, audit log,
+  ban/login/react 차단, public handle/profile, sitemap, forgot/reset session revocation을 한 테스트에서 검증한다.
+- **RED에서 찾은 gap.** 처음 작성한 flow는 기존 구현만으로 통과했다. 운영 큐 요구를 더 정확히 반영해 "reported comment를
+  admin이 hide하면 관련 open comment reports가 resolved 처리되고 audit에 `report_resolved`가 남는다"는 기대를 추가했고,
+  RED를 확인했다. `resolveOpenReportsForComment()`를 추가하고 comment-hide route에서 hide + report resolve audit를 함께
+  기록하도록 고쳐 GREEN으로 만들었다.
+- **Gate fixes.** 전체 gate에서 TypeScript/lint 문제가 드러났다. `ForgotPasswordForm` 누락 복원, `RuntimeConfig.rateLimit`
+  overrides 타입 반영, gallery lockdown 410 status union 보강, publish service 미사용 변수 제거, ProfilePage의 effect 내
+  동기 `setState` 제거를 수행했다.
+- **Ops docs.** `docs/ops/launch-runbook.md`에는 access mode, invite 운영, account trust, moderation/audit, gallery lockdown,
+  backup/restore, load smoke, launch go/no-go를 정리했다. `docs/ops/launch-qa-checklist.md`는 자동 gate 완료와 manual
+  browser/production sign-off 대기 항목을 분리했다.
+- **Load smoke.** in-memory API smoke(500 users, 500 chips, 2,500 likes, 1,000 comments, 30 runs)는 gallery trending
+  p95 1.063ms, top p95 0.860ms, newest p95 0.635ms, detail/profile/sitemap p95 0.504ms 이하로 통과했다.
+- **검증.** RED: `npm run test --workspace server -- launchFlow`가 reported comment queue 잔존으로 실패. GREEN:
+  `npm run test --workspace server -- launchFlow moderationRoutes moderationService auditLog` 4파일/21테스트 통과.
+  최종 gate: `npm test` client 77파일/395테스트 + server 61파일/238테스트 통과, `npm run build` 통과(기존 Vite
+  >500kB chunk warning 유지), `npm run typecheck --workspace server` 통과, `npm run lint` 통과.
+- **남은 체크포인트.** Browser 도구가 현재 세션에 노출되지 않아 manual browser QA는 문서 checklist에 pending으로 남겼다.
+  실제 production gate flip(`VSL_ACCESS_MODE=invite`), live `/api/health` 확인, 첫 invite batch mint는 사용자 명시
+  go/no-go 이후 수행한다.
