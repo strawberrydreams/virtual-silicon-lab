@@ -6,9 +6,11 @@ defects found in that pass were fixed the same day (gallery lockdown wiring; rea
 copy). The previously admin-UI-only gaps (invite-code mint/list/revoke, comment hide + ban-author,
 user ban/unban, audit log) were then **implemented in `AdminPage.tsx` and browser-QA'd on 2026-06-17**
 (invite create/revoke, owner ban/unban with the reason captured in the audit log, chip hide/unhide,
-newest-first audit capture). See "Admin Operations Browser QA — 2026-06-17" below. **Sign-off remains
-pending owner review**: the remaining known item is a dev-only StrictMode artifact on the verify page
-to re-confirm on a production build. The production gate has not been flipped.
+newest-first audit capture). See "Admin Operations Browser QA — 2026-06-17" below. The remaining
+verify-page item was then **re-confirmed on a production bundle** (`vite preview`): a fresh token
+renders "Email Verified" and a reused token renders "Verification Failed" — the dev-only StrictMode
+false-failure is gone. A fresh integrity-checked SQLite backup was also taken. **Sign-off remains
+pending owner go/no-go** and the production gate has not been flipped.
 
 ## Manual QA Run — 2026-06-17 (results)
 
@@ -80,7 +82,7 @@ Run against local or staging with client + API servers up and `VSL_ACCESS_MODE=i
 - [x] `invite` mode: signup requires invite code (Invite Code field appears; missing/invalid blocked). ✅
 - [x] `open` mode: signup works without invite code. ✅
 - [x] Invite mint/redeem/exhaust/expire/revoke. ✅ (mint+list+revoke via admin UI; redeem/exhaust/expire via signup form)
-- [~] Email verification page success and reused-token failure. ⚠️ backend verifies; dev page shows false "Verification Failed" (StrictMode) — re-confirm on prod build.
+- [x] Email verification page success and reused-token failure. ✅ re-confirmed on a production bundle (`vite preview`): fresh token → "Email Verified"; reused token → "Verification Failed". Dev-only StrictMode false-failure does not occur in the prod build.
 - [x] Unverified publish/reaction soft-gate when verification is required. ✅ (like 403; toast copy fixed to "before reacting").
 - [x] Forgot password request and reset link success. ✅ (enumeration-safe; reset + new-password login confirmed)
 - [~] Password reset revokes older sessions. ➖ not browser-driven; covered by `launchFlow.test.ts`.
@@ -115,7 +117,7 @@ Run against local or staging with client + API servers up and `VSL_ACCESS_MODE=i
 ## Production Sign-Off
 
 - [ ] Owner reviewed this checklist.
-- [ ] Fresh backup taken.
+- [x] Fresh backup taken. ✅ (2026-06-17 online backup of `server/data/vsl.sqlite`; `PRAGMA integrity_check` = ok; users/chips/audit rows present. Re-take immediately before the flip per runbook.)
 - [x] Operator can access admin panel. ✅ (full admin UI: invite/comment/ban/audit + chip/contest, QA'd 2026-06-17).
 - [ ] First invite batch prepared.
 - [ ] Explicit go/no-go given.
