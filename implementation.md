@@ -1442,3 +1442,22 @@ v6 "Mobile/Responsive"의 첫 마일스톤. 데스크톱 전용 뷰포트 바닥
   적용, OG/`poster.png` 동작 불변. emitted HTML에 `@media` 포함을 `shareHelpers.test.ts`로 문자열 assert(TDD).
 - **게이트.** `npm test`(client 80 files/414 tests + server 62 files/242 tests), `npm run build`(알려진 청크
   경고만), `npm run typecheck --workspace server`, `npm run lint` 모두 green. 모바일 시각 확인은 V6-M4 QA로 이월.
+
+## V6-M2 Account & Dashboard (2026-06-18)
+
+계정/로그인(`/account` + verify/reset/forgot 상태), 프로젝트 대시보드(`/dashboard`), 온보딩/first-run을 폰에서
+리플로우. 순수 CSS + Tailwind prefix만 — 컴포넌트 구조/JS 변경 없음.
+
+- **대시보드.** `.v2-preset-grid`/`.v2-project-grid`가 `repeat(3, minmax(0,1fr))`라 360px에서 3열은 판독 불가
+  → `@media (max-width: 767px)`에서 1열, `.v2-dashboard__header` 좌우 패딩 1.25rem(랜딩과 동일 거터),
+  `.v2-preset-card` `min-height:auto`. `.v2-dashboard__inner`는 `max-width:1240px`(floor 아님)라 이미 폰에 맞음.
+  new/random 액션은 `.v2-action-row`의 `flex-wrap`으로 이미 줄바꿈됨.
+- **계정 페이지.** 이미 Tailwind 반응형(`max-w-3xl`, 입력 `w-full`, 2단은 `md:grid-cols-2`로 기본 1열). 두 최상위
+  래퍼 `mx-auto max-w-3xl px-6 py-10`을 `px-4 py-8 ... sm:px-6 sm:py-10`로 변경해 폰 거터만 축소(데스크톱 불변).
+  spec이 허용한 already-Tailwind 컴포넌트의 Tailwind prefix 사용(`sm`=640px). verify/reset/forgot도 같은 래퍼라
+  함께 커버. AccountPage 테스트 16개 green(문자열 변경이라 동작 영향 없음).
+- **온보딩.** first-run `FirstRunCoachmarks`는 **데스크톱 에디터 전용**이고 이미 `@media (max-width: 760px)`에서
+  static 배치로 리플로우됨(styles.css:2872). 모바일 에디터(V6-M3)는 coachmark를 렌더하지 않음. 대시보드/계정의
+  first-run 안내 텍스트는 Task 1/2로 리플로우 → M2에 신규 온보딩 코드 불필요(확인만).
+- **게이트.** `npm test`(client 80 files/414 tests + server 62 files/242 tests), `npm run build`(알려진 청크
+  경고만), `npm run typecheck --workspace server`, `npm run lint` 모두 green. 모바일 시각 확인은 V6-M4 QA로 이월.
