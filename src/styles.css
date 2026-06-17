@@ -2546,9 +2546,15 @@ button {
     grid-template-columns: 1fr;
   }
 
-  .gallery-comments__form {
-    flex-direction: column;
-    align-items: stretch;
+  .gallery-comments__form textarea {
+    width: 100%;
+    min-height: 5rem;
+    box-sizing: border-box;
+  }
+
+  .gallery-comments__form .v2-inline-action {
+    width: 100%;
+    margin-top: 0.6rem;
   }
 }
 
