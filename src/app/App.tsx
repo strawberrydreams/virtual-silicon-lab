@@ -27,6 +27,7 @@ import {
   type PageThemeName,
 } from '../visual/pageThemes'
 import { usePageTheme } from '../visual/pageThemeStore'
+import { MobileEditorPreview } from '../features/editor/MobileEditorPreview'
 import { useIsMobile } from './useIsMobile'
 
 function LandingRoute() {
@@ -62,6 +63,7 @@ function EditorRoute() {
   const [, setPageTheme] = usePageTheme()
   const [project, setProject] = useState<Project | 'loading' | 'missing'>('loading')
   const autoThemedProjectId = useRef<string | null>(null)
+  const isMobile = useIsMobile()
 
   // Reset to the loading state when the route's project id changes, derived during
   // render so the effect only owns the async load. `store` is the reactive store
@@ -116,6 +118,8 @@ function EditorRoute() {
       </main>
     )
   }
+
+  if (isMobile) return <MobileEditorPreview project={project} />
 
   return (
     <EditorPage

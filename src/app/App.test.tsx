@@ -10,6 +10,15 @@ vi.mock('../features/editor/EditorPage', () => ({
   ),
 }))
 
+// The mobile editor preview embeds a Konva stage + publish/export panels; mock it
+// so the App-level test verifies only the EditorRoute branch (its real content is
+// covered by MobileEditorPreview's own component test).
+vi.mock('../features/editor/MobileEditorPreview', () => ({
+  MobileEditorPreview: ({ project }: { project: { name: string } }) => (
+    <main aria-label="Chip preview">{project.name} — edit on desktop</main>
+  ),
+}))
+
 describe('App', () => {
   afterEach(() => {
     localStorage.clear()
@@ -183,6 +192,30 @@ describe('App', () => {
 
     expect(await screen.findByRole('main', { name: 'Chip editor workspace' })).toBeInTheDocument()
     expect(screen.getByTestId('app-shell')).toHaveAttribute('data-page-theme', 'space')
+  })
+
+  it('renders the read-only preview on the editor route when mobile', async () => {
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      matches: true,
+      media: query,
+      onchange: null,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      addListener: () => {},
+      removeListener: () => {},
+      dispatchEvent: () => false,
+    }))
+
+    render(
+      <MemoryRouter initialEntries={['/dashboard']}>
+        <App />
+      </MemoryRouter>,
+    )
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Remix N1 GREEN HORIZON' }))
+
+    expect(await screen.findByRole('main', { name: 'Chip preview' })).toBeInTheDocument()
+    expect(screen.queryByRole('main', { name: 'Chip editor workspace' })).not.toBeInTheDocument()
   })
 
   it('toggles the primary navigation drawer from the menu button', async () => {
