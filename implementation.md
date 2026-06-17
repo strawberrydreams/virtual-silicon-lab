@@ -1394,3 +1394,30 @@ M6는 코드/운영 게이트를 invite launch 직전까지 완료하고, 실제
   moderation(feature/unfeature) 수행, audit에 `feature_chip`/`unfeature_chip` 기록. 칩/owner 상태는 원복.
 - **남은 것.** production 서버 호스팅(+`VSL_SESSION_SECRET`/`VSL_PUBLIC_BASE_URL`/영속 `VSL_DATA_DIR`·`VSL_UPLOAD_DIR`,
   런북 line 32대로 admin invite seed), owner go/no-go, 그 환경에서 `VSL_ACCESS_MODE=invite` 설정 + live `/api/health` 확인.
+
+## V6-M0 Responsive Foundation (2026-06-18)
+
+v6 "Mobile/Responsive"의 첫 마일스톤. 데스크톱 전용 뷰포트 바닥을 제거하고, 이후 v6 전 마일스톤이 의존할 768px
+브레이크포인트 프리미티브와 모바일 헤더 내비게이션을 마련했다. **별도 모바일 라우트 트리 없이** 기존 단일 컴포넌트
+트리를 반응형으로 리플로우하는 방향(스펙대로 DB/마이그레이션/신규 API 변경 없음).
+
+- **단일 브레이크포인트 상수.** `src/lib/breakpoints.ts`에 `MOBILE_MAX_WIDTH = 767` + `MOBILE_MEDIA_QUERY =
+  '(max-width: 767px)'`를 두어 CSS 미디어쿼리와 JS 훅이 같은 경계를 공유. `src/lib/`는 프레임워크 무관·무의존
+  규칙대로 React import 없음.
+- **`useIsMobile()` 훅.** `src/app/useIsMobile.ts` — `matchMedia`로 뷰포트를 반응형 구독, lazy `useState`
+  초기화 + `change` 이벤트 구독으로 갱신. CSS가 스타일링을 담당하므로 이 훅은 "구조적으로 모바일 분기가 필요한"
+  소수 지점(드로어 auto-close; M3 에디터 read-only 프리뷰)용. jsdom에 `matchMedia`가 없어 `src/test/setup.ts`에
+  **데스크톱 기본**(`matches:false`) 스텁을 추가 — 기존 테스트 동작 보존, 훅 자체 테스트는 케이스별 override.
+- **뷰포트 바닥 제거.** `src/styles.css` `body`의 `min-width: 1024px` 삭제. CSS-only 변경이라 grep + build로 검증.
+- **모바일 내비게이션 드로어.** `SiteHeader`에 햄버거 토글(`aria-label` Open/Close menu,
+  `aria-controls="primary-nav"`, `aria-expanded`) + `nav#primary-nav[data-open]`. 데스크톱은 가로 nav, `<768px`에서만
+  토글 노출 + 고정 드로어. 뷰포트가 데스크톱으로 돌아오면 effect로 auto-close, Escape로도 닫힘. 링크 선택 시
+  `onNavigate=closeMenu`로 자동 닫힘(`AccountNavLink`/`AdminNavLink`에 옵셔널 `onNavigate` prop 추가).
+- **계획 대비 수정 2건.**
+  ① 백드롭 버튼이 토글과 `aria-label="Close menu"`를 공유해 `getByRole` 충돌 → 백드롭은 장식적 dismiss 오버레이이므로
+  `aria-hidden="true"`로 접근성 트리에서 제외(토글이 이미 라벨된 닫기 동작 제공).
+  ② `react-hooks/set-state-in-effect` 린트가 두 effect의 setState를 지적 → 둘 다 뷰포트 외부 상태 동기화의 정당한
+  사례라 `AdminPage.tsx`의 기존 관행대로 사유 주석과 함께 `eslint-disable-next-line` 적용.
+- **게이트.** `npm test`(client 80 files/412 tests + server 62 files/241 tests), `npm run build`(알려진 >500kB 청크
+  경고만), `npm run lint` 모두 green. 모바일 뷰포트 시각 확인은 V6-M4 QA로 이월. 브랜치 `v6-mobile-responsive`,
+  M1–M4 잔여이므로 미병합.
