@@ -2771,6 +2771,21 @@ button {
   gap: 1rem;
 }
 
+@media (max-width: 767px) {
+  .gallery-page__hero {
+    padding: 2.5rem 0 1.25rem;
+  }
+
+  .gallery-grid {
+    grid-template-columns: 1fr;
+    margin-bottom: 3rem;
+  }
+
+  .gallery-featured__row {
+    grid-template-columns: 1fr;
+  }
+}
+
 .editor-stage-wrap {
   position: relative;
 }
