@@ -1,8 +1,8 @@
 import { Component, lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import type { ErrorInfo, ReactNode } from 'react'
 import type { Project } from '../../domain/project'
-import { resolveTheme } from '../../themes/themeTokens'
-import { buildChip3DModel, type Chip3DPalette } from '../../visual/chip3d/chip3dModel'
+import { buildChip3DModel } from '../../visual/chip3d/chip3dModel'
+import { resolveChip3DStyle } from '../../visual/chip3d/chip3dMaterials'
 import { buildChipLayers } from '../../visual/chipLayers'
 
 const Chip3DViewer = lazy(() => import('../../three/Chip3DViewer'))
@@ -48,15 +48,10 @@ function Chip3DShowcase({ project, onClose }: { project: Project; onClose: () =>
     }
   }, [onClose])
 
-  const model = useMemo(() => {
-    const tokens = resolveTheme(project.theme)
-    const palette: Chip3DPalette = {
-      die: tokens.dieFill[0].color,
-      blockReal: tokens.blockFill.real,
-      blockFantasy: tokens.blockFill.fantasy,
-    }
-    return buildChip3DModel(buildChipLayers(project), project.die, palette)
-  }, [project])
+  const model = useMemo(
+    () => buildChip3DModel(buildChipLayers(project), project.die, resolveChip3DStyle(project.theme)),
+    [project],
+  )
 
   return (
     <section
