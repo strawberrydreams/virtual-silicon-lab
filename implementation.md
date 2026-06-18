@@ -1527,3 +1527,36 @@ v7 Visual Depth의 첫 마일스톤을 시작하기 전, 상세 계획이 요구
 - **결정.** 세 위험 모두 합격해 **go**. 본 구현은 승인 spec대로 순수 `Chip3DModel` 파생과
   `src/three/` lazy renderer 경계를 사용한다. 사용자 확정에 따라 계획의 inline toggle 표현은 에디터
   상단 `Open 3D showcase` 버튼 + 전체 화면 모달로 구체화한다.
+
+## V7-M0 3D Showcase Foundation (2026-06-18)
+
+v7 "Visual Depth"의 첫 마일스톤. 기존 프로젝트 JSON이나 `ChipLayerModel` 계약을 바꾸지 않고, 데스크톱 에디터에서
+현재 2D 프로젝트를 파생한 읽기 전용 Three.js 쇼케이스를 여는 최소 3D 기반을 완성했다. DB/마이그레이션/API 변경은 없다.
+
+- **순수 3D 파생 모델.** `src/visual/chip3d/chip3dModel.ts`가 `ChipLayerModel`을 입력받아 package/die/block의
+  serializable box/cylinder primitive, flat color, center, extent를 계산한다. rect/square/hex는 box footprint,
+  circle은 cylinder footprint를 사용하고 fantasy block은 real block보다 높게 압출한다. 이 계층에는 React·Three.js
+  import가 없어 테스트와 향후 renderer 교체가 가능하다.
+- **좌표와 범위 결정.** 기존 2D y-down 좌표는 scene 조립 시 y를 반전한 뒤 X축으로 눕혀 3D 바닥면의 X/Z로 옮긴다.
+  패키지 중심을 원점으로 정규화하고, `extent`가 카메라 near/far와 초기 거리를 결정한다. 현재 `ChipLayerModel`이 block
+  rotation을 전달하지 않으므로 M0 block은 axis-aligned footprint다. rotation/trace/micro-tile/decoration 매핑은
+  뒤 마일스톤의 richer model 범위로 남겼다.
+- **Three.js 경계와 수명주기.** 모든 Three import는 `src/three/`에 격리했다. `Chip3DViewer`는 동적 import되어
+  2D 에디터 초기 번들에 Three runtime이 들어오지 않는다. ResizeObserver, DPR 2 상한, OrbitControls의 change-driven
+  render를 사용해 idle RAF loop를 만들지 않는다. 종료 시 controls, geometry, material, renderer, WebGL context를
+  명시적으로 dispose한다.
+- **사용자 확정 UX.** 일반적인 inline toggle 대신, 데스크톱 에디터 top command bar의 `Open 3D showcase` 버튼이
+  현재 프로젝트 이름을 가진 전체 화면 modal dialog를 연다. close 버튼과 Escape를 지원하며, 열릴 때 close 버튼으로
+  focus를 이동하고 닫힐 때 opener로 복귀한다. modal 내부 `Reset view`는 초기 orbit 카메라를 복원한다.
+- **실패 격리.** WebGL 미지원은 modal 안에서 안내하고 정상 종료할 수 있다. lazy 청크 로딩/렌더 오류는 전용 error
+  boundary가 잡아 2D 에디터를 유지한다. 쇼케이스 종료는 2D 프로젝트·selection·history를 변경하지 않는다.
+- **시각/QA 중 수정.** Three 0.184의 `PCFSoftShadowMap` deprecation warning을 `PCFShadowMap`으로 교체했다.
+  실제 N1 GREEN HORIZON 프로젝트에서 초기 카메라가 지나치게 멀고 flat material이 어두워, extent 배수와 hemisphere/key
+  light를 조정했다. M0의 의도는 물성 셰이더가 아닌 구조 검증이므로 색상은 flat material로 유지했다.
+- **브라우저 게이트.** 실제 12-block N1 GREEN HORIZON에서 진입 → 3D 식별 → drag orbit → reset → Escape 종료를
+  확인했다. dialog/close/reset 접근성 이름은 각각 단일 locator였고, 종료 후 `Chip editor workspace`가 유지되며 focus가
+  `Open 3D showcase`로 복귀했다. 교체 전 시각의 deprecation warning 2건 외에 교체 후 신규 warning/error는 없었다.
+- **번들/자동 게이트.** 최종 production build는 core `747.63 kB / gzip 224.05 kB`, lazy Three viewer
+  `561.37 kB / gzip 142.56 kB`, CSS `70.95 kB / gzip 13.18 kB`. baseline 대비 core gzip 증가는 1.04 kB이고
+  Three runtime은 별도 청크다. 최종 `npm test`는 client 83 files/426 tests + server 62 files/242 tests,
+  `npm run build`, `npm run typecheck --workspace server`, `npm run lint` 모두 통과했다.
