@@ -1560,3 +1560,44 @@ v7 "Visual Depth"의 첫 마일스톤. 기존 프로젝트 JSON이나 `ChipLayer
   `561.37 kB / gzip 142.56 kB`, CSS `70.95 kB / gzip 13.18 kB`. baseline 대비 core gzip 증가는 1.04 kB이고
   Three runtime은 별도 청크다. 최종 `npm test`는 client 83 files/426 tests + server 62 files/242 tests,
   `npm run build`, `npm run typecheck --workspace server`, `npm run lint` 모두 통과했다.
+
+## V7-M1 3D Material & Lighting (2026-06-18)
+
+M0의 평면 박스 쇼케이스를 v2/v3 비주얼 게이트 수준의 "프리미엄"으로 끌어올렸다. 테마 기반 PBR 머티리얼, 절차적
+PMREM 환경광, 3점 라이팅+ACES 톤매핑, emissive+UnrealBloom 글로우를 모두 기존 `resolveMaterialRecipe`/
+`resolveTheme`에서 파생했다. 스키마/마이그레이션/API 변경은 없고, 2D Konva 에디터·익스포트 계약·local-first는 불변이다.
+
+- **순수 머티리얼 매퍼.** 신규 `src/visual/chip3d/chip3dMaterials.ts`의 `resolveChip3DStyle(theme)`가 recipe·tokens를
+  직렬화 가능한 PBR 디스크립터로 매핑한다(`Chip3DMaterial`/`Chip3DMaterialSet`/`Chip3DEnvironment`/`Chip3DStyle`).
+  `three` import 없는 순수 계층이라 유닛테스트가 가능하다. open design decision은 "모델을 직렬화 가능·자기서술적으로
+  유지"로 확정 — recipe→PBR을 순수 함수로 분리하고 결과를 모델에 내장해, 향후 M3 비디오/M5 갤러리에서 모델이 곧
+  결정적 계약이 되게 했다. 시그니처는 `recipe`만으로는 fantasy 색·배경색을 못 얻어 `theme`을 받아 내부에서
+  `resolveMaterialRecipe`+`resolveTheme`를 모두 쓰도록 했다.
+- **머티리얼 매핑.** package=어두운 유전체(metalness 0.1/roughness 0.82), dieBase=기판(0.4/0.55),
+  blockReal=브러시드 메탈(0.75/0.35), blockFantasy=발광체(emissive=`glassGlow.color`). emissive는 fantasy 블록만
+  부여하고 강도를 테마 glow에 비례시켰다. `Chip3DPiece`의 flat `color`를 `material: Chip3DMaterial`로 교체하고
+  `Chip3DModel`에 `environment`를 추가했으며, `buildChip3DModel(layers, die, style)`로 시그니처를 바꾸고
+  `Chip3DPalette`를 제거했다. 지오메트리/footprint/depth/stacking 로직은 M0 그대로다.
+- **렌더 파이프라인(`src/three/`).** `chip3dScene.ts`는 piece.material로 `MeshStandardMaterial`(metalness/roughness/
+  emissive)를 만들고, `Chip3DViewer.tsx`는 테마 backdrop 그라디언트를 `PMREMGenerator.fromScene`으로 구워
+  `scene.environment`에 넣어 금속면 반사를 만든다(외부 HDRI 에셋 0). `ACESFilmicToneMapping`+exposure, 3점 리그
+  (key 따뜻·강·shadow, fill 차갑·약, rim/back)+낮은 hemisphere ambient를 적용하고, `EffectComposer`의 RenderPass→
+  `UnrealBloomPass`로 렌더해 발광 블록이 후광을 만든다. resize 시 composer/bloom 해상도를 갱신하고, 종료 시
+  composer/PMREM/envRT를 기존 M0 dispose(geometry/material/controls/renderer/context)에 더해 모두 해제한다.
+  postprocessing/PMREM은 설치된 `three` 패키지의 모듈이라 신규 npm 의존성 없이 lazy 청크에 함께 격리된다.
+- **시퀀싱.** M0의 toggle/showcase는 평면 팔레트를 썼는데, Task 2의 시그니처 변경으로 `chip3dScene.ts`와
+  `Chip3DPreviewToggle.tsx`가 동시에 깨졌다. toggle 마이그레이션(팔레트→`resolveChip3DStyle(project.theme)`)은 Task 1·2
+  산출물만 필요한 순수 타입 변경이라 Task 3에 함께 묶어, 렌더링 task(3~5) 내내 트리가 컴파일되고 build가 정직하게
+  green이 되게 했다.
+- **비주얼 게이트 중 튜닝.** 실제 N1 GREEN HORIZON(neon) 브라우저 QA에서 초기 emissiveIntensity(≈2.1)가 cyan 판타지
+  블록 면을 순백색으로 clip시켰다. emissive 밴드를 ~1.0으로 낮춰 ACES 하에서 면이 테마 hue를 유지하게 하고, bloom을
+  threshold↓/strength 중간으로 재조정해 in-gamut 발광이 whiteout 대신 진짜 네온 후광을 던지게 했다. 상수는
+  `resolveChip3DStyle`에 중앙화되어 있어 튜닝이 국소·테스트 가능한 변경이었다(neon>mono 등 순서 불변, 유닛테스트 유지).
+- **브라우저 게이트.** N1 GREEN HORIZON(neon)과 LUCID MONO PACKAGE(mono)에서 쇼케이스를 확인: 메탈은 환경 반사가 있는
+  브러시드 메탈로, 기판은 테마 backdrop을 은은히 반사, 판타지 블록은 cyan 면+네온 후광으로 읽혔고, 테마 구분(neon
+  드라마틱 ↔ mono 절제)이 뚜렷했다. WebGL 컨텍스트 정상, 3D 관련 콘솔 에러 없음(`/api/...` 404는 미실행 API 서버로
+  3D와 무관). 오너 비주얼 품질 사인오프 완료.
+- **번들/자동 게이트.** lazy Three viewer 청크는 `Chip3DViewer-*.js 580.13 kB / gzip 147.12 kB`(M0 561 kB에서
+  postprocessing 추가분), core `index-*.js 748.20 kB`에는 three/postprocessing 미포함 — 번들 격리 유지. 최종
+  `npm test`는 client 84 files/431 tests + server 62 files/242 tests, `npm run build`,
+  `npm run typecheck --workspace server`, `npm run lint` 모두 통과했다.
