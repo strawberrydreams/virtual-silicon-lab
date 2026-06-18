@@ -1509,3 +1509,21 @@ v6 모바일 대응을 마감하는 QA·릴리스 마일스톤. 제품 코드는
   Working Context 불릿 추가(로컬 전용 파일).
 - **게이트.** `npm test`(client 81 files/416 tests + server 62 files/242 tests), `npm run build`(알려진 청크
   경고만), `npm run typecheck --workspace server`, `npm run lint` 모두 green. (M4)
+
+## V7-M0 3D Showcase Foundation — Feasibility Spike (2026-06-18)
+
+v7 Visual Depth의 첫 마일스톤을 시작하기 전, 상세 계획이 요구한 Three.js 번들 격리·실제 프로젝트 파생
+식별성·데스크톱 orbit 성능을 throwaway 진입점으로 검증했다. 임시 spike 코드는 검증 후 모두 제거했다.
+
+- **의존성.** `three@0.184.0`과 개발 타입 `@types/three@0.184.1`을 추가했다.
+- **실제 프로젝트 파생.** `createHeroChip()`의 AURORA C-1 블록 bounds를 package/die/real/fantasy 높이로
+  압출했다. 2D의 중앙 Consciousness Processor와 하단 Quantum Memory rail을 포함한 배치가 3D에서도
+  즉시 식별됐다.
+- **인터랙션/성능.** 인앱 브라우저의 기본 1280×720 데스크톱 뷰포트에서 OrbitControls drag 전후 렌더가
+  정상이고 콘솔 warning/error가 없었다. 연속 렌더 spike 계측은 약 121 FPS였다.
+- **번들 격리.** baseline core는 `744.66 kB / gzip 223.01 kB`. 임시 dynamic import 빌드에서 core는
+  `744.77 kB / gzip 223.08 kB`(+gzip 0.07 kB), Three runtime은 별도
+  `spike-runtime-*.js` `532.60 kB / gzip 133.51 kB` 청크로 분리됐다.
+- **결정.** 세 위험 모두 합격해 **go**. 본 구현은 승인 spec대로 순수 `Chip3DModel` 파생과
+  `src/three/` lazy renderer 경계를 사용한다. 사용자 확정에 따라 계획의 inline toggle 표현은 에디터
+  상단 `Open 3D showcase` 버튼 + 전체 화면 모달로 구체화한다.
