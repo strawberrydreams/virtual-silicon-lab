@@ -1633,3 +1633,20 @@ M1의 정적 프리미엄 3D 프레임에 사용자가 선택해서 재생하는
   `index-BYeA_II-.js` `748.20 kB / gzip 224.27 kB`, CSS `71.06 kB / gzip 13.20 kB`; 신규 의존성 없이 Three 격리 유지.
   최종 `npm test`는 client 85 files/438 tests + server 62 files/242 tests이며, `npm run build`, server typecheck,
   lint를 모두 통과했다.
+
+## V7-M3 MP4 Export Feasibility Spike (2026-06-18)
+
+M3 본 구현 전 핵심 위험인 브라우저 WebCodecs H.264 → MP4 muxing을 throwaway 진입점으로 검증했고, 임시 코드는
+검증 후 모두 제거했다.
+
+- **인코딩/재생.** Chrome WebCodecs `VideoEncoder`에 `avc1.42001f`(H.264 Baseline level 3.1), 6 Mbps,
+  30 fps를 설정하고 1280×720 canvas 30 frames를 인코딩했다. `mp4-muxer@5.2.2`의
+  `video: { codec: 'avc', width, height }`, `fastStart: 'in-memory'` 구성으로 194,980-byte MP4를 만들었고,
+  브라우저 video element가 오류 없이 readyState 4, 1280×720, 1.0초로 디코딩·재생 가능함을 확인했다.
+- **타입/번들.** 설치된 패키지가 함께 제공하는 `@types/dom-webcodecs`를 통해 TypeScript 6 빌드가
+  `VideoEncoder`/`VideoFrame`을 인식했다. 동적 import 빌드에서 muxer는 별도
+  `mp4-muxer-*.js` 30.73 kB / gzip 8.96 kB 청크였고 core에는 합쳐지지 않았다.
+- **의존성 trade-off.** `mp4-muxer`는 upstream에서 Mediabunny로 대체되었다는 deprecation 경고가 있지만,
+  승인된 M3 spec·계획의 범위와 API를 그대로 검증했고 신규 대체 라이브러리 전환은 별도 설계 변경이므로 이번
+  마일스톤에서는 5.2.2를 고정한다. 향후 브라우저 호환성 확장 시 Mediabunny 마이그레이션을 검토한다.
+- **결정.** MP4 생성, 실제 브라우저 디코딩, WebCodecs 타입, lazy chunk 격리가 모두 통과해 **go**.
