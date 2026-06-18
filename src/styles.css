@@ -1163,6 +1163,17 @@ button {
   bottom: 1rem;
 }
 
+.chip-3d-export {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.chip-3d-export__note {
+  color: var(--v2-muted);
+  font-size: 0.66rem;
+}
+
 .editor-statusbar {
   display: grid;
   min-height: 36px;

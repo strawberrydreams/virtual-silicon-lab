@@ -4,6 +4,7 @@ import type { Project } from '../../domain/project'
 import { buildChip3DModel } from '../../visual/chip3d/chip3dModel'
 import { resolveChip3DStyle } from '../../visual/chip3d/chip3dMaterials'
 import { buildChipLayers } from '../../visual/chipLayers'
+import { VideoExportPanel } from '../export/VideoExportPanel'
 
 const Chip3DViewer = lazy(() => import('../../three/Chip3DViewer'))
 
@@ -52,6 +53,7 @@ function Chip3DShowcase({ project, onClose }: { project: Project; onClose: () =>
     () => buildChip3DModel(buildChipLayers(project), project.die, resolveChip3DStyle(project.theme)),
     [project],
   )
+  const supports3D = webglAvailable()
 
   return (
     <section
@@ -65,11 +67,12 @@ function Chip3DShowcase({ project, onClose }: { project: Project; onClose: () =>
           <p className="editor-kicker">Derived from the active 2D project</p>
           <h2>{project.name}</h2>
         </div>
+        {supports3D ? <VideoExportPanel model={model} name={project.name} /> : null}
         <button ref={closeButtonRef} type="button" onClick={onClose}>
           Close 3D showcase
         </button>
       </header>
-      {webglAvailable() ? (
+      {supports3D ? (
         <ShowcaseErrorBoundary>
           <Suspense fallback={<p>Loading 3D showcase…</p>}>
             <Chip3DViewer model={model} />
