@@ -1394,3 +1394,118 @@ M6는 코드/운영 게이트를 invite launch 직전까지 완료하고, 실제
   moderation(feature/unfeature) 수행, audit에 `feature_chip`/`unfeature_chip` 기록. 칩/owner 상태는 원복.
 - **남은 것.** production 서버 호스팅(+`VSL_SESSION_SECRET`/`VSL_PUBLIC_BASE_URL`/영속 `VSL_DATA_DIR`·`VSL_UPLOAD_DIR`,
   런북 line 32대로 admin invite seed), owner go/no-go, 그 환경에서 `VSL_ACCESS_MODE=invite` 설정 + live `/api/health` 확인.
+
+## V6-M0 Responsive Foundation (2026-06-18)
+
+v6 "Mobile/Responsive"의 첫 마일스톤. 데스크톱 전용 뷰포트 바닥을 제거하고, 이후 v6 전 마일스톤이 의존할 768px
+브레이크포인트 프리미티브와 모바일 헤더 내비게이션을 마련했다. **별도 모바일 라우트 트리 없이** 기존 단일 컴포넌트
+트리를 반응형으로 리플로우하는 방향(스펙대로 DB/마이그레이션/신규 API 변경 없음).
+
+- **단일 브레이크포인트 상수.** `src/lib/breakpoints.ts`에 `MOBILE_MAX_WIDTH = 767` + `MOBILE_MEDIA_QUERY =
+  '(max-width: 767px)'`를 두어 CSS 미디어쿼리와 JS 훅이 같은 경계를 공유. `src/lib/`는 프레임워크 무관·무의존
+  규칙대로 React import 없음.
+- **`useIsMobile()` 훅.** `src/app/useIsMobile.ts` — `matchMedia`로 뷰포트를 반응형 구독, lazy `useState`
+  초기화 + `change` 이벤트 구독으로 갱신. CSS가 스타일링을 담당하므로 이 훅은 "구조적으로 모바일 분기가 필요한"
+  소수 지점(드로어 auto-close; M3 에디터 read-only 프리뷰)용. jsdom에 `matchMedia`가 없어 `src/test/setup.ts`에
+  **데스크톱 기본**(`matches:false`) 스텁을 추가 — 기존 테스트 동작 보존, 훅 자체 테스트는 케이스별 override.
+- **뷰포트 바닥 제거.** `src/styles.css` `body`의 `min-width: 1024px` 삭제. CSS-only 변경이라 grep + build로 검증.
+- **모바일 내비게이션 드로어.** `SiteHeader`에 햄버거 토글(`aria-label` Open/Close menu,
+  `aria-controls="primary-nav"`, `aria-expanded`) + `nav#primary-nav[data-open]`. 데스크톱은 가로 nav, `<768px`에서만
+  토글 노출 + 고정 드로어. 뷰포트가 데스크톱으로 돌아오면 effect로 auto-close, Escape로도 닫힘. 링크 선택 시
+  `onNavigate=closeMenu`로 자동 닫힘(`AccountNavLink`/`AdminNavLink`에 옵셔널 `onNavigate` prop 추가).
+- **계획 대비 수정 2건.**
+  ① 백드롭 버튼이 토글과 `aria-label="Close menu"`를 공유해 `getByRole` 충돌 → 백드롭은 장식적 dismiss 오버레이이므로
+  `aria-hidden="true"`로 접근성 트리에서 제외(토글이 이미 라벨된 닫기 동작 제공).
+  ② `react-hooks/set-state-in-effect` 린트가 두 effect의 setState를 지적 → 둘 다 뷰포트 외부 상태 동기화의 정당한
+  사례라 `AdminPage.tsx`의 기존 관행대로 사유 주석과 함께 `eslint-disable-next-line` 적용.
+- **게이트.** `npm test`(client 80 files/412 tests + server 62 files/241 tests), `npm run build`(알려진 >500kB 청크
+  경고만), `npm run lint` 모두 green. 모바일 뷰포트 시각 확인은 V6-M4 QA로 이월. 브랜치 `v6-mobile-responsive`,
+  M1–M4 잔여이므로 미병합.
+
+## V6-M1 Public Read Surfaces (2026-06-18)
+
+공개 read 표면(랜딩 `/`, 갤러리 리스트 `/gallery`, 갤러리 상세 `/gallery/:slug`, 공개 프로필 `/u/:handle`,
+서버 렌더 share viewer `/s/:slug`)을 폰에서 가로 스크롤 없이 리플로우. **순수 CSS 리플로우** — 컴포넌트 구조/JS
+변경 없음, 모든 신규 모바일 규칙은 `@media (max-width: 767px)`(V6-M0 브레이크포인트와 일치). M1–M4 계획 4건을
+이번에 한꺼번에 작성(`docs/superpowers/plans/2026-06-18-v6-m1..m4-*.md`).
+
+- **랜딩.** `.v2-landing__hero`가 `minmax(430px,0.9fr) minmax(560px,1.1fr)`(≈990px 최소폭)라 폰에서 하드
+  가로 스크롤을 유발 → `<768px`에서 1열·`min-height:auto`·패딩 축소, 타이틀 `clamp(2.1rem,9vw,3.35rem)`,
+  hero preview frame `min-height:360px`, featured 그리드/카드 1열, action 버튼 full-width.
+- **갤러리 리스트 + 프로필.** 두 표면이 `gallery-grid`/`gallery-card`/`gallery-page__hero`를 공유 → 한 블록으로
+  처리. 그리드는 이미 `auto-fit minmax(280px,1fr)`로 collapse되지만 `<768px`에서 명시적 1열 + hero 상단 패딩
+  축소, featured row 1열.
+- **갤러리 상세.** 기존 `@media (max-width: 860px)`(hero 1열 + spec 2열) 아래에 `767px` 블록 추가: spec 그리드
+  1열, hero 패딩 축소, comment form 세로 스택.
+- **share viewer(서버).** `server/src/share/viewer.ts`의 `BASE_STYLE`에 `@media (max-width:767px)` 추가
+  (`.grid` 1열, `.wrap` 패딩 축소, h1 26px, `.cta` 세로 스택) — `renderViewerHtml`/`renderNotFoundHtml` 공통
+  적용, OG/`poster.png` 동작 불변. emitted HTML에 `@media` 포함을 `shareHelpers.test.ts`로 문자열 assert(TDD).
+- **게이트.** `npm test`(client 80 files/414 tests + server 62 files/242 tests), `npm run build`(알려진 청크
+  경고만), `npm run typecheck --workspace server`, `npm run lint` 모두 green. 모바일 시각 확인은 V6-M4 QA로 이월. (M1)
+
+## V6-M2 Account & Dashboard (2026-06-18)
+
+계정/로그인(`/account` + verify/reset/forgot 상태), 프로젝트 대시보드(`/dashboard`), 온보딩/first-run을 폰에서
+리플로우. 순수 CSS + Tailwind prefix만 — 컴포넌트 구조/JS 변경 없음.
+
+- **대시보드.** `.v2-preset-grid`/`.v2-project-grid`가 `repeat(3, minmax(0,1fr))`라 360px에서 3열은 판독 불가
+  → `@media (max-width: 767px)`에서 1열, `.v2-dashboard__header` 좌우 패딩 1.25rem(랜딩과 동일 거터),
+  `.v2-preset-card` `min-height:auto`. `.v2-dashboard__inner`는 `max-width:1240px`(floor 아님)라 이미 폰에 맞음.
+  new/random 액션은 `.v2-action-row`의 `flex-wrap`으로 이미 줄바꿈됨.
+- **계정 페이지.** 이미 Tailwind 반응형(`max-w-3xl`, 입력 `w-full`, 2단은 `md:grid-cols-2`로 기본 1열). 두 최상위
+  래퍼 `mx-auto max-w-3xl px-6 py-10`을 `px-4 py-8 ... sm:px-6 sm:py-10`로 변경해 폰 거터만 축소(데스크톱 불변).
+  spec이 허용한 already-Tailwind 컴포넌트의 Tailwind prefix 사용(`sm`=640px). verify/reset/forgot도 같은 래퍼라
+  함께 커버. AccountPage 테스트 16개 green(문자열 변경이라 동작 영향 없음).
+- **온보딩.** first-run `FirstRunCoachmarks`는 **데스크톱 에디터 전용**이고 이미 `@media (max-width: 760px)`에서
+  static 배치로 리플로우됨(styles.css:2872). 모바일 에디터(V6-M3)는 coachmark를 렌더하지 않음. 대시보드/계정의
+  first-run 안내 텍스트는 Task 1/2로 리플로우 → M2에 신규 온보딩 코드 불필요(확인만).
+- **게이트.** `npm test`(client 80 files/414 tests + server 62 files/242 tests), `npm run build`(알려진 청크
+  경고만), `npm run typecheck --workspace server`, `npm run lint` 모두 green. 모바일 시각 확인은 V6-M4 QA로 이월. (M2)
+
+## V6-M3 Editor Read-Only Mobile Preview (2026-06-18)
+
+모바일에서 `/editor/:id`가 Konva 저작 셸 대신 **읽기 전용 미리보기**(공유 artwork 렌더 + fake spec + die/poster
+export + share link + "Edit on desktop" CTA)를 렌더. 데스크톱 저작은 불변. v6의 유일한 구조적 마일스톤.
+
+- **분기 위치.** `App.tsx`의 `EditorRoute`에서 `useIsMobile()`로 분기 — `EditorPage` **mount 전에** 결정해
+  에디터의 stateful 훅(`useAutosave`/`useEditorShortcuts`/editor store)이 모바일에서 mount되지 않게 함(Rules of
+  Hooks 준수). spec 문구는 "EditorPage가 분기를 렌더"였으나, EditorPage가 훅을 먼저 호출하므로 조기 return이
+  불가 → 라우트에서 분기하는 것이 올바른 React 구조(효과는 동일).
+- **`MobileChipPreview`.** `DieExportStage`와 동일한 `ChipArtwork project renderMode="die-only"` 경로를 재사용하되
+  컨테이너 폭에 맞춰 `scale = width / die.width`로 표시 전용 Stage 렌더(`ResizeObserver`로 폭 측정). **export
+  stage가 아님** — die `pixelRatio:4`/poster `3200x1800` raster 계약은 `ExportPanel`의 오프스크린 stage에 그대로.
+  jsdom canvas 부재로 컨벤션대로 유닛테스트 제외(별도 파일이라 상위 테스트가 mock).
+- **`MobileEditorPreview`.** 미리보기 + fake spec 섹션 + `PublishPanel`(게시 시 share link 복사) + `ExportPanel`
+  (die/poster PNG) + "Edit on desktop" CTA 조합. `{ project }`만 받고 `persist` 미수신 → 로컬 JSON 읽기 전용,
+  **로컬-퍼스트/비변형 보존**, DOM 스크레이프 없음. 컴포넌트 테스트는 Konva child·두 패널을 mock하고 spec/CTA 구조 assert(TDD).
+- **App 레벨 테스트.** `App.test.tsx`는 `EditorPage`를 모듈 mock하므로, `MobileEditorPreview`도 모듈 mock하고
+  "Remix N1 GREEN HORIZON"으로 프로젝트 seed + mobile `matchMedia` stub → `/editor/<id>`가 "Chip preview"를
+  렌더하고 "Chip editor workspace"는 렌더하지 않음을 확인(데스크톱 기본 테스트들은 그대로 EditorPage mock 사용).
+- **CSS.** `.mobile-editor-preview*`(1열·중앙·여유 패딩). 정의상 모바일 전용 표면이라 미디어쿼리 밖 기본 스타일.
+- **게이트.** `npm test`(client 81 files/416 tests + server 62 files/242 tests), `npm run build`(알려진 청크
+  경고만), `npm run typecheck --workspace server`, `npm run lint` 모두 green. Konva 표시/시각 확인은 V6-M4 QA로 이월. (M3)
+
+## V6-M4 Mobile QA & Release (2026-06-18)
+
+v6 모바일 대응을 마감하는 QA·릴리스 마일스톤. 제품 코드는 QA에서 발견한 nit 1건 수정 외 없음(스키마/마이그레이션/API 변경 없음).
+
+- **QA 매트릭스.** Playwright 디바이스 에뮬레이션으로 360x800(Android급)·390x844(iPhone급) 두 폭에서 전 표면
+  검증 + 1280x900 데스크톱 회귀 스팟체크. 합격 기준: 가로 스크롤 없음(`scrollWidth <= clientWidth`)·텍스트
+  겹침/잘림 없음·포스터 비잘림·탭 타깃 ≥44px·드로어 nav 동작·가독성. 대상: 랜딩 `/`·갤러리 `/gallery`·상세
+  `/gallery/:slug`·프로필 `/u/:handle`·공유 뷰어 `/s/:slug`·계정 `/account`·대시보드 `/dashboard`·에디터 읽기
+  전용 미리보기 `/editor/:id`. 관리자 `/admin`은 데스크톱 전용으로 범위 외. 결과는 `docs/ops/mobile-qa.md`에 기록.
+- **nit 발견·수정.** 갤러리 상세 댓글 폼의 `<textarea>`가 `display:block` 폼 안에서 브라우저 기본 폭(~186px)으로
+  좁게 렌더(M1의 `flex-direction:column`이 block 요소에 무효). `fix(v6): full-width comment form on mobile
+  gallery detail`로 `@media (max-width:767px)` 블록에 `textarea{width:100%;min-height:5rem}` + 전체폭 제출 버튼
+  추가. 재검증 OK. 릴리스 블로커 아님.
+- **드로어 nav.** 360px에서 햄버거 open → 링크 탭/Escape/백드롭 close, 데스크톱(1280px) 리사이즈 시 자동 close +
+  수평 nav 복원 모두 확인. 데스크톱 스팟체크: `/editor/:id`가 모바일 미리보기가 아닌 전체 저작 셸 렌더(미디어쿼리
+  768px 미만에만 적용).
+- **시각 게이트 사인오프.** 전 표면 단일 컬럼·텍스트 겹침/포스터 잘림 없음·전체폭 주요 액션·에디터 fit-to-width
+  미리보기·드로어 동작 정상, 360/390px 가로 스크롤 없음. v2 페이지 테마와 일관된 intentional/premium. **릴리스
+  블로커 없음.**
+- **문서/버전.** `docs/ops/launch-qa-checklist.md`의 모바일 라인을 `[~]`(미평가)→`[x]`(평가 완료)로 전환.
+  `README.md` 버전 라인 `0.3 v5`→`0.4 v6` + v6 릴리스 개요 항목 추가. `CLAUDE.md`에 v6 Milestone Status 블록 +
+  Working Context 불릿 추가(로컬 전용 파일).
+- **게이트.** `npm test`(client 81 files/416 tests + server 62 files/242 tests), `npm run build`(알려진 청크
+  경고만), `npm run typecheck --workspace server`, `npm run lint` 모두 green. (M4)

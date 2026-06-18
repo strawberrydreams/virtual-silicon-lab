@@ -38,6 +38,13 @@ const BASE_STYLE = `
   .viewer-lineage a { color: #6fd3ff; text-decoration: none; }
   .cta { margin-top: 32px; }
   .cta a { color: #6fd3ff; text-decoration: none; border: 1px solid #25406b; border-radius: 8px; padding: 10px 18px; }
+  @media (max-width: 767px) {
+    .wrap { padding: 28px 16px 48px; }
+    h1 { font-size: 26px; }
+    .grid { grid-template-columns: 1fr; }
+    .cta { display: flex; flex-direction: column; gap: 10px; }
+    .cta a { text-align: center; }
+  }
 `
 
 export function renderViewerHtml(input: ViewerInput): string {

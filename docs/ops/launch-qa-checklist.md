@@ -112,7 +112,7 @@ Run against local or staging with client + API servers up and `VSL_ACCESS_MODE=i
 - [x] Gallery detail poster/spec layout is polished. ✅
 - [x] Share page is crawler-friendly and visually aligned. ✅ (server-rendered OG/Twitter meta + poster.png 3200x1800)
 - [x] Public profile cards are clean and not visually amateurish. ✅
-- [~] No overlapping text or broken mobile layout in launch-critical pages. ➖ desktop-first verified; mobile not assessed (out of scope per product invariants).
+- [x] No overlapping text or broken mobile layout in launch-critical pages. ✅ v6 mobile QA passed at 360/390px across landing, gallery, detail, profile, share, account, dashboard, and the editor read-only preview; see `docs/ops/mobile-qa.md`.
 
 ## Production Sign-Off
 
