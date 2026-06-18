@@ -1,5 +1,6 @@
 import type { Die } from '../../domain/project'
 import type { Bounds, ChipLayerModel } from '../chipLayers'
+import type { Chip3DEnvironment, Chip3DMaterial, Chip3DStyle } from './chip3dMaterials'
 
 export type Vec3 = [number, number, number]
 
@@ -14,7 +15,7 @@ export type Chip3DPiece =
       footprint: Footprint
       baseZ: number
       depth: number
-      color: string
+      material: Chip3DMaterial
     }
   | {
       id: string
@@ -22,7 +23,7 @@ export type Chip3DPiece =
       footprint: Footprint
       baseZ: number
       depth: number
-      color: string
+      material: Chip3DMaterial
     }
   | {
       id: string
@@ -31,7 +32,7 @@ export type Chip3DPiece =
       footprint: Footprint
       baseZ: number
       depth: number
-      color: string
+      material: Chip3DMaterial
       emphasis: 'real' | 'fantasy'
     }
 
@@ -39,12 +40,7 @@ export type Chip3DModel = {
   pieces: Chip3DPiece[]
   center: Vec3
   extent: Vec3
-}
-
-export type Chip3DPalette = {
-  die: string
-  blockReal: string
-  blockFantasy: string
+  environment: Chip3DEnvironment
 }
 
 const PACKAGE_DEPTH = 24
@@ -86,7 +82,7 @@ function dieFootprint(die: Die, bounds: Bounds): Footprint {
 export function buildChip3DModel(
   layers: ChipLayerModel,
   die: Die,
-  palette: Chip3DPalette,
+  style: Chip3DStyle,
 ): Chip3DModel {
   const pieces: Chip3DPiece[] = []
 
@@ -97,7 +93,7 @@ export function buildChip3DModel(
     footprint: rectFootprint(layers.package.bounds),
     baseZ: packageZ,
     depth: PACKAGE_DEPTH,
-    color: layers.package.color,
+    material: style.materials.package,
   })
 
   const dieZ = packageZ + PACKAGE_DEPTH
@@ -107,7 +103,7 @@ export function buildChip3DModel(
     footprint: dieFootprint(die, layers.dieBase.bounds),
     baseZ: dieZ,
     depth: DIE_DEPTH,
-    color: palette.die,
+    material: style.materials.dieBase,
   })
 
   const blockZ = dieZ + DIE_DEPTH
@@ -120,7 +116,7 @@ export function buildChip3DModel(
       footprint: rectFootprint(surface.bounds),
       baseZ: blockZ,
       depth: fantasy ? BLOCK_FANTASY_DEPTH : BLOCK_REAL_DEPTH,
-      color: fantasy ? palette.blockFantasy : palette.blockReal,
+      material: fantasy ? style.materials.blockFantasy : style.materials.blockReal,
       emphasis: surface.emphasis,
     })
   }
@@ -133,5 +129,5 @@ export function buildChip3DModel(
   ]
   const extent: Vec3 = [layers.package.bounds.width, top, layers.package.bounds.height]
 
-  return { pieces, center, extent }
+  return { pieces, center, extent, environment: style.environment }
 }
