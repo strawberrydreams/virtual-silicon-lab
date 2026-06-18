@@ -1,6 +1,9 @@
 import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js'
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js'
+import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js'
 import type { Chip3DModel } from '../visual/chip3d/chip3dModel'
 import { buildChip3DScene, disposeChip3DScene } from './chip3dScene'
 
@@ -68,13 +71,25 @@ export default function Chip3DViewer({ model }: { model: Chip3DModel }) {
     controls.maxDistance = distance * 3
     controls.update()
 
-    const render = () => renderer.render(scene, camera)
+    const composer = new EffectComposer(renderer)
+    composer.addPass(new RenderPass(scene, camera))
+    const bloom = new UnrealBloomPass(
+      new THREE.Vector2(1, 1),
+      model.environment.bloom.strength,
+      model.environment.bloom.radius,
+      model.environment.bloom.threshold,
+    )
+    composer.addPass(bloom)
+
+    const render = () => composer.render()
     const resize = () => {
       const width = host.clientWidth || 640
       const height = host.clientHeight || 420
       camera.aspect = width / height
       camera.updateProjectionMatrix()
       renderer.setSize(width, height, false)
+      composer.setSize(width, height)
+      bloom.setSize(width, height)
       render()
     }
     const resetView = () => {
@@ -98,6 +113,7 @@ export default function Chip3DViewer({ model }: { model: Chip3DModel }) {
       disposeChip3DScene(chip)
       envRT.dispose()
       pmrem.dispose()
+      composer.dispose()
       renderer.dispose()
       renderer.forceContextLoss()
       renderer.domElement.remove()
