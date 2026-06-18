@@ -7,6 +7,7 @@ import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPa
 import { glowPulseAt, turntableAzimuthAt } from '../visual/chip3d/chip3dAnimation'
 import type { Chip3DModel } from '../visual/chip3d/chip3dModel'
 import { buildChip3DScene, disposeChip3DScene } from './chip3dScene'
+import { addShowcaseLights, createShowcaseEnvironment } from './chip3dStage'
 
 const UP = new THREE.Vector3(0, 1, 0)
 
@@ -34,23 +35,8 @@ export default function Chip3DViewer({ model }: { model: Chip3DModel }) {
 
     const scene = new THREE.Scene()
 
-    // Procedural studio environment: a vertical gradient → PMREM → image-based
-    // reflections on metal surfaces. Tinted by the theme backdrop so reflections
-    // read on-theme. No external HDRI asset (keeps the chunk asset-free).
-    const pmrem = new THREE.PMREMGenerator(renderer)
-    const envScene = new THREE.Scene()
-    const top = new THREE.Color(model.environment.topColor)
-    const bottom = new THREE.Color(model.environment.bottomColor)
-    envScene.background = top
-    const envGround = new THREE.Mesh(
-      new THREE.SphereGeometry(1, 16, 16),
-      new THREE.MeshBasicMaterial({ color: bottom, side: THREE.BackSide }),
-    )
-    envScene.add(envGround)
-    const envRT = pmrem.fromScene(envScene, 0.04)
-    scene.environment = envRT.texture
-    envGround.geometry.dispose()
-    ;(envGround.material as THREE.Material).dispose()
+    const environment = createShowcaseEnvironment(renderer, model)
+    scene.environment = environment.texture
 
     const chip = buildChip3DScene(model)
     scene.add(chip)
@@ -66,18 +52,7 @@ export default function Chip3DViewer({ model }: { model: Chip3DModel }) {
       }
     })
 
-    // Three-point rig + low ambient. Key warm/strong (shadow), fill cool/soft, rim/back.
-    scene.add(new THREE.HemisphereLight(0xc8dcff, 0x08080c, 1.2))
-    const key = new THREE.DirectionalLight(0xfff1e0, 3.2)
-    key.position.set(1, 2, 1)
-    key.castShadow = true
-    scene.add(key)
-    const fill = new THREE.DirectionalLight(0xbcd0ff, 1.1)
-    fill.position.set(-1.5, 1, 1.2)
-    scene.add(fill)
-    const rim = new THREE.DirectionalLight(0xffffff, 1.6)
-    rim.position.set(-0.5, 1.2, -2)
-    scene.add(rim)
+    addShowcaseLights(scene)
 
     const distance = Math.max(model.extent[0], model.extent[2]) * 0.95
     const camera = new THREE.PerspectiveCamera(42, 1, 1, distance * 10)
@@ -180,8 +155,7 @@ export default function Chip3DViewer({ model }: { model: Chip3DModel }) {
       host.removeEventListener('chip3d:set-play', onSetPlay)
       controls.dispose()
       disposeChip3DScene(chip)
-      envRT.dispose()
-      pmrem.dispose()
+      environment.dispose()
       composer.dispose()
       renderer.dispose()
       renderer.forceContextLoss()
