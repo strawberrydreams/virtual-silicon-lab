@@ -14,19 +14,19 @@ export default function Chip3DViewer({ model }: { model: Chip3DModel }) {
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
     renderer.shadowMap.enabled = true
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap
+    renderer.shadowMap.type = THREE.PCFShadowMap
     host.append(renderer.domElement)
 
     const scene = new THREE.Scene()
     const chip = buildChip3DScene(model)
     scene.add(chip)
-    scene.add(new THREE.HemisphereLight(0xc8dcff, 0x08080c, 1.6))
-    const key = new THREE.DirectionalLight(0xffffff, 2.2)
+    scene.add(new THREE.HemisphereLight(0xc8dcff, 0x08080c, 3.4))
+    const key = new THREE.DirectionalLight(0xffffff, 4.2)
     key.position.set(1, 2, 1)
     key.castShadow = true
     scene.add(key)
 
-    const distance = Math.max(model.extent[0], model.extent[2]) * 1.45
+    const distance = Math.max(model.extent[0], model.extent[2]) * 0.95
     const camera = new THREE.PerspectiveCamera(42, 1, 1, distance * 10)
     const initialPosition = new THREE.Vector3(distance, distance * 0.9, distance)
     camera.position.copy(initialPosition)

@@ -1,4 +1,4 @@
-import { Component, lazy, Suspense, useEffect, useMemo, useState } from 'react'
+import { Component, lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import type { ErrorInfo, ReactNode } from 'react'
 import type { Project } from '../../domain/project'
 import { resolveTheme } from '../../themes/themeTokens'
@@ -33,12 +33,19 @@ function webglAvailable(): boolean {
 }
 
 function Chip3DShowcase({ project, onClose }: { project: Project; onClose: () => void }) {
+  const closeButtonRef = useRef<HTMLButtonElement>(null)
+
   useEffect(() => {
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') onClose()
     }
     document.addEventListener('keydown', onKeyDown)
-    return () => document.removeEventListener('keydown', onKeyDown)
+    closeButtonRef.current?.focus()
+    return () => {
+      document.removeEventListener('keydown', onKeyDown)
+      previousFocus?.focus()
+    }
   }, [onClose])
 
   const model = useMemo(() => {
@@ -63,7 +70,7 @@ function Chip3DShowcase({ project, onClose }: { project: Project; onClose: () =>
           <p className="editor-kicker">Derived from the active 2D project</p>
           <h2>{project.name}</h2>
         </div>
-        <button type="button" onClick={onClose}>
+        <button ref={closeButtonRef} type="button" onClick={onClose}>
           Close 3D showcase
         </button>
       </header>

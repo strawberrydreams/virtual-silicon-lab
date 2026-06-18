@@ -69,4 +69,17 @@ describe('Chip3DPreviewToggle', () => {
     expect(await screen.findByText('3D showcase failed to load.')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Close 3D showcase' })).toBeEnabled()
   })
+
+  it('moves focus into the modal and restores it to the opener', async () => {
+    render(<Chip3DPreviewToggle project={createProject('T')} />)
+    const opener = screen.getByRole('button', { name: 'Open 3D showcase' })
+
+    opener.focus()
+    fireEvent.click(opener)
+    const close = await screen.findByRole('button', { name: 'Close 3D showcase' })
+    expect(close).toHaveFocus()
+
+    fireEvent.click(close)
+    expect(opener).toHaveFocus()
+  })
 })
