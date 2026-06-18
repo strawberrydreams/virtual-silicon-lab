@@ -1109,6 +1109,7 @@ button {
 }
 
 .chip-3d-showcase__header button,
+.chip-3d-viewer__play,
 .chip-3d-viewer__reset {
   min-height: 40px;
   border: 1px solid var(--v2-border-strong);
@@ -1123,6 +1124,7 @@ button {
 }
 
 .chip-3d-showcase__header button:hover,
+.chip-3d-viewer__play:hover,
 .chip-3d-viewer__reset:hover {
   border-color: var(--v2-accent-2);
   background: rgba(91, 213, 240, 0.08);
@@ -1152,6 +1154,12 @@ button {
 .chip-3d-viewer__reset {
   position: absolute;
   right: 1rem;
+  bottom: 1rem;
+}
+
+.chip-3d-viewer__play {
+  position: absolute;
+  left: 1rem;
   bottom: 1rem;
 }
 
