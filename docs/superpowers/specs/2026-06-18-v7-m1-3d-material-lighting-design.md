@@ -124,10 +124,14 @@ environment mapping needs both `resolveMaterialRecipe(theme)` (for `package.fill
 
 - `topColor` / `bottomColor` from `tokens.background` (the theme backdrop), so reflections on metal
   surfaces match the theme rather than a generic gray studio.
-- `bloom.strength` derived from theme glow (`tokens.glow.shadowOpacity`/`shadowBlur`): **neon >
-  keynote > retro > military ≈ mono**. `bloom.threshold` set so non-emissive surfaces stay below it.
-  `bloom.radius` a small constant.
-- `exposure` a per-theme constant (brighter themes slightly lower) for a balanced ACES result.
+- `bloom.strength` derived from theme glow (`tokens.glow.shadowOpacity`): the hottest theme
+  (neon) blooms strongest and the most restrained (mono) weakest; the exact mid-theme order follows
+  each theme's `shadowOpacity` (as-built: neon > retro > keynote > military > mono). Only the
+  endpoints (neon strongest, mono weakest) are a guaranteed/tested invariant. `bloom.threshold` and
+  `bloom.radius` are small constants tuned so the in-gamut emissive faces throw a halo while lit
+  metal stays below threshold.
+- `exposure` is a single constant for a balanced ACES result across themes (a per-theme exposure was
+  considered but dropped as unnecessary — YAGNI).
 
 ### `chip3dModel.ts` changes (pure, no `three`)
 
