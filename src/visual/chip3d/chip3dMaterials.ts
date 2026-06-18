@@ -36,8 +36,10 @@ export function resolveChip3DStyle(theme: StyleTheme): Chip3DStyle {
 
   // glassGlow.opacity is small (≈0.12..0.7-scaled); map it into a visible emissive band
   // so fantasy blocks clear the bloom threshold while staying theme-proportional.
+  // Kept near ~1.0 so the emissive face keeps its theme hue under ACES tone mapping
+  // instead of clipping to white (browser QA: 2.x blew the cyan core out to white).
   const glow = tokens.glow.shadowOpacity // 0.3 (mono) .. 0.7 (neon)
-  const emissiveIntensity = 0.6 + glow * 2.2 // ≈1.26 (mono) .. ≈2.14 (neon)
+  const emissiveIntensity = 0.5 + glow * 0.85 // ≈0.76 (mono) .. ≈1.1 (neon)
 
   const materials: Chip3DMaterialSet = {
     package: {
@@ -71,8 +73,8 @@ export function resolveChip3DStyle(theme: StyleTheme): Chip3DStyle {
     topColor: tokens.background[0].color,
     bottomColor: tokens.background[1].color,
     bloom: {
-      threshold: 0.62,
-      strength: 0.35 + glow * 1.3, // neon (0.7) ≈1.26 > mono (0.3) ≈0.74
+      threshold: 0.5, // low enough that the in-gamut emissive face throws a real halo
+      strength: 0.3 + glow * 0.9, // neon (0.7) ≈0.93 > mono (0.3) ≈0.57 — a neon halo, face stays in-hue
       radius: 0.55,
     },
     exposure: 1.15,
