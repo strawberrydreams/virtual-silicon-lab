@@ -35,7 +35,13 @@ function meshForPiece(piece: Chip3DPiece): THREE.Mesh {
   // original 2D y-down coordinate becomes +Z in the 3D floor plane.
   geometry.rotateX(-Math.PI / 2)
   geometry.translate(0, piece.baseZ, 0)
-  const material = new THREE.MeshStandardMaterial({ color: piece.color })
+  const material = new THREE.MeshStandardMaterial({
+    color: piece.material.color,
+    metalness: piece.material.metalness,
+    roughness: piece.material.roughness,
+    emissive: piece.material.emissive,
+    emissiveIntensity: piece.material.emissiveIntensity,
+  })
   const mesh = new THREE.Mesh(geometry, material)
   mesh.castShadow = true
   mesh.receiveShadow = true
