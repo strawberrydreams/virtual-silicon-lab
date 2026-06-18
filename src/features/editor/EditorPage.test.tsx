@@ -40,6 +40,7 @@ describe('EditorPage', () => {
       screen.getByRole('heading', { name: 'AURORA C-1 — Consciousness Processor' }),
     ).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Exit Editor' })).toHaveAttribute('href', '/dashboard')
+    expect(screen.getByRole('button', { name: 'Open 3D showcase' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Simulate' })).toBeDisabled()
     expect(screen.getByRole('heading', { name: 'Generated Spec' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Appearance' })).toBeInTheDocument()
