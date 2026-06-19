@@ -55,4 +55,9 @@ describe('mapAiDraftToProject', () => {
     expect(project.name).toBe('AI Draft Chip')
     expect(project.blocks).toEqual([])
   })
+
+  it('falls back to a rect die for an unknown die shape', () => {
+    const project = mapAiDraftToProject({ dieShape: 'blob' as never, blocks: [] })
+    expect(project.die.shape).toBe('rect')
+  })
 })

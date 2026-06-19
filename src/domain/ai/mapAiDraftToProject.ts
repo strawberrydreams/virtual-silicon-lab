@@ -1,12 +1,16 @@
 import { buildBlock } from '../blockFactory'
 import { createProject } from '../projectFactory'
-import type { BlockType, Project } from '../project'
+import type { BlockType, DieShape, Project } from '../project'
 import type { AiChipDraft } from './aiChipDraft'
 
 const BLOCK_TYPES: ReadonlySet<string> = new Set<BlockType>([
   'CPU', 'GPU', 'DSP', 'SRAM', 'Cache', 'DAC', 'ADC', 'PLL', 'IO', 'USB',
   'EmotionEngine', 'DreamSynth', 'QuantumMemory', 'ConsciousnessProcessor',
   'RealityDistortionUnit', 'TimeCore',
+])
+
+const DIE_SHAPES: ReadonlySet<string> = new Set<DieShape>([
+  'rect', 'square', 'circle', 'hexagon',
 ])
 
 const MIN_SIZE = 24
@@ -25,7 +29,8 @@ function clamp(value: number, lo: number, hi: number): number {
 export function mapAiDraftToProject(draft: AiChipDraft, id?: string, now?: number): Project {
   const name = draft.name?.trim() ? draft.name.trim() : 'AI Draft Chip'
   const project = createProject(name, id, now)
-  project.die = { ...project.die, shape: draft.dieShape }
+  const shape = DIE_SHAPES.has(draft.dieShape) ? draft.dieShape : 'rect'
+  project.die = { ...project.die, shape }
   const { width, height } = project.die
 
   let z = 0
