@@ -1682,3 +1682,35 @@ M2 turntable과 fantasy glow를 프로젝트 이름의 다운로드 가능한 12
   server typecheck, lint가 모두 통과했다. build는 core `index-WQjh1sRf.js` 750.01 kB / gzip 224.93 kB,
   recorder 1.82/0.98 kB, viewer 22.53/5.53 kB, shared Three stage 559.22/142.46 kB, muxer
   30.73/8.96 kB로 Three·muxer lazy 격리를 유지했다.
+
+## V7-M4 Drop + V7-M5 Gallery / Share 3D Integration (2026-06-19)
+
+M4의 optional shader-grade 2D enhancement는 승인 spec의 `v7-M4 disposition`에 따라 **구현하지 않기로
+확정**하고, M5에서 기존 premium 3D showcase를 public gallery/share 경로로 확장했다. 프로젝트 snapshot만
+클라이언트에서 파생하므로 schema/migration/API/upload 변경은 없다.
+
+- **M4 no-go.** M1–M3가 2D/3D 시각 격차를 충분히 닫았고, export-visible 효과는 결국 Konva
+  `toDataURL()` 경로에 다시 구현해야 한다. PixiJS second-canvas는 편집 화면에만 보이는 효과와 큰 번들/GPU 비용을
+  추가하므로 채택하지 않았다. 신규 dependency나 `src/visual/filters/`는 만들지 않았다.
+- **공유 showcase 경계.** editor 내부의 model derivation, WebGL guard, error boundary, lazy viewer,
+  Escape/focus 복귀를 `src/three/Chip3DShowcase.tsx`로 추출했다. editor는 `renderExtras`로 기존
+  `VideoExportPanel`만 주입하고, gallery는 extras 없이 orbit·Play/Pause·Reset만 제공하는 view-only surface다.
+  Fast Refresh 규칙을 지키기 위해 browser capability/model helper는 별도 `chip3dAvailability.ts`로 분리했다.
+- **예산과 fallback.** 순수 `resolveChip3DRenderMode`가 WebGL availability와 `400` piece admission budget을
+  기준으로 `interactive | poster`를 결정한다. 계획 예시는 gallery button에서 WebGL만 확인했지만 승인 spec은
+  예산 초과에서도 button 숨김을 요구하므로, 공유 `isChip3DShowcaseAvailable(project)`가 두 조건을 모두 검사하도록
+  보정했다. jsdom처럼 WebGL constructor 자체가 없는 runtime은 canvas를 probe하지 않아 경고 없이 poster로
+  fallback한다. 401-piece editor/gallery 회귀 테스트가 이 경계를 고정한다.
+- **Gallery / Share.** gallery detail의 `View in 3D`는 published snapshot을 그대로 공유 showcase에 넘기며
+  initial poster는 유지한다. server-rendered `/s/:slug`는 client JS나 Three 없이 동일 `/gallery/:slug`를 가리키는
+  정적 `View in 3D` anchor만 추가해 OG/poster/crawler contract를 보존했다. stored video tier는 schema/storage 비용과
+  v7 no-schema 원칙 때문에 채택하지 않았다.
+- **브라우저 QA.** 실제 published PANTHER SCALE에서 gallery `View in 3D` → 동일 PBR/PMREM viewer를 확인했고,
+  Play→Pause, Reset, Escape 종료와 opener focus 복귀가 동작했다. gallery modal에는 MP4 export가 없고 editor의
+  N1 GREEN HORIZON modal에는 기존 `Export turntable MP4`가 유지됐다. 임시 no-WebGL query hook으로 poster visible,
+  3D button/dialog 없음도 확인한 뒤 hook을 제거했다. 실제 `/s/panther-scale-8313ef09`의 anchor는 정확한
+  `/gallery/panther-scale-8313ef09`를 가리켰고 console warning/error는 0건이었다.
+- **자동 게이트/번들.** 최종 `npm test`는 client 89 files/455 tests, server 62 files/243 tests이며 build,
+  server typecheck, lint가 모두 통과했다. core `index-BF_Cl0hJ.js` 750.60 kB / gzip 225.09 kB,
+  `Chip3DViewer-BaTHCd8E.js` 22.53/5.53 kB, shared Three stage 559.22/142.46 kB로 Three runtime은 gallery
+  initial path가 아닌 lazy chunk에 남았다. Konva die `pixelRatio:4`/poster 3200×1800 export 계약도 untouched다.

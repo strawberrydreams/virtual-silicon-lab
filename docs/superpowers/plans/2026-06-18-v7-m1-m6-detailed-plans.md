@@ -106,7 +106,7 @@ precedes the build, like M0. **No bite-sized code until this is settled.**
 
 ---
 
-## v7-M4 — Shader-grade 2D Enhancement (optional; open adoption decision)
+## v7-M4 — Shader-grade 2D Enhancement — **DROPPED** (recorded decision; see `2026-06-19-v7-m5-gallery-share-integration-design.md`)
 
 **Goal:** Optionally push 2D glow/material fidelity in the editor/export with a WebGL/PixiJS filter
 layer, bridging 2D and 3D quality.
@@ -132,6 +132,8 @@ and are ignored by `toDataURL()`.
 ---
 
 ## v7-M5 — Gallery / Share Integration + Performance Budget
+
+**Resolved:** interactive snapshot-derived gallery viewer + share link, no stored video; see the M5 spec/plan.
 
 **Goal:** Surface the 3D showcase (and M3 video) in gallery detail + share; add a 3D performance
 budget and low-end fallback.
