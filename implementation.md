@@ -1740,3 +1740,38 @@ M4의 optional shader-grade 2D enhancement는 승인 spec의 `v7-M4 disposition`
 - **릴리스 패키징.** README 타이틀을 `0.5 v7`로(버전 노트·릴리스 개요 v7 항목 포함), `package.json`은 1.0.0 유지.
   루트의 stray `v6-mobile-*.png` 7개 삭제, `.gitignore`에 루트 레벨 이미지 무시 규칙 추가. 브랜치는 오너의
   통합/PR 결정을 위해 미병합 상태로 원격 push했다.
+
+## V8-M0 Server AI Foundation (2026-06-19)
+
+v8 "AI-Assisted Creation"의 첫 마일스톤. 서버 측 AI draft 생성 기반만 구축했고, 클라이언트 UI는 아직
+없다. 스펙 `docs/superpowers/specs/2026-06-19-v8-m0-server-ai-foundation-design.md`, 계획
+`docs/superpowers/plans/2026-06-19-v8-m0-server-ai-foundation.md`.
+
+- **순수 valid-project 보증.** `src/domain/ai/aiChipDraft.ts`의 `AiChipDraft` 타입과
+  `mapAiDraftToProject(draft, id?, now?)`가 임의의 AI draft를 domain-valid `Project`로 매핑한다.
+  알 수 없는 block type은 버리고, 모든 block을 die의 bounding box 안으로 clamp하며, z-order를
+  순차 재부여하고 `schemaVersion`은 5로 유지한다. M0은 die 형태와 무관하게 사각 bounding box로만
+  clamp하며(circle/hexagon inset 보정은 후속 마일스톤), React/Konva/Zustand/IndexedDB import가 없는
+  순수 함수다. AI 출력의 "shape만 보장"이라는 한계를 이 매핑 함수 하나로 흡수해, 잘못된 block type이나
+  die 밖 좌표가 들어와도 항상 유효한 `Project`가 나오도록 한다.
+- **`013_ai` 마이그레이션.** append-only `ai_prompt_log(id, user_id, kind, prompt, created_at)` 테이블을
+  추가했다(`user_id`는 계정 삭제 시 CASCADE). `Project` schemaVersion 변경은 없다.
+- **`server/src/ai/` 모듈.** `resolveAiConfig`가 환경변수를 읽어 `VSL_AI_PROVIDER`(기본값 `fake`),
+  `VSL_AI_MODEL`(기본값 `claude-opus-4-8`), `VSL_AI_DAILY_QUOTA`(기본값 `20`), `ANTHROPIC_API_KEY`(서버
+  전용, 클라이언트에 노출되지 않음)를 구성한다. `AiProvider` 인터페이스와 결정적 `createFakeProvider`로
+  키 없이도 전체 파이프라인을 테스트할 수 있게 했고, `@anthropic-ai/sdk` 기반의 얇은
+  `createAnthropicProvider`는 `claude-opus-4-8` + `output_config.format` json_schema로 structured
+  output을 요청한다. structured output은 **shape만** 강제하므로(필드 누락·타입 불일치 방지) 실제 invariant
+  보장(block clamp, z-order, schemaVersion)은 모두 `mapAiDraftToProject` factory 매핑에 남아 있다 — 어느
+  provider를 쓰든 동일한 안전 경계를 통과한다. 사용자별 24시간 quota는
+  `countRecentGenerations`/`logPrompt`로 구현했고, 실패하거나 거부된 호출도 quota에 포함되도록 prompt를
+  provider 호출 **전에** 기록한다.
+- **기반 엔드포인트(클라이언트 UI 없음).** 인증된 `POST /api/ai/generate-draft`가 401(미인증)/400(잘못된
+  입력)/429(quota 초과)/503(provider 비활성)/200(성공, 미저장 draft `Project` 반환)을 처리한다. 응답은 항상
+  unsaved `Project`이며 서버가 직접 저장하지 않는다. `buildAppDeps`는 `VSL_AI_PROVIDER=anthropic`이면서
+  `ANTHROPIC_API_KEY`가 설정된 경우에만 실제 provider를 선택하고, 그 외에는 fake provider로 fallback한다.
+- **키 유출 점검.** `npm run build` 후 `grep -rl "ANTHROPIC_API_KEY" dist/assets`가 아무 결과도 내지 않아
+  `ANTHROPIC_API_KEY`가 `server/src/ai/`에만 존재하고 클라이언트 번들에는 전혀 포함되지 않음을 확인했다.
+- **자동 게이트.** 최종 `npm test`는 client 90 files/459 tests, server 68 files/256 tests이며, `npm run
+  build`(기존 >500kB 청크 경고만 — 신규 dependency나 client 코드 변경 없음), `npm run typecheck --workspace
+  server`, `npm run lint`가 모두 통과했다.
