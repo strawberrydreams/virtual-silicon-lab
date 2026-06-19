@@ -103,6 +103,7 @@ export function renderViewerHtml(input: ViewerInput): string {
   </section>
   <p class="cta">
     <a href="${escapeHtml(baseUrl)}/gallery/${escapeHtml(slug)}">Remix this chip</a>
+    <a href="${escapeHtml(baseUrl)}/gallery/${escapeHtml(slug)}">View in 3D</a>
     <a href="${escapeHtml(baseUrl)}/">Open the Lab</a>
   </p>
 </main>

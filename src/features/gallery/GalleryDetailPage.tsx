@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import type { Project } from '../../domain/project'
+import { isChip3DShowcaseAvailable } from '../../three/chip3dAvailability'
+import { Chip3DShowcase } from '../../three/Chip3DShowcase'
 import { useAuthStore } from '../../stores/authStoreContext'
 import {
   liveGalleryApi,
@@ -36,6 +38,7 @@ export function GalleryDetailPage({
   const [comments, setComments] = useState<GalleryComment[]>([])
   const [lineage, setLineage] = useState<ChipLineage | null>(null)
   const [draft, setDraft] = useState('')
+  const [show3D, setShow3D] = useState(false)
   // Reset to loading (and clear stale lineage) when the slug changes, derived
   // during render so the effect only owns the async fetch.
   const [loadedSlug, setLoadedSlug] = useState(slug)
@@ -48,6 +51,7 @@ export function GalleryDetailPage({
     setComments([])
     setLineage(null)
     setDraft('')
+    setShow3D(false)
   }
 
   useEffect(() => {
@@ -174,6 +178,11 @@ export function GalleryDetailPage({
           >
             Remix into my projects
           </button>
+          {isChip3DShowcaseAvailable(chip.project) && (
+            <button type="button" className="v2-inline-action" onClick={() => setShow3D(true)}>
+              View in 3D
+            </button>
+          )}
           {likeState !== null && (
             <div className="gallery-detail__reactions">
               <button
@@ -349,6 +358,7 @@ export function GalleryDetailPage({
           )}
         </section>
       )}
+      {show3D && <Chip3DShowcase project={chip.project} onClose={() => setShow3D(false)} />}
     </main>
   )
 }

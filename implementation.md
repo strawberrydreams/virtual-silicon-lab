@@ -1509,3 +1509,234 @@ v6 모바일 대응을 마감하는 QA·릴리스 마일스톤. 제품 코드는
   Working Context 불릿 추가(로컬 전용 파일).
 - **게이트.** `npm test`(client 81 files/416 tests + server 62 files/242 tests), `npm run build`(알려진 청크
   경고만), `npm run typecheck --workspace server`, `npm run lint` 모두 green. (M4)
+
+## V7-M0 3D Showcase Foundation — Feasibility Spike (2026-06-18)
+
+v7 Visual Depth의 첫 마일스톤을 시작하기 전, 상세 계획이 요구한 Three.js 번들 격리·실제 프로젝트 파생
+식별성·데스크톱 orbit 성능을 throwaway 진입점으로 검증했다. 임시 spike 코드는 검증 후 모두 제거했다.
+
+- **의존성.** `three@0.184.0`과 개발 타입 `@types/three@0.184.1`을 추가했다.
+- **실제 프로젝트 파생.** `createHeroChip()`의 AURORA C-1 블록 bounds를 package/die/real/fantasy 높이로
+  압출했다. 2D의 중앙 Consciousness Processor와 하단 Quantum Memory rail을 포함한 배치가 3D에서도
+  즉시 식별됐다.
+- **인터랙션/성능.** 인앱 브라우저의 기본 1280×720 데스크톱 뷰포트에서 OrbitControls drag 전후 렌더가
+  정상이고 콘솔 warning/error가 없었다. 연속 렌더 spike 계측은 약 121 FPS였다.
+- **번들 격리.** baseline core는 `744.66 kB / gzip 223.01 kB`. 임시 dynamic import 빌드에서 core는
+  `744.77 kB / gzip 223.08 kB`(+gzip 0.07 kB), Three runtime은 별도
+  `spike-runtime-*.js` `532.60 kB / gzip 133.51 kB` 청크로 분리됐다.
+- **결정.** 세 위험 모두 합격해 **go**. 본 구현은 승인 spec대로 순수 `Chip3DModel` 파생과
+  `src/three/` lazy renderer 경계를 사용한다. 사용자 확정에 따라 계획의 inline toggle 표현은 에디터
+  상단 `Open 3D showcase` 버튼 + 전체 화면 모달로 구체화한다.
+
+## V7-M0 3D Showcase Foundation (2026-06-18)
+
+v7 "Visual Depth"의 첫 마일스톤. 기존 프로젝트 JSON이나 `ChipLayerModel` 계약을 바꾸지 않고, 데스크톱 에디터에서
+현재 2D 프로젝트를 파생한 읽기 전용 Three.js 쇼케이스를 여는 최소 3D 기반을 완성했다. DB/마이그레이션/API 변경은 없다.
+
+- **순수 3D 파생 모델.** `src/visual/chip3d/chip3dModel.ts`가 `ChipLayerModel`을 입력받아 package/die/block의
+  serializable box/cylinder primitive, flat color, center, extent를 계산한다. rect/square/hex는 box footprint,
+  circle은 cylinder footprint를 사용하고 fantasy block은 real block보다 높게 압출한다. 이 계층에는 React·Three.js
+  import가 없어 테스트와 향후 renderer 교체가 가능하다.
+- **좌표와 범위 결정.** 기존 2D y-down 좌표는 scene 조립 시 y를 반전한 뒤 X축으로 눕혀 3D 바닥면의 X/Z로 옮긴다.
+  패키지 중심을 원점으로 정규화하고, `extent`가 카메라 near/far와 초기 거리를 결정한다. 현재 `ChipLayerModel`이 block
+  rotation을 전달하지 않으므로 M0 block은 axis-aligned footprint다. rotation/trace/micro-tile/decoration 매핑은
+  뒤 마일스톤의 richer model 범위로 남겼다.
+- **Three.js 경계와 수명주기.** 모든 Three import는 `src/three/`에 격리했다. `Chip3DViewer`는 동적 import되어
+  2D 에디터 초기 번들에 Three runtime이 들어오지 않는다. ResizeObserver, DPR 2 상한, OrbitControls의 change-driven
+  render를 사용해 idle RAF loop를 만들지 않는다. 종료 시 controls, geometry, material, renderer, WebGL context를
+  명시적으로 dispose한다.
+- **사용자 확정 UX.** 일반적인 inline toggle 대신, 데스크톱 에디터 top command bar의 `Open 3D showcase` 버튼이
+  현재 프로젝트 이름을 가진 전체 화면 modal dialog를 연다. close 버튼과 Escape를 지원하며, 열릴 때 close 버튼으로
+  focus를 이동하고 닫힐 때 opener로 복귀한다. modal 내부 `Reset view`는 초기 orbit 카메라를 복원한다.
+- **실패 격리.** WebGL 미지원은 modal 안에서 안내하고 정상 종료할 수 있다. lazy 청크 로딩/렌더 오류는 전용 error
+  boundary가 잡아 2D 에디터를 유지한다. 쇼케이스 종료는 2D 프로젝트·selection·history를 변경하지 않는다.
+- **시각/QA 중 수정.** Three 0.184의 `PCFSoftShadowMap` deprecation warning을 `PCFShadowMap`으로 교체했다.
+  실제 N1 GREEN HORIZON 프로젝트에서 초기 카메라가 지나치게 멀고 flat material이 어두워, extent 배수와 hemisphere/key
+  light를 조정했다. M0의 의도는 물성 셰이더가 아닌 구조 검증이므로 색상은 flat material로 유지했다.
+- **브라우저 게이트.** 실제 12-block N1 GREEN HORIZON에서 진입 → 3D 식별 → drag orbit → reset → Escape 종료를
+  확인했다. dialog/close/reset 접근성 이름은 각각 단일 locator였고, 종료 후 `Chip editor workspace`가 유지되며 focus가
+  `Open 3D showcase`로 복귀했다. 교체 전 시각의 deprecation warning 2건 외에 교체 후 신규 warning/error는 없었다.
+- **번들/자동 게이트.** 최종 production build는 core `747.63 kB / gzip 224.05 kB`, lazy Three viewer
+  `561.37 kB / gzip 142.56 kB`, CSS `70.95 kB / gzip 13.18 kB`. baseline 대비 core gzip 증가는 1.04 kB이고
+  Three runtime은 별도 청크다. 최종 `npm test`는 client 83 files/426 tests + server 62 files/242 tests,
+  `npm run build`, `npm run typecheck --workspace server`, `npm run lint` 모두 통과했다.
+
+## V7-M1 3D Material & Lighting (2026-06-18)
+
+M0의 평면 박스 쇼케이스를 v2/v3 비주얼 게이트 수준의 "프리미엄"으로 끌어올렸다. 테마 기반 PBR 머티리얼, 절차적
+PMREM 환경광, 3점 라이팅+ACES 톤매핑, emissive+UnrealBloom 글로우를 모두 기존 `resolveMaterialRecipe`/
+`resolveTheme`에서 파생했다. 스키마/마이그레이션/API 변경은 없고, 2D Konva 에디터·익스포트 계약·local-first는 불변이다.
+
+- **순수 머티리얼 매퍼.** 신규 `src/visual/chip3d/chip3dMaterials.ts`의 `resolveChip3DStyle(theme)`가 recipe·tokens를
+  직렬화 가능한 PBR 디스크립터로 매핑한다(`Chip3DMaterial`/`Chip3DMaterialSet`/`Chip3DEnvironment`/`Chip3DStyle`).
+  `three` import 없는 순수 계층이라 유닛테스트가 가능하다. open design decision은 "모델을 직렬화 가능·자기서술적으로
+  유지"로 확정 — recipe→PBR을 순수 함수로 분리하고 결과를 모델에 내장해, 향후 M3 비디오/M5 갤러리에서 모델이 곧
+  결정적 계약이 되게 했다. 시그니처는 `recipe`만으로는 fantasy 색·배경색을 못 얻어 `theme`을 받아 내부에서
+  `resolveMaterialRecipe`+`resolveTheme`를 모두 쓰도록 했다.
+- **머티리얼 매핑.** package=어두운 유전체(metalness 0.1/roughness 0.82), dieBase=기판(0.4/0.55),
+  blockReal=브러시드 메탈(0.75/0.35), blockFantasy=발광체(emissive=`glassGlow.color`). emissive는 fantasy 블록만
+  부여하고 강도를 테마 glow에 비례시켰다. `Chip3DPiece`의 flat `color`를 `material: Chip3DMaterial`로 교체하고
+  `Chip3DModel`에 `environment`를 추가했으며, `buildChip3DModel(layers, die, style)`로 시그니처를 바꾸고
+  `Chip3DPalette`를 제거했다. 지오메트리/footprint/depth/stacking 로직은 M0 그대로다.
+- **렌더 파이프라인(`src/three/`).** `chip3dScene.ts`는 piece.material로 `MeshStandardMaterial`(metalness/roughness/
+  emissive)를 만들고, `Chip3DViewer.tsx`는 테마 backdrop 그라디언트를 `PMREMGenerator.fromScene`으로 구워
+  `scene.environment`에 넣어 금속면 반사를 만든다(외부 HDRI 에셋 0). `ACESFilmicToneMapping`+exposure, 3점 리그
+  (key 따뜻·강·shadow, fill 차갑·약, rim/back)+낮은 hemisphere ambient를 적용하고, `EffectComposer`의 RenderPass→
+  `UnrealBloomPass`로 렌더해 발광 블록이 후광을 만든다. resize 시 composer/bloom 해상도를 갱신하고, 종료 시
+  composer/PMREM/envRT를 기존 M0 dispose(geometry/material/controls/renderer/context)에 더해 모두 해제한다.
+  postprocessing/PMREM은 설치된 `three` 패키지의 모듈이라 신규 npm 의존성 없이 lazy 청크에 함께 격리된다.
+- **시퀀싱.** M0의 toggle/showcase는 평면 팔레트를 썼는데, Task 2의 시그니처 변경으로 `chip3dScene.ts`와
+  `Chip3DPreviewToggle.tsx`가 동시에 깨졌다. toggle 마이그레이션(팔레트→`resolveChip3DStyle(project.theme)`)은 Task 1·2
+  산출물만 필요한 순수 타입 변경이라 Task 3에 함께 묶어, 렌더링 task(3~5) 내내 트리가 컴파일되고 build가 정직하게
+  green이 되게 했다.
+- **비주얼 게이트 중 튜닝.** 실제 N1 GREEN HORIZON(neon) 브라우저 QA에서 초기 emissiveIntensity(≈2.1)가 cyan 판타지
+  블록 면을 순백색으로 clip시켰다. emissive 밴드를 ~1.0으로 낮춰 ACES 하에서 면이 테마 hue를 유지하게 하고, bloom을
+  threshold↓/strength 중간으로 재조정해 in-gamut 발광이 whiteout 대신 진짜 네온 후광을 던지게 했다. 상수는
+  `resolveChip3DStyle`에 중앙화되어 있어 튜닝이 국소·테스트 가능한 변경이었다(neon>mono 등 순서 불변, 유닛테스트 유지).
+- **브라우저 게이트.** N1 GREEN HORIZON(neon)과 LUCID MONO PACKAGE(mono)에서 쇼케이스를 확인: 메탈은 환경 반사가 있는
+  브러시드 메탈로, 기판은 테마 backdrop을 은은히 반사, 판타지 블록은 cyan 면+네온 후광으로 읽혔고, 테마 구분(neon
+  드라마틱 ↔ mono 절제)이 뚜렷했다. WebGL 컨텍스트 정상, 3D 관련 콘솔 에러 없음(`/api/...` 404는 미실행 API 서버로
+  3D와 무관). 오너 비주얼 품질 사인오프 완료.
+- **번들/자동 게이트.** lazy Three viewer 청크는 `Chip3DViewer-*.js 580.13 kB / gzip 147.12 kB`(M0 561 kB에서
+  postprocessing 추가분), core `index-*.js 748.20 kB`에는 three/postprocessing 미포함 — 번들 격리 유지. 최종
+  `npm test`는 client 84 files/431 tests + server 62 files/242 tests, `npm run build`,
+  `npm run typecheck --workspace server`, `npm run lint` 모두 통과했다.
+
+## V7-M2 Turntable & Animation (2026-06-18)
+
+M1의 정적 프리미엄 3D 프레임에 사용자가 선택해서 재생하는 느린 카메라 turntable과 fantasy emissive breathing을
+추가했다. 쇼케이스는 기본 paused이고 재생 중에만 rAF가 돌아, 정지 상태의 change-driven render와 idle GPU 0에 가까운
+구조를 보존한다. 2D Konva/익스포트, local-first, 스키마/API, M1 머티리얼·조명·bloom은 변경하지 않았다.
+
+- **순수 시간 함수.** 신규 `src/visual/chip3d/chip3dAnimation.ts`가 `turntableAzimuthAt(t)`와 `glowPulseAt(t)`를
+  제공한다. 전자는 14초당 `2π`의 선형 방위각, 후자는 3초 주기의 sine multiplier `[0.8, 1.2]`다. Three/React import
+  없이 결정적이므로 M3 fixed-timestep capture가 그대로 재사용할 수 있다. RED는 모듈 미존재로 확인했고, GREEN은
+  turntable 시작/주기/단조성/custom period와 pulse 범위/연속성/extrema/결정성을 다룬 7 tests다. 계획 본문의
+  “6 tests”는 실제 명시 케이스가 7개인 문서 개수 오기였으며 구현 범위 변경은 없다.
+- **in-viewer 제어.** `Chip3DViewer` 안에 `Play turntable`/`Pause` 버튼을 두고 기존 Reset과 같은 DOM custom-event
+  경계(`chip3d:set-play`)로 setup effect에 전달했다. 따라서 React label state 변경은 renderer/PMREM/composer를
+  재생성하지 않고 `[model]` effect 경계가 유지된다. 새 model은 cleanup에서 rAF를 취소하고 label을 paused로 맞춘다.
+- **재생 루프.** Play 시 현재 camera-target offset을 캡처해 수동 reframing 위치에서 점프 없이 시작하고 OrbitControls를
+  잠근다. 매 frame offset을 world Y로 회전하고, scene 조립 후 한 번 수집한 emissive `MeshStandardMaterial`에
+  `baseIntensity * glowPulseAt(t)`를 적용한 뒤 composer를 렌더한다. Pause는 rAF 취소, base emissive 복구,
+  controls 재활성화·`update()` 후 단일 render로 복귀한다. cleanup도 항상 `cancelAnimationFrame`한다.
+- **Reset/재진입.** paused reset은 기존 initial camera/target을 복원한다. playing reset은 base offset과 start time을
+  초기화해 재생을 끊지 않고 초기 framing에서 다시 돈다. Pause 후 drag가 즉시 수동 orbit을 바꿨고, 닫기→재열기에서
+  다시 paused/Play 상태로 시작했다.
+- **성능 계측 trade-off.** 인앱 브라우저의 read-only evaluate sandbox에는 rAF가 없어 계획의 콘솔 스니펫을 직접 실행할
+  수 없었다. 실제 viewer rAF에 180-frame 임시 계측을 넣어 dev 브라우저에서 수집한 뒤 즉시 제거하고 final code를 다시
+  reload/검증했다. N1 GREEN HORIZON에서 worst `9.3 ms`, p95 `9.1 ms`로 33 ms smoothness gate를 충분히 통과했다.
+- **브라우저 게이트.** N1 GREEN HORIZON에서 open-paused(700ms 간 screenshot hash 동일), Play 시 camera motion,
+  Pause 후 static frame·free drag, playing/paused Reset, close/reopen을 검증했다. fantasy block 없는 mono PANTHER SCALE도
+  turntable이 동작하고 glow 오류가 없었다. 최종 코드 reload 후 3D 관련 warning/error는 0건이었다.
+- **번들/자동 게이트.** lazy `Chip3DViewer-99TPouiS.js` `581.41 kB / gzip 147.56 kB`, core
+  `index-BYeA_II-.js` `748.20 kB / gzip 224.27 kB`, CSS `71.06 kB / gzip 13.20 kB`; 신규 의존성 없이 Three 격리 유지.
+  최종 `npm test`는 client 85 files/438 tests + server 62 files/242 tests이며, `npm run build`, server typecheck,
+  lint를 모두 통과했다.
+
+## V7-M3 MP4 Export Feasibility Spike (2026-06-18)
+
+M3 본 구현 전 핵심 위험인 브라우저 WebCodecs H.264 → MP4 muxing을 throwaway 진입점으로 검증했고, 임시 코드는
+검증 후 모두 제거했다.
+
+- **인코딩/재생.** Chrome WebCodecs `VideoEncoder`에 `avc1.42001f`(H.264 Baseline level 3.1), 6 Mbps,
+  30 fps를 설정하고 1280×720 canvas 30 frames를 인코딩했다. `mp4-muxer@5.2.2`의
+  `video: { codec: 'avc', width, height }`, `fastStart: 'in-memory'` 구성으로 194,980-byte MP4를 만들었고,
+  브라우저 video element가 오류 없이 readyState 4, 1280×720, 1.0초로 디코딩·재생 가능함을 확인했다.
+- **타입/번들.** 설치된 패키지가 함께 제공하는 `@types/dom-webcodecs`를 통해 TypeScript 6 빌드가
+  `VideoEncoder`/`VideoFrame`을 인식했다. 동적 import 빌드에서 muxer는 별도
+  `mp4-muxer-*.js` 30.73 kB / gzip 8.96 kB 청크였고 core에는 합쳐지지 않았다.
+- **의존성 trade-off.** `mp4-muxer`는 upstream에서 Mediabunny로 대체되었다는 deprecation 경고가 있지만,
+  승인된 M3 spec·계획의 범위와 API를 그대로 검증했고 신규 대체 라이브러리 전환은 별도 설계 변경이므로 이번
+  마일스톤에서는 5.2.2를 고정한다. 향후 브라우저 호환성 확장 시 Mediabunny 마이그레이션을 검토한다.
+- **결정.** MP4 생성, 실제 브라우저 디코딩, WebCodecs 타입, lazy chunk 격리가 모두 통과해 **go**.
+
+## V7-M3 MP4 Export (2026-06-18)
+
+M2 turntable과 fantasy glow를 프로젝트 이름의 다운로드 가능한 1280×720 / 30 fps / 8초 H.264 MP4로
+내보내는 로컬 브라우저 경로를 완성했다. 기존 Konva PNG export와 프로젝트 스키마/API는 변경하지 않았다.
+
+- **결정적 캡처 계약.** 순수 `src/visual/chip3d/chip3dCapture.ts`가 8초×30 fps=240 frames를 고정 timestep으로
+  샘플링한다. 한 clip에 정확히 1회전과 3 glow cycles를 배치해 frame 240의 방위각·glow가 loop 시작 상태와
+  일치한다. M2 `turntableAzimuthAt`/`glowPulseAt`을 재사용하며 Three/React import가 없다. RED는 모듈 미존재,
+  GREEN은 frame count·경계·단조성·glow 범위/loop·결정성을 다룬 6 tests로 확인했다.
+- **라이브/녹화 시각 일치.** 기존 viewer의 PMREM 환경과 3점 조명을 `src/three/chip3dStage.ts`로 추출해
+  live viewer와 offscreen recorder가 같은 구성 함수를 사용한다. viewer refactor는 카메라, PBR, bloom,
+  exposure, controls, dispose 계약을 보존했다.
+- **인코더/recorder.** `chip3dEncoder.ts`가 WebCodecs 지원을 확인하고 실제 encode 시에만
+  `mp4-muxer`를 동적 import한다. recorder는 opaque theme backdrop의 1280×720 WebGLRenderer와 동일한
+  EffectComposer/UnrealBloomPass를 구성하고, 240 frames를 `VideoFrame`으로 전달한 뒤 모든 GPU resource와
+  WebGL context를 해제한다. codec/config는 spike에서 검증한 `avc1.42001f`, 6 Mbps,
+  `fastStart: 'in-memory'`다.
+- **UX/격리.** 3D showcase header에 `Export turntable MP4`를 추가했다. 진행률 동안 button을 잠그고,
+  실패와 unsupported browser를 inline 안내하며 성공 시 `{project name}-turntable.mp4`로 기존
+  `downloadFile` 경로를 사용한다. recorder는 click handler에서만 동적 import되어 초기 core bundle에 Three와
+  muxer가 들어가지 않는다.
+- **브라우저 QA.** 실제 12-block N1 GREEN HORIZON에서 240-frame encode를 실행해 3,794,911-byte MP4를 얻었다.
+  브라우저 video decoder가 readyState 4, 오류 없음, 정확히 1280×720/8.0초로 판독했고 첫 frame의 PBR·PMREM·
+  cyan emissive+bloom이 live showcase와 시각적으로 일치했다. Play→Pause→Reset 회귀와 console warning/error 0도
+  확인했다. 인앱 QA 브라우저 자체가 filesystem download event를 지원하지 않아 임시 인페이지 video로 blob을
+  디코딩한 뒤 해당 throwaway hook을 제거했다. 실제 filename/download 호출은 panel test로 검증했다.
+- **PNG 회귀/자동 게이트.** export scope 6 files/21 tests가 통과해 die `pixelRatio:4`, poster 3200×1800 계약은
+  불변이다. 최종 전체 gate는 client 87 files/447 tests, server 62 files/242 tests, production build,
+  server typecheck, lint가 모두 통과했다. build는 core `index-WQjh1sRf.js` 750.01 kB / gzip 224.93 kB,
+  recorder 1.82/0.98 kB, viewer 22.53/5.53 kB, shared Three stage 559.22/142.46 kB, muxer
+  30.73/8.96 kB로 Three·muxer lazy 격리를 유지했다.
+
+## V7-M4 Drop + V7-M5 Gallery / Share 3D Integration (2026-06-19)
+
+M4의 optional shader-grade 2D enhancement는 승인 spec의 `v7-M4 disposition`에 따라 **구현하지 않기로
+확정**하고, M5에서 기존 premium 3D showcase를 public gallery/share 경로로 확장했다. 프로젝트 snapshot만
+클라이언트에서 파생하므로 schema/migration/API/upload 변경은 없다.
+
+- **M4 no-go.** M1–M3가 2D/3D 시각 격차를 충분히 닫았고, export-visible 효과는 결국 Konva
+  `toDataURL()` 경로에 다시 구현해야 한다. PixiJS second-canvas는 편집 화면에만 보이는 효과와 큰 번들/GPU 비용을
+  추가하므로 채택하지 않았다. 신규 dependency나 `src/visual/filters/`는 만들지 않았다.
+- **공유 showcase 경계.** editor 내부의 model derivation, WebGL guard, error boundary, lazy viewer,
+  Escape/focus 복귀를 `src/three/Chip3DShowcase.tsx`로 추출했다. editor는 `renderExtras`로 기존
+  `VideoExportPanel`만 주입하고, gallery는 extras 없이 orbit·Play/Pause·Reset만 제공하는 view-only surface다.
+  Fast Refresh 규칙을 지키기 위해 browser capability/model helper는 별도 `chip3dAvailability.ts`로 분리했다.
+- **예산과 fallback.** 순수 `resolveChip3DRenderMode`가 WebGL availability와 `400` piece admission budget을
+  기준으로 `interactive | poster`를 결정한다. 계획 예시는 gallery button에서 WebGL만 확인했지만 승인 spec은
+  예산 초과에서도 button 숨김을 요구하므로, 공유 `isChip3DShowcaseAvailable(project)`가 두 조건을 모두 검사하도록
+  보정했다. jsdom처럼 WebGL constructor 자체가 없는 runtime은 canvas를 probe하지 않아 경고 없이 poster로
+  fallback한다. 401-piece editor/gallery 회귀 테스트가 이 경계를 고정한다.
+- **Gallery / Share.** gallery detail의 `View in 3D`는 published snapshot을 그대로 공유 showcase에 넘기며
+  initial poster는 유지한다. server-rendered `/s/:slug`는 client JS나 Three 없이 동일 `/gallery/:slug`를 가리키는
+  정적 `View in 3D` anchor만 추가해 OG/poster/crawler contract를 보존했다. stored video tier는 schema/storage 비용과
+  v7 no-schema 원칙 때문에 채택하지 않았다.
+- **브라우저 QA.** 실제 published PANTHER SCALE에서 gallery `View in 3D` → 동일 PBR/PMREM viewer를 확인했고,
+  Play→Pause, Reset, Escape 종료와 opener focus 복귀가 동작했다. gallery modal에는 MP4 export가 없고 editor의
+  N1 GREEN HORIZON modal에는 기존 `Export turntable MP4`가 유지됐다. 임시 no-WebGL query hook으로 poster visible,
+  3D button/dialog 없음도 확인한 뒤 hook을 제거했다. 실제 `/s/panther-scale-8313ef09`의 anchor는 정확한
+  `/gallery/panther-scale-8313ef09`를 가리켰고 console warning/error는 0건이었다.
+- **자동 게이트/번들.** 최종 `npm test`는 client 89 files/455 tests, server 62 files/243 tests이며 build,
+  server typecheck, lint가 모두 통과했다. core `index-BF_Cl0hJ.js` 750.60 kB / gzip 225.09 kB,
+  `Chip3DViewer-BaTHCd8E.js` 22.53/5.53 kB, shared Three stage 559.22/142.46 kB로 Three runtime은 gallery
+  initial path가 아닌 lazy chunk에 남았다. Konva die `pixelRatio:4`/poster 3200×1800 export 계약도 untouched다.
+
+## V7-M6 Final QA & Release (2026-06-19)
+
+신규 제품 코드 없이 QA·릴리스 패키징만 수행한 v7의 마지막 마일스톤. 스펙
+`docs/superpowers/specs/2026-06-19-v7-m6-final-qa-release-design.md`, 계획
+`docs/superpowers/plans/2026-06-19-v7-m6-final-qa-release.md`.
+
+- **실행 방식.** subagent-driven으로 시작했으나 M6은 상호작용 QA + 오너 사인오프 성격이라 하이브리드로 합의:
+  게이트/번들 검증은 verify 서브에이전트에 위임하고, 3D 브라우저 QA와 오너 수동 사인오프는 메인 세션에서 진행했다.
+- **자동 게이트.** `npm test` client 89 files/455 tests, server 62 files/243 tests; `npm run build`(기존 >500kB
+  청크 경고만), server typecheck, lint 모두 green.
+- **번들 사인오프.** Three+recorder+`mp4-muxer`는 lazy `chip3dStage-DKOqudVi.js`(559.22 kB/142.46 kB gzip,
+  `Chip3DViewer-*` 22.53 kB wrapper 경유)에만 존재. `grep BufferGeometry|WebGLRenderer dist/assets/index-*.js`가
+  `core index clean of three`를 출력해 core·gallery initial 청크가 Three-free임을 확인.
+- **3D/비디오 QA(에이전트 자동화).** Playwright MCP 브라우저가 실제 하드웨어 WebGL(ANGLE Metal, Apple M4 Pro)
+  + WebCodecs를 노출. 갤러리 `panther-scale`에서 `View in 3D` → PBR 렌더, view-only(Play/Reset, export 패널 없음),
+  턴테이블 회전 확인. 에디터 N-9는 `Export turntable MP4` 버튼 유지 + hexagon·circle 다이에서 네온 판타지
+  emissive glow/bloom이 프리미엄으로 렌더(48-seg circle 페이싱 아티팩트 없음). 서버 렌더 `/s/:slug`는
+  `/gallery/:slug`로 가는 `View in 3D` anchor만 추가. `getContext`를 null로 stub하면 `View in 3D` 버튼이 사라지고
+  poster가 남는 폴백 확인(over-budget는 `chip3dBudget.test.ts`가 고정). 스크린샷은
+  `docs/ops/3d-showcase-qa-assets/`, 결과 표는 `docs/ops/3d-showcase-qa.md`.
+- **오너 사인오프.** 분리 합의대로 MP4 export 실파일 검증과 M0 레퍼런스 비주얼 품질 사인오프는 오너 몫(MP4는
+  M3에서 실제 3.79 MB 파일을 디코드해 1280×720/30fps/8s로 이미 검증됨). 오너가 Task 4 완료를 지시해 릴리스를 확정했다.
+- **릴리스 패키징.** README 타이틀을 `0.5 v7`로(버전 노트·릴리스 개요 v7 항목 포함), `package.json`은 1.0.0 유지.
+  루트의 stray `v6-mobile-*.png` 7개 삭제, `.gitignore`에 루트 레벨 이미지 무시 규칙 추가. 브랜치는 오너의
+  통합/PR 결정을 위해 미병합 상태로 원격 push했다.

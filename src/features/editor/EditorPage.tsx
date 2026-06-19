@@ -13,6 +13,7 @@ import { chipFinishLabel } from '../../visual/themeFinish'
 import { useAutosave } from './useAutosave'
 import { useEditorShortcuts } from './useEditorShortcuts'
 import { FirstRunCoachmarks } from './FirstRunCoachmarks'
+import Chip3DPreviewToggle from './Chip3DPreviewToggle'
 
 type Props = {
   project: Project
@@ -110,6 +111,7 @@ export function EditorPage({ project, persist }: Props) {
                 </span>
                 Simulate
               </button>
+              <Chip3DPreviewToggle project={state.project} />
               <Link className="editor-exit-link" to="/dashboard">
                 Exit Editor
               </Link>
