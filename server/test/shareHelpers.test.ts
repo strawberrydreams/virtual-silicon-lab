@@ -94,6 +94,18 @@ describe('renderViewerHtml', () => {
     expect(html).toContain('&lt;script&gt;alert(1)&lt;/script&gt;')
   })
 
+  it('links to the gallery 3D showcase from the share viewer', () => {
+    const html = renderViewerHtml({
+      title: 'Ada Chip',
+      ownerDisplayName: 'Ada',
+      slug: 'ada-chip-deadbeef',
+      project,
+      baseUrl: 'https://chips.example.com',
+    })
+    expect(html).toContain('View in 3D')
+    expect(html).toContain('href="https://chips.example.com/gallery/ada-chip-deadbeef"')
+  })
+
   it('renders a Remixed from link when a visible parent is provided', () => {
     const html = renderViewerHtml({
       title: 'Child Chip',
