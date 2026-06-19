@@ -10,6 +10,12 @@ import { ServerUnreachableError } from './galleryApi'
 import type { GalleryComment, ReactionsApi } from './reactionsApi'
 import { GalleryDetailPage } from './GalleryDetailPage'
 
+vi.mock('../../three/Chip3DViewer', () => ({
+  default: ({ model }: { model: { pieces: unknown[] } }) => (
+    <div data-testid="mock-viewer">pieces:{model.pieces.length}</div>
+  ),
+}))
+
 const project = {
   ...createProject('Ada Chip', 'project-1', 1_000),
   spec: {
@@ -118,6 +124,41 @@ function GalleryRouteHarness({ api, reactions }: { api: GalleryApi; reactions: R
 }
 
 describe('GalleryDetailPage', () => {
+  it('opens an interactive 3D showcase from the gallery detail page', async () => {
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({} as never)
+    const user = userEvent.setup()
+    renderDetail(fakeApi())
+
+    await user.click(await screen.findByRole('button', { name: 'View in 3D' }))
+
+    expect(await screen.findByRole('dialog', { name: 'Ada Chip 3D showcase' })).toBeInTheDocument()
+    expect(await screen.findByTestId('mock-viewer')).toBeInTheDocument()
+  })
+
+  it('keeps the static poster and hides 3D when the snapshot exceeds the piece budget', async () => {
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({} as never)
+    const heavyProject = createProject('Heavy Chip', 'heavy-project', 1_000)
+    heavyProject.blocks = Array.from({ length: 399 }, (_, index) => ({
+      id: `block-${index}`,
+      type: 'CPU' as const,
+      category: 'real' as const,
+      x: index % 20,
+      y: Math.floor(index / 20),
+      w: 1,
+      h: 1,
+      rotation: 0,
+      zIndex: index,
+    }))
+    renderDetail(
+      fakeApi({
+        get: vi.fn().mockResolvedValue({ ...detail, title: 'Heavy Chip', project: heavyProject }),
+      }),
+    )
+
+    expect(await screen.findByRole('img', { name: 'Heavy Chip poster' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'View in 3D' })).not.toBeInTheDocument()
+  })
+
   it('renders poster, owner, version, and fake spec fields', async () => {
     renderDetail(fakeApi())
 
