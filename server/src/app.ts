@@ -3,6 +3,7 @@ import { Hono } from 'hono'
 import { CURRENT_SCHEMA_VERSION } from '@domain/project'
 import { accountRoutes } from './accounts/routes'
 import { aiRoutes } from './ai/routes'
+import { createAnthropicProvider } from './ai/anthropicProvider'
 import { resolveAiConfig } from './ai/config'
 import { createFakeProvider } from './ai/fakeProvider'
 import type { AiProvider } from './ai/provider'
@@ -47,7 +48,10 @@ export function buildAppDeps(
   runtime: { db: Database.Database; imageStore?: PublishedImageStore; emailProvider?: EmailProvider },
 ): AppDeps {
   const aiConfig = resolveAiConfig()
-  // M0: always the fake provider; the real adapter is selected in a later task.
+  const aiProvider =
+    aiConfig.provider === 'anthropic' && aiConfig.apiKey !== undefined
+      ? createAnthropicProvider({ apiKey: aiConfig.apiKey, model: aiConfig.model })
+      : createFakeProvider()
   return {
     db: runtime.db,
     imageStore: runtime.imageStore,
@@ -61,7 +65,7 @@ export function buildAppDeps(
     requireVerifiedPublish: config.requireVerifiedPublish,
     adminEmails: config.adminEmails,
     galleryLockdown: config.galleryLockdown,
-    aiProvider: createFakeProvider(),
+    aiProvider,
     aiDailyQuota: aiConfig.dailyQuota,
   }
 }
