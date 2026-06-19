@@ -1714,3 +1714,29 @@ M4의 optional shader-grade 2D enhancement는 승인 spec의 `v7-M4 disposition`
   server typecheck, lint가 모두 통과했다. core `index-BF_Cl0hJ.js` 750.60 kB / gzip 225.09 kB,
   `Chip3DViewer-BaTHCd8E.js` 22.53/5.53 kB, shared Three stage 559.22/142.46 kB로 Three runtime은 gallery
   initial path가 아닌 lazy chunk에 남았다. Konva die `pixelRatio:4`/poster 3200×1800 export 계약도 untouched다.
+
+## V7-M6 Final QA & Release (2026-06-19)
+
+신규 제품 코드 없이 QA·릴리스 패키징만 수행한 v7의 마지막 마일스톤. 스펙
+`docs/superpowers/specs/2026-06-19-v7-m6-final-qa-release-design.md`, 계획
+`docs/superpowers/plans/2026-06-19-v7-m6-final-qa-release.md`.
+
+- **실행 방식.** subagent-driven으로 시작했으나 M6은 상호작용 QA + 오너 사인오프 성격이라 하이브리드로 합의:
+  게이트/번들 검증은 verify 서브에이전트에 위임하고, 3D 브라우저 QA와 오너 수동 사인오프는 메인 세션에서 진행했다.
+- **자동 게이트.** `npm test` client 89 files/455 tests, server 62 files/243 tests; `npm run build`(기존 >500kB
+  청크 경고만), server typecheck, lint 모두 green.
+- **번들 사인오프.** Three+recorder+`mp4-muxer`는 lazy `chip3dStage-DKOqudVi.js`(559.22 kB/142.46 kB gzip,
+  `Chip3DViewer-*` 22.53 kB wrapper 경유)에만 존재. `grep BufferGeometry|WebGLRenderer dist/assets/index-*.js`가
+  `core index clean of three`를 출력해 core·gallery initial 청크가 Three-free임을 확인.
+- **3D/비디오 QA(에이전트 자동화).** Playwright MCP 브라우저가 실제 하드웨어 WebGL(ANGLE Metal, Apple M4 Pro)
+  + WebCodecs를 노출. 갤러리 `panther-scale`에서 `View in 3D` → PBR 렌더, view-only(Play/Reset, export 패널 없음),
+  턴테이블 회전 확인. 에디터 N-9는 `Export turntable MP4` 버튼 유지 + hexagon·circle 다이에서 네온 판타지
+  emissive glow/bloom이 프리미엄으로 렌더(48-seg circle 페이싱 아티팩트 없음). 서버 렌더 `/s/:slug`는
+  `/gallery/:slug`로 가는 `View in 3D` anchor만 추가. `getContext`를 null로 stub하면 `View in 3D` 버튼이 사라지고
+  poster가 남는 폴백 확인(over-budget는 `chip3dBudget.test.ts`가 고정). 스크린샷은
+  `docs/ops/3d-showcase-qa-assets/`, 결과 표는 `docs/ops/3d-showcase-qa.md`.
+- **오너 사인오프.** 분리 합의대로 MP4 export 실파일 검증과 M0 레퍼런스 비주얼 품질 사인오프는 오너 몫(MP4는
+  M3에서 실제 3.79 MB 파일을 디코드해 1280×720/30fps/8s로 이미 검증됨). 오너가 Task 4 완료를 지시해 릴리스를 확정했다.
+- **릴리스 패키징.** README 타이틀을 `0.5 v7`로(버전 노트·릴리스 개요 v7 항목 포함), `package.json`은 1.0.0 유지.
+  루트의 stray `v6-mobile-*.png` 7개 삭제, `.gitignore`에 루트 레벨 이미지 무시 규칙 추가. 브랜치는 오너의
+  통합/PR 결정을 위해 미병합 상태로 원격 push했다.

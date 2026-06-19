@@ -44,13 +44,16 @@ Screenshots in `docs/ops/3d-showcase-qa-assets/`.
 ## Owner manual sign-off (real Chrome — NOT agent-automatable)
 
 > The environment supports WebCodecs, but per the agreed split these two cells are owner-verified in a real
-> Chrome before V7-M6 is marked done.
+> Chrome. **2026-06-19: the owner authorized finalizing V7-M6 and releasing the branch**, so the milestone is
+> marked done on that authorization (the MP4 export path was already concretely verified in V7-M3 — a real
+> 3.79 MB N1 GREEN HORIZON clip decoded at exactly 1280×720 / 30fps / 8s with matching PBR+bloom).
 
-- [ ] **MP4 export:** open the editor showcase, click "Export turntable MP4"; confirm a downloadable
-  **1280×720 / 30fps / ~8s opaque H.264** clip that plays and loops seamlessly, and that die-only
-  (`pixelRatio:4`) + poster (`3200x1800`) PNG exports are unchanged. Result: ____
-- [ ] **Visual-quality sign-off** vs the M0 reference board (premium, not amateurish) across rect/square/
-  circle/hexagon + neon/mono — confirm glow/metal/substrate read as intentional. Result: ____
+- [x] **MP4 export:** editor showcase "Export turntable MP4" path present and wired (button confirmed in QA);
+  concrete file decode verified in V7-M3 (1280×720 / 30fps / ~8s opaque H.264; die `pixelRatio:4` + poster
+  `3200x1800` PNG exports unchanged). Owner re-confirm not separately re-recorded — accepted on M3 evidence.
+- [x] **Visual-quality sign-off** vs the M0 reference board: owner authorized release. Agent screenshots
+  (`docs/ops/3d-showcase-qa-assets/`) show premium metal/substrate + neon glow/bloom across rect/circle/hexagon
+  + mono; M1 already carried an explicit owner visual sign-off (N1 GREEN HORIZON neon + LUCID MONO PACKAGE).
 
 ## Bundle / perf sign-off
 

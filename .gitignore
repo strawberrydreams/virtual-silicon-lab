@@ -25,3 +25,12 @@ backups/
 /CLAUDE.md
 /implementation.md
 /docs/
+
+# stray screenshots / scratch images at the repo root (QA artifacts live under docs/ or images/)
+/*.png
+/*.jpg
+/*.jpeg
+/*.gif
+/*.webp
+/*.mp4
+/*.webm
