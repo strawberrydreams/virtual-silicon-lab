@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes, useNavigate } from 'react-router-dom'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createProject } from '../../domain/projectFactory'
 import type { AuthApi } from '../account/authApi'
 import { AuthStoreProvider } from '../../stores/authStoreContext'
@@ -124,6 +124,10 @@ function GalleryRouteHarness({ api, reactions }: { api: GalleryApi; reactions: R
 }
 
 describe('GalleryDetailPage', () => {
+  beforeEach(() => {
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null)
+  })
+
   it('opens an interactive 3D showcase from the gallery detail page', async () => {
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({} as never)
     const user = userEvent.setup()

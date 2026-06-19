@@ -2,9 +2,8 @@ import { Component, lazy, Suspense, useEffect, useMemo, useRef } from 'react'
 import type { ErrorInfo, ReactNode } from 'react'
 import type { Project } from '../domain/project'
 import { resolveChip3DRenderMode } from '../visual/chip3d/chip3dBudget'
-import { buildChip3DModel, type Chip3DModel } from '../visual/chip3d/chip3dModel'
-import { resolveChip3DStyle } from '../visual/chip3d/chip3dMaterials'
-import { buildChipLayers } from '../visual/chipLayers'
+import type { Chip3DModel } from '../visual/chip3d/chip3dModel'
+import { buildChip3DShowcaseModel, webglAvailable } from './chip3dAvailability'
 
 const Chip3DViewer = lazy(() => import('./Chip3DViewer'))
 
@@ -22,33 +21,6 @@ class ShowcaseErrorBoundary extends Component<{ children: ReactNode }, { failed:
   render() {
     return this.state.failed ? <p>3D showcase failed to load.</p> : this.props.children
   }
-}
-
-export function webglAvailable(): boolean {
-  try {
-    const canvas = document.createElement('canvas')
-    return Boolean(canvas.getContext('webgl2') ?? canvas.getContext('webgl'))
-  } catch {
-    return false
-  }
-}
-
-function buildShowcaseModel(project: Project): Chip3DModel {
-  return buildChip3DModel(
-    buildChipLayers(project),
-    project.die,
-    resolveChip3DStyle(project.theme),
-  )
-}
-
-export function isChip3DShowcaseAvailable(project: Project): boolean {
-  const model = buildShowcaseModel(project)
-  return (
-    resolveChip3DRenderMode({
-      pieceCount: model.pieces.length,
-      webglAvailable: webglAvailable(),
-    }) === 'interactive'
-  )
 }
 
 export function Chip3DShowcase({
@@ -75,7 +47,7 @@ export function Chip3DShowcase({
     }
   }, [onClose])
 
-  const model = useMemo(() => buildShowcaseModel(project), [project])
+  const model = useMemo(() => buildChip3DShowcaseModel(project), [project])
   const interactive =
     resolveChip3DRenderMode({
       pieceCount: model.pieces.length,

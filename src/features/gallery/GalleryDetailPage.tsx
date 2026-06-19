@@ -1,10 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import type { Project } from '../../domain/project'
-import {
-  Chip3DShowcase,
-  isChip3DShowcaseAvailable,
-} from '../../three/Chip3DShowcase'
+import { isChip3DShowcaseAvailable } from '../../three/chip3dAvailability'
+import { Chip3DShowcase } from '../../three/Chip3DShowcase'
 import { useAuthStore } from '../../stores/authStoreContext'
 import {
   liveGalleryApi,
