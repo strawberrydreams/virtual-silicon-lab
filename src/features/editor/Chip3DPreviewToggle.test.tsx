@@ -60,6 +60,29 @@ describe('Chip3DPreviewToggle', () => {
     expect(screen.queryByTestId('mock-viewer')).toBeNull()
   })
 
+  it('shows the poster fallback when the derived model exceeds the piece budget', async () => {
+    const project = createProject('Heavy')
+    project.blocks = Array.from({ length: 399 }, (_, index) => ({
+      id: `block-${index}`,
+      type: 'CPU' as const,
+      category: 'real' as const,
+      x: index % 20,
+      y: Math.floor(index / 20),
+      w: 1,
+      h: 1,
+      rotation: 0,
+      zIndex: index,
+    }))
+    render(<Chip3DPreviewToggle project={project} />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open 3D showcase' }))
+
+    expect(
+      await screen.findByText('3D is not available in this browser.'),
+    ).toBeInTheDocument()
+    expect(screen.queryByTestId('mock-viewer')).toBeNull()
+  })
+
   it('keeps the modal recoverable when the viewer fails to load', async () => {
     viewerState.throws = true
     render(<Chip3DPreviewToggle project={createProject('T')} />)
