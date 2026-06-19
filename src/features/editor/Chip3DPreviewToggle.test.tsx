@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createProject } from '../../domain/projectFactory'
 import Chip3DPreviewToggle from './Chip3DPreviewToggle'
 
@@ -15,7 +15,12 @@ vi.mock('../../three/Chip3DViewer', () => ({
 describe('Chip3DPreviewToggle', () => {
   beforeEach(() => {
     viewerState.throws = false
+    vi.stubGlobal('WebGLRenderingContext', class WebGLRenderingContext {})
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({} as never)
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
   })
 
   it('lazy-mounts the viewer inside a modal showcase when opened', async () => {

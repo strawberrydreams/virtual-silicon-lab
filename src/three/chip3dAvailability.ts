@@ -5,6 +5,12 @@ import { resolveChip3DStyle } from '../visual/chip3d/chip3dMaterials'
 import { buildChipLayers } from '../visual/chipLayers'
 
 export function webglAvailable(): boolean {
+  if (
+    typeof WebGLRenderingContext === 'undefined' &&
+    typeof WebGL2RenderingContext === 'undefined'
+  ) {
+    return false
+  }
   try {
     const canvas = document.createElement('canvas')
     return Boolean(canvas.getContext('webgl2') ?? canvas.getContext('webgl'))

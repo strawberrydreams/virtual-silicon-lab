@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes, useNavigate } from 'react-router-dom'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createProject } from '../../domain/projectFactory'
 import type { AuthApi } from '../account/authApi'
 import { AuthStoreProvider } from '../../stores/authStoreContext'
@@ -128,7 +128,12 @@ describe('GalleryDetailPage', () => {
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null)
   })
 
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
   it('opens an interactive 3D showcase from the gallery detail page', async () => {
+    vi.stubGlobal('WebGLRenderingContext', class WebGLRenderingContext {})
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({} as never)
     const user = userEvent.setup()
     renderDetail(fakeApi())
@@ -140,6 +145,7 @@ describe('GalleryDetailPage', () => {
   })
 
   it('keeps the static poster and hides 3D when the snapshot exceeds the piece budget', async () => {
+    vi.stubGlobal('WebGLRenderingContext', class WebGLRenderingContext {})
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({} as never)
     const heavyProject = createProject('Heavy Chip', 'heavy-project', 1_000)
     heavyProject.blocks = Array.from({ length: 399 }, (_, index) => ({
