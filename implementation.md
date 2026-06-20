@@ -1988,7 +1988,15 @@ M0–M5를 닫는다.
 - **자동 게이트/키 유출 점검.** 최종 `npm test`는 client 103 files/514 tests, server 70 files/296 tests이며,
   `npm run build`(기존 >500 kB 청크 경고만), `npm run typecheck --workspace server`, `npm run lint`가 모두
   통과했다. 빌드 산출물 `dist/assets`에서 `ANTHROPIC_API_KEY` 문자열은 0건이었다.
-- **브라우저 QA 보류.** M0–M4의 prompt→editor, copy Apply/Discard, suggestion Accept/undo/Reject, variation
-  save/source 불변과 서버 중단 시 local editing 유지 흐름의 실제 브라우저 검증은 승인 계획대로 **오너 수동
-  QA로 보류**한다. 이번 v8 close 근거는 전체 자동 게이트, 네 endpoint E2E, bounds/quota/admin usage 테스트이며,
-  실제 브라우저 세션을 수행했다고 주장하지 않는다. public-launch gate와 branch 통합은 별도 오너 결정이다.
+- **브라우저 QA 완료 (2026-06-20, 에이전트 자동화 Playwright MCP).** fake provider로 띄운 실서버(`VSL_SIGNUPS_OPEN=true`,
+  `VSL_ADMIN_EMAILS`, 임시 `VSL_DATA_DIR`)에 로그인해 M1–M5를 실제 브라우저(Chromium)로 검증했다:
+  M2 dashboard prompt → fresh local 프로젝트가 editor로 열림(서버 draft와 다른 새 local id),
+  M1 "Generate from this chip" → preview → Apply로 Spec Sheet가 AI copy(Brand "A RETRO MILITARY COMMAND PROCESSOR
+  RETRO", Cores 16 등)로 갱신,
+  M3 Suggest improvements → 2건(GPU/PLL) → Accept 시 undo 버튼이 disabled→enabled(=1 undo step), undo로 원복(undo
+  disabled·redo enabled),
+  M4 count=2 → re-theme된 live Konva thumbnail 2개(military/keynote) → Save로 dashboard에 독립 local 프로젝트 추가
+  (Local Projects 3→5, source 불변·panel은 "Saved ✓"로 in-place),
+  M5 client `maxLength=2000` 확인, 2001자 prompt는 실서버에서 400(log row 미증가), admin `GET /api/ai/usage`는 admin
+  200·anon 401, 서버 종료 후 Suggest improvements는 "AI server is unreachable" inline 에러를 표시하고 canvas·spec
+  편집은 정상 동작. QA 후 사용자의 기본 `dev:server`를 원상 복구했다. public-launch gate와 branch 통합은 별도 오너 결정이다.
