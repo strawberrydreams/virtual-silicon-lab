@@ -9,6 +9,7 @@ const DRAFT_SCHEMA = {
   properties: {
     name: { type: 'string' },
     dieShape: { type: 'string', enum: ['rect', 'square', 'circle', 'hexagon'] },
+    theme: { type: 'string', enum: ['neon', 'retro', 'military', 'keynote', 'mono'] },
     blocks: {
       type: 'array',
       items: {
@@ -59,7 +60,8 @@ export function createAnthropicProvider(opts: { apiKey: string; model: string })
           {
             role: 'user',
             content:
-              'Return ONLY a JSON chip layout (die shape + blocks with fractional x,y,w,h in [0,1]) ' +
+              'Return ONLY a JSON chip layout (die shape, a theme from ' +
+              'neon/retro/military/keynote/mono, and blocks with fractional x,y,w,h in [0,1]) ' +
               `for this surreal chip idea: ${input.prompt}`,
           },
         ],

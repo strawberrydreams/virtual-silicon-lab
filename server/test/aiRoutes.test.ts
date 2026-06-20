@@ -28,6 +28,18 @@ describe('POST /api/ai/generate-draft', () => {
     expect(n).toBe(1)
   })
 
+  it('returns a project whose theme reflects the prompt-derived fake draft', async () => {
+    const { app } = createTestApp()
+    const cookie = await signIn(app)
+    const res = await app.request(
+      '/api/ai/generate-draft',
+      jsonRequest('POST', { prompt: 'a calm mono chip' }, cookie),
+    )
+    expect(res.status).toBe(200)
+    const body = (await res.json()) as { project: { theme: string } }
+    expect(body.project.theme).toBe('mono')
+  })
+
   it('enforces the daily quota with 429', async () => {
     const { app } = createTestApp(Date.now, { aiDailyQuota: 1 })
     const cookie = await signIn(app)

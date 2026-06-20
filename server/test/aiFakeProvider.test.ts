@@ -13,6 +13,12 @@ describe('createFakeProvider', () => {
     expect(a.blocks.every((blk) => typeof blk.type === 'string')).toBe(true)
     expect(a.name).toContain('neon')
   })
+
+  it('derives a deterministic theme from the prompt', async () => {
+    const provider = createFakeProvider()
+    expect((await provider.generateChipDraft({ prompt: 'a calm mono chip' })).theme).toBe('mono')
+    expect((await provider.generateChipDraft({ prompt: 'a neon dream chip' })).theme).toBe('neon')
+  })
 })
 
 describe('createFakeProvider.generateSpecCopy', () => {

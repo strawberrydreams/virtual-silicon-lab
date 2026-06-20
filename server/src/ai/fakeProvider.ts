@@ -5,9 +5,20 @@ export function createFakeProvider(): AiProvider {
   return {
     async generateChipDraft(input) {
       const name = input.prompt.trim().slice(0, 40) || 'AI Draft Chip'
+      const lower = input.prompt.toLowerCase()
+      const theme = lower.includes('mono')
+        ? 'mono'
+        : lower.includes('retro')
+          ? 'retro'
+          : lower.includes('military')
+            ? 'military'
+            : lower.includes('keynote')
+              ? 'keynote'
+              : 'neon'
       return {
         name,
         dieShape: 'rect',
+        theme,
         blocks: [
           { type: 'CPU', label: 'Core', x: 0.1, y: 0.1, w: 0.3, h: 0.3 },
           { type: 'Cache', label: 'L2', x: 0.55, y: 0.1, w: 0.3, h: 0.3 },

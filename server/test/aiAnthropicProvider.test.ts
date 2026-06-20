@@ -39,6 +39,27 @@ describe('createAnthropicProvider', () => {
     const provider = createAnthropicProvider({ apiKey: 'sk', model: 'claude-opus-4-8' })
     await expect(provider.generateChipDraft({ prompt: 'x' })).rejects.toThrow()
   })
+
+  it('includes a theme enum in the draft schema and parses a returned theme', async () => {
+    create.mockResolvedValue({
+      stop_reason: 'end_turn',
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify({
+            dieShape: 'rect',
+            theme: 'keynote',
+            blocks: [{ type: 'CPU', x: 0.1, y: 0.1, w: 0.2, h: 0.2 }],
+          }),
+        },
+      ],
+    })
+    const provider = createAnthropicProvider({ apiKey: 'sk', model: 'claude-opus-4-8' })
+    const draft = await provider.generateChipDraft({ prompt: 'keynote chip' })
+    expect(draft.theme).toBe('keynote')
+    const args = create.mock.calls.at(-1)?.[0]
+    expect(args.output_config.format.schema.properties.theme.enum).toContain('keynote')
+  })
 })
 
 describe('createAnthropicProvider.generateSpecCopy', () => {
