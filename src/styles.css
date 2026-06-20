@@ -579,6 +579,43 @@ button {
   text-transform: uppercase;
 }
 
+.v2-dashboard__actions {
+  display: grid;
+  justify-items: end;
+  gap: 0.5rem;
+}
+
+.v2-ai-prompt {
+  min-width: min(18rem, 70vw);
+  min-height: 44px;
+  border: 1px solid var(--v2-border);
+  background: color-mix(in srgb, var(--v2-panel-strong) 72%, transparent);
+  color: var(--v2-text);
+  padding: 0 0.875rem;
+  font-size: 0.8rem;
+}
+
+.v2-ai-prompt:focus {
+  border-color: var(--v2-accent-2);
+  outline: 1px solid var(--v2-accent-2);
+  outline-offset: 1px;
+}
+
+.v2-ai-prompt::placeholder {
+  color: var(--v2-muted);
+}
+
+.v2-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.v2-dashboard__actions .v2-ai-error {
+  margin: 0;
+  color: #ff8f9b;
+  font-size: 0.75rem;
+}
+
 .v2-dashboard__header p:last-child {
   margin: 0.75rem 0 0;
   color: var(--v2-muted);
@@ -736,8 +773,18 @@ button {
 
 @media (max-width: 767px) {
   .v2-dashboard__header {
+    align-items: stretch;
+    flex-direction: column;
     padding-left: 1.25rem;
     padding-right: 1.25rem;
+  }
+
+  .v2-dashboard__actions {
+    justify-items: stretch;
+  }
+
+  .v2-dashboard__actions .v2-action-row > * {
+    flex: 1 1 100%;
   }
 
   .v2-preset-grid,
