@@ -104,3 +104,40 @@ describe('createAnthropicProvider.generateSpecCopy', () => {
     ).rejects.toThrow()
   })
 })
+
+describe('createAnthropicProvider.generateLayoutSuggestions', () => {
+  it('requests opus-4-8 with a json_schema format and parses the suggestions', async () => {
+    create.mockResolvedValue({
+      stop_reason: 'end_turn',
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify({
+            suggestions: [
+              { type: 'Cache', reason: 'pair with CPU', x: 0.5, y: 0.5, w: 0.2, h: 0.2 },
+            ],
+          }),
+        },
+      ],
+    })
+    const provider = createAnthropicProvider({ apiKey: 'sk', model: 'claude-opus-4-8' })
+    const result = await provider.generateLayoutSuggestions({
+      context: {
+        dieShape: 'rect',
+        blocks: [{ type: 'CPU', x: 0.1, y: 0.1, w: 0.2, h: 0.2 }],
+      },
+    })
+    expect(result.suggestions[0].type).toBe('Cache')
+    const args = create.mock.calls.at(-1)?.[0]
+    expect(args.model).toBe('claude-opus-4-8')
+    expect(args.output_config.format.type).toBe('json_schema')
+  })
+
+  it('throws on a refusal stop reason', async () => {
+    create.mockResolvedValue({ stop_reason: 'refusal', content: [] })
+    const provider = createAnthropicProvider({ apiKey: 'sk', model: 'claude-opus-4-8' })
+    await expect(
+      provider.generateLayoutSuggestions({ context: { dieShape: 'rect', blocks: [] } }),
+    ).rejects.toThrow()
+  })
+})

@@ -99,6 +99,9 @@ describe('POST /api/ai/generate-copy', () => {
       async generateSpecCopy() {
         throw new Error('down')
       },
+      async generateLayoutSuggestions() {
+        throw new Error('down')
+      },
     }
     const { app } = createTestApp(Date.now, { aiProvider: failing })
     const cookie = await signIn(app)

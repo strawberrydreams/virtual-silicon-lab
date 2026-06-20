@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk'
 import type { AiChipDraft } from '@domain/ai/aiChipDraft'
+import type { AiLayoutSuggestion } from '@domain/ai/aiLayoutSuggestion'
 import type { AiSpecDraft } from '@domain/ai/aiSpecDraft'
 import type { AiProvider } from './provider'
 
@@ -46,6 +47,31 @@ const SPEC_SCHEMA = {
   required: [
     'brand', 'series', 'generation', 'process', 'cores', 'bandwidth', 'features', 'description',
   ],
+} as const
+
+const SUGGESTIONS_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    suggestions: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        properties: {
+          type: { type: 'string' },
+          label: { type: 'string' },
+          reason: { type: 'string' },
+          x: { type: 'number' },
+          y: { type: 'number' },
+          w: { type: 'number' },
+          h: { type: 'number' },
+        },
+        required: ['type', 'x', 'y', 'w', 'h'],
+      },
+    },
+  },
+  required: ['suggestions'],
 } as const
 
 export function createAnthropicProvider(opts: { apiKey: string; model: string }): AiProvider {
@@ -98,6 +124,32 @@ export function createAnthropicProvider(opts: { apiKey: string; model: string })
       const text = response.content.find((b) => b.type === 'text')
       if (text === undefined || text.type !== 'text') throw new Error('No structured output returned')
       return JSON.parse(text.text) as AiSpecDraft
+    },
+
+    async generateLayoutSuggestions(input) {
+      const { context } = input
+      const summary =
+        `dieShape=${context.dieShape}, ` +
+        `existingBlocks=[${context.blocks.map((block) => block.type).join(', ')}]`
+      const response = await client.messages.create({
+        model: opts.model,
+        max_tokens: 2048,
+        output_config: { format: { type: 'json_schema', schema: SUGGESTIONS_SCHEMA } },
+        messages: [
+          {
+            role: 'user',
+            content:
+              'Suggest a few NEW blocks to add to this fictional chip (each with a block type, a ' +
+              'short reason, and fractional x,y,w,h in [0,1]). Context: ' +
+              summary,
+          },
+        ],
+      } as unknown as Anthropic.MessageCreateParamsNonStreaming)
+
+      if ((response.stop_reason as string) === 'refusal') throw new Error('AI declined the request')
+      const text = response.content.find((block) => block.type === 'text')
+      if (text === undefined || text.type !== 'text') throw new Error('No structured output returned')
+      return JSON.parse(text.text) as { suggestions: AiLayoutSuggestion[] }
     },
   }
 }
