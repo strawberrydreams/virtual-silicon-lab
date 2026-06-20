@@ -1,4 +1,4 @@
-# Virtual Silicon Lab 0.5 v7
+# Virtual Silicon Lab 0.6 v8
 
 가상의 반도체 다이를 디자인하고, 고해상도 칩 PNG와 보도자료 스타일 포스터를 내보내는
 로컬 우선(local-first) 크리에이티브 웹 앱입니다. EDA 툴이 아니며 실제 제조와는 무관합니다.
