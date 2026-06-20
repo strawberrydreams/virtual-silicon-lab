@@ -283,3 +283,80 @@ describe('POST /api/ai/generate-variations', () => {
     expect(res.status).toBe(503)
   })
 })
+
+describe('AI route abuse bounds', () => {
+  it('rejects an over-long prompt with 400 and writes no log row', async () => {
+    const { app, db } = createTestApp()
+    const cookie = await signIn(app)
+    const res = await app.request(
+      '/api/ai/generate-draft',
+      jsonRequest('POST', { prompt: 'x'.repeat(2001) }, cookie),
+    )
+
+    expect(res.status).toBe(400)
+    const n = (db.prepare('SELECT COUNT(*) AS n FROM ai_prompt_log').get() as { n: number }).n
+    expect(n).toBe(0)
+  })
+
+  it('rejects an oversized suggest-layout context before logging', async () => {
+    const { app, db } = createTestApp()
+    const cookie = await signIn(app)
+    const blocks = Array.from({ length: 65 }, () => ({
+      type: 'CPU',
+      x: 0,
+      y: 0,
+      w: 0.1,
+      h: 0.1,
+    }))
+    const res = await app.request(
+      '/api/ai/suggest-layout',
+      jsonRequest('POST', { context: { dieShape: 'rect', blocks } }, cookie),
+    )
+
+    expect(res.status).toBe(400)
+    const n = (db.prepare('SELECT COUNT(*) AS n FROM ai_prompt_log').get() as { n: number }).n
+    expect(n).toBe(0)
+  })
+
+  it('rejects an oversized generate-variations context before logging', async () => {
+    const { app, db } = createTestApp()
+    const cookie = await signIn(app)
+    const blocks = Array.from({ length: 65 }, () => ({
+      type: 'CPU',
+      x: 0,
+      y: 0,
+      w: 0.1,
+      h: 0.1,
+    }))
+    const res = await app.request(
+      '/api/ai/generate-variations',
+      jsonRequest(
+        'POST',
+        { context: { theme: 'neon', dieShape: 'rect', blocks }, count: 3 },
+        cookie,
+      ),
+    )
+
+    expect(res.status).toBe(400)
+    const n = (db.prepare('SELECT COUNT(*) AS n FROM ai_prompt_log').get() as { n: number }).n
+    expect(n).toBe(0)
+  })
+
+  it('rejects an oversized generate-copy context before logging', async () => {
+    const { app, db } = createTestApp()
+    const cookie = await signIn(app)
+    const blockTypes = Array.from({ length: 65 }, () => 'CPU')
+    const res = await app.request(
+      '/api/ai/generate-copy',
+      jsonRequest(
+        'POST',
+        { context: { theme: 'neon', dieShape: 'rect', blockTypes } },
+        cookie,
+      ),
+    )
+
+    expect(res.status).toBe(400)
+    const n = (db.prepare('SELECT COUNT(*) AS n FROM ai_prompt_log').get() as { n: number }).n
+    expect(n).toBe(0)
+  })
+})

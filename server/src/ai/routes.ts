@@ -12,6 +12,8 @@ import { createFakeProvider } from './fakeProvider'
 import { countRecentGenerations, logPrompt } from './quota'
 
 const SESSION_COOKIE = 'vsl_session'
+const MAX_PROMPT_LENGTH = 2000
+const MAX_CONTEXT_BLOCKS = 64
 
 export function aiRoutes({
   db,
@@ -51,6 +53,9 @@ export function aiRoutes({
     const body = (await c.req.json().catch(() => null)) as { prompt?: unknown } | null
     const prompt = typeof body?.prompt === 'string' ? body.prompt : ''
     if (prompt.trim() === '') return fail(c, 400, 'INVALID_PROMPT', 'A prompt is required.')
+    if (prompt.length > MAX_PROMPT_LENGTH) {
+      return fail(c, 400, 'PAYLOAD_TOO_LARGE', 'Prompt is too long.')
+    }
 
     // Log before calling out so failed/abused attempts still count against the quota.
     logPrompt(db, { userId: user.id, kind: 'generate-draft', prompt }, now)
@@ -85,6 +90,9 @@ export function aiRoutes({
         ? source.blockTypes.filter((t): t is string => typeof t === 'string')
         : [],
     }
+    if (context.blockTypes.length > MAX_CONTEXT_BLOCKS) {
+      return fail(c, 400, 'PAYLOAD_TOO_LARGE', 'Too many blocks.')
+    }
 
     // Log before calling out so failed/abused attempts still count against the shared quota.
     logPrompt(db, { userId: user.id, kind: 'generate-copy', prompt: JSON.stringify(context) }, now)
@@ -118,6 +126,9 @@ export function aiRoutes({
             (block) => typeof block === 'object' && block !== null,
           ) as AiLayoutContext['blocks'])
         : [],
+    }
+    if (context.blocks.length > MAX_CONTEXT_BLOCKS) {
+      return fail(c, 400, 'PAYLOAD_TOO_LARGE', 'Too many blocks.')
     }
 
     // Log before calling out so failed attempts still count against the shared quota.
@@ -164,6 +175,9 @@ export function aiRoutes({
               h: typeof block.h === 'number' ? block.h : 0,
             }))
         : [],
+    }
+    if (context.blocks.length > MAX_CONTEXT_BLOCKS) {
+      return fail(c, 400, 'PAYLOAD_TOO_LARGE', 'Too many blocks.')
     }
     const rawCount = body?.count
     const requested =
