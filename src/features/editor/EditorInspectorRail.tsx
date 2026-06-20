@@ -10,6 +10,7 @@ import type {
 import type { SelectedStudioItem } from '../../stores/editorStore'
 import { ExportPanel } from '../export/ExportPanel'
 import { PublishPanel } from '../publish/PublishPanel'
+import { AiSpecPanel } from '../specs/AiSpecPanel'
 import { FakeSpecForm } from '../specs/FakeSpecForm'
 import { GeneratedSpecPanel } from '../specs/GeneratedSpecPanel'
 import { BlockVisualPanel } from './BlockVisualPanel'
@@ -96,6 +97,7 @@ export function EditorInspectorRail({
           onUpdateSticker={onUpdateSticker}
           onUpdateSpray={onUpdateSpray}
         />
+        <AiSpecPanel project={project} onApply={onSetSpec} />
         <FakeSpecForm spec={project.spec} onChange={onSetSpec} />
         {/* Exports always composite the full artwork from project data; the
             editor's ephemeral layer toggles must never leak into the PNGs. */}
