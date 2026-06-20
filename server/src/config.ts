@@ -28,6 +28,10 @@ const SENSITIVE_RATE_LIMIT_OVERRIDES = {
   'POST:/api/auth/signup': { windowMs: DEFAULT_RATE_LIMIT_WINDOW_MS, max: 10 },
   'POST:/api/auth/forgot-password': { windowMs: DEFAULT_RATE_LIMIT_WINDOW_MS, max: 5 },
   'POST:/api/reports': { windowMs: DEFAULT_RATE_LIMIT_WINDOW_MS, max: 10 },
+  'POST:/api/ai/generate-draft': { windowMs: DEFAULT_RATE_LIMIT_WINDOW_MS, max: 10 },
+  'POST:/api/ai/generate-copy': { windowMs: DEFAULT_RATE_LIMIT_WINDOW_MS, max: 10 },
+  'POST:/api/ai/suggest-layout': { windowMs: DEFAULT_RATE_LIMIT_WINDOW_MS, max: 10 },
+  'POST:/api/ai/generate-variations': { windowMs: DEFAULT_RATE_LIMIT_WINDOW_MS, max: 10 },
 }
 
 function parseBaseUrl(value: string, field: string): string {

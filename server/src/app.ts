@@ -2,6 +2,11 @@ import type Database from 'better-sqlite3'
 import { Hono } from 'hono'
 import { CURRENT_SCHEMA_VERSION } from '@domain/project'
 import { accountRoutes } from './accounts/routes'
+import { aiRoutes } from './ai/routes'
+import { createAnthropicProvider } from './ai/anthropicProvider'
+import { resolveAiConfig } from './ai/config'
+import { createFakeProvider } from './ai/fakeProvider'
+import type { AiProvider } from './ai/provider'
 import { contestRoutes } from './contests/routes'
 import type { AccessMode, RuntimeConfig } from './config'
 import type { EmailProvider } from './email/provider'
@@ -30,6 +35,8 @@ export type AppDeps = {
   requireVerifiedPublish?: boolean
   adminEmails?: string[]
   galleryLockdown?: boolean
+  aiProvider?: AiProvider
+  aiDailyQuota?: number
 }
 
 // Single source of truth for turning validated runtime config into app deps. The server
@@ -40,6 +47,11 @@ export function buildAppDeps(
   config: RuntimeConfig,
   runtime: { db: Database.Database; imageStore?: PublishedImageStore; emailProvider?: EmailProvider },
 ): AppDeps {
+  const aiConfig = resolveAiConfig()
+  const aiProvider =
+    aiConfig.provider === 'anthropic' && aiConfig.apiKey !== undefined
+      ? createAnthropicProvider({ apiKey: aiConfig.apiKey, model: aiConfig.model })
+      : createFakeProvider()
   return {
     db: runtime.db,
     imageStore: runtime.imageStore,
@@ -53,6 +65,8 @@ export function buildAppDeps(
     requireVerifiedPublish: config.requireVerifiedPublish,
     adminEmails: config.adminEmails,
     galleryLockdown: config.galleryLockdown,
+    aiProvider,
+    aiDailyQuota: aiConfig.dailyQuota,
   }
 }
 
@@ -109,6 +123,7 @@ export function createApp(deps: AppDeps) {
     })
   })
   app.route('/api', accountRoutes(deps))
+  app.route('/api', aiRoutes(deps))
   app.route('/api', inviteRoutes(deps))
   app.route('/api', publishRoutes(deps))
   app.route('/api', moderationRoutes(deps))

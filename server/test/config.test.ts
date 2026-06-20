@@ -59,6 +59,10 @@ describe('loadRuntimeConfig', () => {
         'POST:/api/auth/signup': { windowMs: 60_000, max: 10 },
         'POST:/api/auth/forgot-password': { windowMs: 60_000, max: 5 },
         'POST:/api/reports': { windowMs: 60_000, max: 10 },
+        'POST:/api/ai/generate-draft': { windowMs: 60_000, max: 10 },
+        'POST:/api/ai/generate-copy': { windowMs: 60_000, max: 10 },
+        'POST:/api/ai/suggest-layout': { windowMs: 60_000, max: 10 },
+        'POST:/api/ai/generate-variations': { windowMs: 60_000, max: 10 },
       },
     })
     expect(config.uploadMaxBytes).toBe(8 * 1024 * 1024)

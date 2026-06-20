@@ -1,10 +1,11 @@
-import { useNavigate } from 'react-router-dom'
-import { Link } from 'react-router-dom'
+import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import type { Project } from '../../domain/project'
 import type { PresetId, PresetMetadata } from '../../presets/presetCatalog'
 import { MiniChipPreview } from './MiniChipPreview'
 import { chipFinishLabel } from '../../visual/themeFinish'
 import { PresetCard } from './PresetCard'
+import { AiApiError, AiServerUnreachableError } from '../specs/aiCopyApi'
 
 type Props = {
   projects: Project[]
@@ -12,8 +13,26 @@ type Props = {
   createProject: (name: string) => Promise<Project>
   createRandomProject: () => Promise<Project>
   remixPreset: (id: PresetId) => Promise<Project>
+  generateAiChip: (prompt: string) => Promise<Project>
   duplicateProject: (id: string) => Promise<Project>
   removeProject: (id: string) => Promise<void>
+}
+
+function messageForAiError(error: unknown): string {
+  if (error instanceof AiServerUnreachableError) return 'AI server is unreachable. Try again later.'
+  if (error instanceof AiApiError) {
+    switch (error.code) {
+      case 'UNAUTHORIZED':
+        return 'Sign in to use AI generation.'
+      case 'QUOTA_EXCEEDED':
+        return 'Daily AI limit reached. Try again tomorrow.'
+      case 'AI_UNAVAILABLE':
+        return "The AI couldn't generate a chip right now."
+      default:
+        return error.message
+    }
+  }
+  return 'Something went wrong generating a chip.'
 }
 
 export function ProjectDashboard({
@@ -22,11 +41,15 @@ export function ProjectDashboard({
   createProject,
   createRandomProject,
   remixPreset,
+  generateAiChip,
   duplicateProject,
   removeProject,
 }: Props) {
   const navigate = useNavigate()
   const starterPresets = presets.filter((preset) => preset.featured).slice(0, 3)
+  const [aiPrompt, setAiPrompt] = useState('')
+  const [aiStatus, setAiStatus] = useState<'idle' | 'loading'>('idle')
+  const [aiError, setAiError] = useState<string | null>(null)
 
   async function startProject() {
     const project = await createProject('Untitled Dream Chip')
@@ -41,6 +64,20 @@ export function ProjectDashboard({
   async function startRemix(id: PresetId) {
     const project = await remixPreset(id)
     navigate(`/editor/${project.id}`)
+  }
+
+  async function startAiChip() {
+    const trimmed = aiPrompt.trim()
+    if (trimmed === '') return
+    setAiStatus('loading')
+    setAiError(null)
+    try {
+      const project = await generateAiChip(trimmed)
+      navigate(`/editor/${project.id}`)
+    } catch (error) {
+      setAiError(messageForAiError(error))
+      setAiStatus('idle')
+    }
   }
 
   async function duplicate(project: Project) {
@@ -73,16 +110,38 @@ export function ProjectDashboard({
               Presets
             </p>
           </div>
-          <div className="v2-action-row">
-            <Link className="v2-button v2-button--muted" to="/">
-              Lab Home
-            </Link>
-            <button className="v2-button v2-button--primary" onClick={startProject}>
-              New Project
-            </button>
-            <button className="v2-button" onClick={startRandomProject}>
-              Random Chip
-            </button>
+          <div className="v2-dashboard__actions">
+            <div className="v2-action-row">
+              <Link className="v2-button v2-button--muted" to="/">
+                Lab Home
+              </Link>
+              <button className="v2-button v2-button--primary" onClick={startProject}>
+                New Project
+              </button>
+              <button className="v2-button" onClick={startRandomProject}>
+                Random Chip
+              </button>
+              <input
+                className="v2-ai-prompt"
+                aria-label="AI chip prompt"
+                placeholder="Describe a chip…"
+                maxLength={2000}
+                value={aiPrompt}
+                onChange={(event) => setAiPrompt(event.target.value)}
+              />
+              <button
+                className="v2-button"
+                onClick={startAiChip}
+                disabled={aiStatus === 'loading' || aiPrompt.trim() === ''}
+              >
+                {aiStatus === 'loading' ? 'Generating…' : 'Generate with AI'}
+              </button>
+            </div>
+            {aiError !== null ? (
+              <p className="v2-ai-error" role="alert">
+                {aiError}
+              </p>
+            ) : null}
           </div>
         </header>
         <section aria-label="Preset remix surface" className="v2-dashboard-section">

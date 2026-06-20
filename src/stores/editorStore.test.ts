@@ -449,3 +449,33 @@ describe('editorStore visual commands', () => {
     expect(store.getState().project.spec).toEqual(original)
   })
 })
+
+describe('editor store AI suggestions', () => {
+  it('applies a suggestion as one undoable block addition', () => {
+    const store = createEditorStore(seededProject(), { createId: fixedIds('sug-1') })
+    const before = store.getState().project.blocks.length
+
+    store.getState().applyAiSuggestion({ type: 'SRAM', x: 0.1, y: 0.1, w: 0.2, h: 0.2 })
+
+    const added = store.getState().project.blocks
+    expect(added).toHaveLength(before + 1)
+    expect(added[added.length - 1]).toMatchObject({ id: 'sug-1', type: 'SRAM' })
+    expect(store.getState().selectedBlockId).toBe('sug-1')
+    expect(store.getState().past).toHaveLength(1)
+
+    store.getState().undo()
+    expect(store.getState().project.blocks).toHaveLength(before)
+  })
+
+  it('ignores a suggestion with an unknown block type without creating history', () => {
+    const store = createEditorStore(seededProject())
+    const before = store.getState().project.blocks.length
+
+    store
+      .getState()
+      .applyAiSuggestion({ type: 'Nonsense', x: 0.1, y: 0.1, w: 0.2, h: 0.2 })
+
+    expect(store.getState().project.blocks).toHaveLength(before)
+    expect(store.getState().past).toHaveLength(0)
+  })
+})

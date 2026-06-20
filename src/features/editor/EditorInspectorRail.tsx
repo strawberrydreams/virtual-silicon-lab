@@ -7,12 +7,16 @@ import type {
   StudioSticker,
   StudioTileSettings,
 } from '../../domain/project'
+import type { AiLayoutSuggestion } from '../../domain/ai/aiLayoutSuggestion'
 import type { SelectedStudioItem } from '../../stores/editorStore'
 import { ExportPanel } from '../export/ExportPanel'
 import { PublishPanel } from '../publish/PublishPanel'
+import { AiSpecPanel } from '../specs/AiSpecPanel'
 import { FakeSpecForm } from '../specs/FakeSpecForm'
 import { GeneratedSpecPanel } from '../specs/GeneratedSpecPanel'
 import { BlockVisualPanel } from './BlockVisualPanel'
+import { AiLayoutSuggestionsPanel } from './AiLayoutSuggestionsPanel'
+import { AiVariationsPanel } from './AiVariationsPanel'
 import { ColorSettingsPanel } from './ColorSettingsPanel'
 import { LayerVisibilityPanel } from './LayerVisibilityPanel'
 import { SelectedTilePanel } from './SelectedTilePanel'
@@ -40,6 +44,8 @@ type Props = {
     patch: Partial<Pick<StudioSpray, 'color' | 'intensity' | 'radius' | 'blend'>>,
   ) => void
   onSetSpec: (spec: Project['spec']) => void
+  onApplyAiSuggestion: (suggestion: AiLayoutSuggestion) => void
+  onSaveVariation: (variation: Project) => Promise<unknown>
   onToggleLayerVisibility: (layer: ChipLayerId) => void
 }
 
@@ -54,6 +60,8 @@ export function EditorInspectorRail({
   onUpdateSticker,
   onUpdateSpray,
   onSetSpec,
+  onApplyAiSuggestion,
+  onSaveVariation,
   onToggleLayerVisibility,
 }: Props) {
   return (
@@ -96,6 +104,9 @@ export function EditorInspectorRail({
           onUpdateSticker={onUpdateSticker}
           onUpdateSpray={onUpdateSpray}
         />
+        <AiSpecPanel project={project} onApply={onSetSpec} />
+        <AiLayoutSuggestionsPanel project={project} onApply={onApplyAiSuggestion} />
+        <AiVariationsPanel project={project} onSaveVariation={onSaveVariation} />
         <FakeSpecForm spec={project.spec} onChange={onSetSpec} />
         {/* Exports always composite the full artwork from project data; the
             editor's ephemeral layer toggles must never leak into the PNGs. */}

@@ -1,4 +1,6 @@
 import { createStore } from 'zustand/vanilla'
+import type { AiLayoutSuggestion } from '../domain/ai/aiLayoutSuggestion'
+import { resolveAiSuggestionBlock } from '../domain/ai/resolveAiSuggestionBlock'
 import type {
   Block,
   BlockType,
@@ -61,6 +63,7 @@ export type EditorState = {
   select: (id: string | null) => void
   selectStudioItem: (item: SelectedStudioItem | null) => void
   addBlock: (type: BlockType) => void
+  applyAiSuggestion: (suggestion: AiLayoutSuggestion) => void
   addSticker: (kind?: StudioStickerKind) => void
   addSpray: (color?: string) => void
   transformBlock: (id: string, transform: BlockTransform) => void
@@ -214,6 +217,26 @@ export function createEditorStore(initialProject: Project, options: Options = {}
                 die: project.die,
                 targetBlockId: block.id,
                 target: { x: 0, y: 0 },
+              })
+            : blocks
+        commit(replaceBlocks(project, nextBlocks), {
+          selectedBlockId: block.id,
+          selectedStudioItem: null,
+        })
+      },
+
+      applyAiSuggestion(suggestion) {
+        const { project } = get()
+        const block = resolveAiSuggestionBlock(project, suggestion, createId())
+        if (block === null) return
+        const blocks = [...project.blocks, block]
+        const nextBlocks =
+          project.studio.layoutMode === 'global-reflow'
+            ? reflowBlocksGlobally({
+                blocks,
+                die: project.die,
+                targetBlockId: block.id,
+                target: { x: block.x, y: block.y },
               })
             : blocks
         commit(replaceBlocks(project, nextBlocks), {

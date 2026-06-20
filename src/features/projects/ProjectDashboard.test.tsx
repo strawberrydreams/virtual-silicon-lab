@@ -4,6 +4,7 @@ import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it, vi } from 'vitest'
 import { createProject } from '../../domain/projectFactory'
 import { PRESET_CATALOG } from '../../presets/presetCatalog'
+import { AiApiError } from '../specs/aiCopyApi'
 import { ProjectDashboard } from './ProjectDashboard'
 
 describe('ProjectDashboard', () => {
@@ -16,6 +17,7 @@ describe('ProjectDashboard', () => {
           createProject={vi.fn()}
           createRandomProject={vi.fn()}
           remixPreset={vi.fn()}
+          generateAiChip={vi.fn()}
           duplicateProject={vi.fn()}
           removeProject={vi.fn()}
         />
@@ -39,6 +41,7 @@ describe('ProjectDashboard', () => {
           createProject={vi.fn()}
           createRandomProject={vi.fn()}
           remixPreset={remixPreset}
+          generateAiChip={vi.fn()}
           duplicateProject={vi.fn()}
           removeProject={vi.fn()}
         />
@@ -62,6 +65,7 @@ describe('ProjectDashboard', () => {
           createProject={createProjectCommand}
           createRandomProject={vi.fn()}
           remixPreset={vi.fn()}
+          generateAiChip={vi.fn()}
           duplicateProject={vi.fn()}
           removeProject={vi.fn()}
         />
@@ -83,6 +87,7 @@ describe('ProjectDashboard', () => {
           createProject={vi.fn()}
           createRandomProject={vi.fn()}
           remixPreset={remixPreset}
+          generateAiChip={vi.fn()}
           duplicateProject={vi.fn()}
           removeProject={vi.fn()}
         />
@@ -104,6 +109,7 @@ describe('ProjectDashboard', () => {
           createProject={vi.fn()}
           createRandomProject={createRandomProject}
           remixPreset={vi.fn()}
+          generateAiChip={vi.fn()}
           duplicateProject={vi.fn()}
           removeProject={vi.fn()}
         />
@@ -128,6 +134,7 @@ describe('ProjectDashboard', () => {
           createProject={vi.fn()}
           createRandomProject={vi.fn()}
           remixPreset={vi.fn()}
+          generateAiChip={vi.fn()}
           duplicateProject={duplicateProject}
           removeProject={removeProject}
         />
@@ -156,6 +163,7 @@ describe('ProjectDashboard', () => {
           createProject={vi.fn()}
           createRandomProject={vi.fn()}
           remixPreset={vi.fn()}
+          generateAiChip={vi.fn()}
           duplicateProject={vi.fn()}
           removeProject={removeProject}
         />
@@ -167,5 +175,76 @@ describe('ProjectDashboard', () => {
     expect(confirmSpy).toHaveBeenCalled()
     expect(removeProject).not.toHaveBeenCalled()
     confirmSpy.mockRestore()
+  })
+
+  it('generates a chip from a prompt and navigates on success', async () => {
+    const generateAiChip = vi.fn().mockResolvedValue(createProject('AI Chip', 'ai-1', 100))
+    render(
+      <MemoryRouter>
+        <ProjectDashboard
+          projects={[]}
+          presets={PRESET_CATALOG}
+          createProject={vi.fn()}
+          createRandomProject={vi.fn()}
+          remixPreset={vi.fn()}
+          generateAiChip={generateAiChip}
+          duplicateProject={vi.fn()}
+          removeProject={vi.fn()}
+        />
+      </MemoryRouter>,
+    )
+
+    const generateButton = screen.getByRole('button', { name: /generate with ai/i })
+    expect(generateButton).toBeDisabled()
+    await userEvent.type(screen.getByPlaceholderText(/describe a chip/i), 'a calm mono chip')
+    expect(generateButton).toBeEnabled()
+    await userEvent.click(generateButton)
+
+    expect(generateAiChip).toHaveBeenCalledWith('a calm mono chip')
+  })
+
+  it('caps the AI prompt input length at 2000 characters', () => {
+    render(
+      <MemoryRouter>
+        <ProjectDashboard
+          projects={[]}
+          presets={PRESET_CATALOG}
+          createProject={vi.fn()}
+          createRandomProject={vi.fn()}
+          remixPreset={vi.fn()}
+          generateAiChip={vi.fn()}
+          duplicateProject={vi.fn()}
+          removeProject={vi.fn()}
+        />
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByLabelText('AI chip prompt')).toHaveAttribute('maxlength', '2000')
+  })
+
+  it('shows an inline message and creates no project when generation fails', async () => {
+    const generateAiChip = vi
+      .fn()
+      .mockRejectedValue(new AiApiError('QUOTA_EXCEEDED', 'too many'))
+    render(
+      <MemoryRouter>
+        <ProjectDashboard
+          projects={[]}
+          presets={PRESET_CATALOG}
+          createProject={vi.fn()}
+          createRandomProject={vi.fn()}
+          remixPreset={vi.fn()}
+          generateAiChip={generateAiChip}
+          duplicateProject={vi.fn()}
+          removeProject={vi.fn()}
+        />
+      </MemoryRouter>,
+    )
+
+    await userEvent.type(screen.getByPlaceholderText(/describe a chip/i), 'x')
+    await userEvent.click(screen.getByRole('button', { name: /generate with ai/i }))
+
+    expect(await screen.findByText(/daily ai limit/i)).toBeInTheDocument()
+    expect(generateAiChip).toHaveBeenCalledTimes(1)
   })
 })

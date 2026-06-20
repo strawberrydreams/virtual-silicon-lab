@@ -227,4 +227,19 @@ export const migrations: Migration[] = [
       `)
     },
   },
+  {
+    id: '013_ai',
+    up: (db) => {
+      db.exec(`
+        CREATE TABLE ai_prompt_log (
+          id TEXT PRIMARY KEY,
+          user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          kind TEXT NOT NULL,
+          prompt TEXT NOT NULL,
+          created_at INTEGER NOT NULL
+        );
+        CREATE INDEX idx_ai_prompt_log_user_created ON ai_prompt_log(user_id, created_at);
+      `)
+    },
+  },
 ]

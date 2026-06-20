@@ -15,6 +15,7 @@ import { GalleryDetailPage } from '../features/gallery/GalleryDetailPage'
 import { GalleryPage } from '../features/gallery/GalleryPage'
 import { LandingPage } from '../features/landing/LandingPage'
 import { ProfilePage } from '../features/profile/ProfilePage'
+import { liveAiDraftApi } from '../features/projects/aiDraftApi'
 import { ProjectDashboard } from '../features/projects/ProjectDashboard'
 import { PRESET_CATALOG } from '../presets/presetCatalog'
 import { AuthStoreProvider, useAuthStore } from '../stores/authStoreContext'
@@ -51,6 +52,9 @@ function DashboardRoute() {
       createProject={store.create}
       createRandomProject={store.createRandom}
       remixPreset={store.remixPreset}
+      generateAiChip={async (prompt) =>
+        store.createFromAiDraft(await liveAiDraftApi.generateDraft(prompt))
+      }
       duplicateProject={store.duplicate}
       removeProject={store.remove}
     />
@@ -126,6 +130,7 @@ function EditorRoute() {
       key={project.id}
       project={project}
       persist={(nextProject) => void store.save(nextProject)}
+      onSaveVariation={store.createFromAiDraft}
     />
   )
 }
