@@ -1,4 +1,5 @@
 import type { AiProvider } from './provider'
+import type { StyleTheme } from '@domain/project'
 
 /** Deterministic provider for dev/test — no network. */
 export function createFakeProvider(): AiProvider {
@@ -55,6 +56,25 @@ export function createFakeProvider(): AiProvider {
           h: 0.2,
         }))
       return { suggestions }
+    },
+    async generateVariations(input) {
+      const { context, count } = input
+      const themes: StyleTheme[] = ['neon', 'retro', 'military', 'keynote', 'mono']
+      const baseName = (context.name ?? '').trim() || 'AI Chip'
+      const baseIndex = Math.max(0, themes.indexOf(context.theme))
+      const variations = Array.from({ length: count }, (_, index) => ({
+        name: `${baseName} v${index + 1}`,
+        dieShape: context.dieShape,
+        theme: themes[(baseIndex + index + 1) % themes.length],
+        blocks: context.blocks.map((block) => ({
+          type: block.type,
+          x: block.x,
+          y: block.y,
+          w: block.w,
+          h: block.h,
+        })),
+      }))
+      return { variations }
     },
   }
 }
