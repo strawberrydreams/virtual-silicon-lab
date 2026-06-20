@@ -90,6 +90,22 @@ describe('project store', () => {
     expect(await repository.get(project.id)).toEqual(project)
   })
 
+  it('saves an AI draft as a fresh local project listed first, keeping its name', async () => {
+    const repository = createMemoryRepository()
+    let n = 0
+    const store = createProjectStore(repository, () => 7_000, () => `ai-${n++}`)
+    const draft = createProject('Prompted Chip', 'server-id', 1_000)
+
+    const first = await store.getState().createFromAiDraft(draft)
+    const second = await store.getState().createFromAiDraft(draft)
+
+    expect(first).toMatchObject({ id: 'ai-0', name: 'Prompted Chip', createdAt: 7_000 })
+    expect(first.remixedFrom).toBeUndefined()
+    expect(second.id).toBe('ai-1')
+    expect(store.getState().projects.map((project) => project.id)).toEqual(['ai-1', 'ai-0'])
+    expect(await repository.get(first.id)).toEqual(first)
+  })
+
   it('persists a deterministic random chip project and lists it first', async () => {
     const repository = createMemoryRepository()
     const store = createProjectStore(

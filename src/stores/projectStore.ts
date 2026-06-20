@@ -1,4 +1,5 @@
 import { createStore } from 'zustand/vanilla'
+import { materializeAiDraftProject } from '../domain/ai/materializeAiDraftProject'
 import type { Project, RemixOrigin } from '../domain/project'
 import { createProject } from '../domain/projectFactory'
 import { importRemixedProject } from '../domain/remixImport'
@@ -14,6 +15,7 @@ type ProjectState = {
   createRandom: () => Promise<Project>
   remixPreset: (presetId: PresetId) => Promise<Project>
   remixImport: (snapshot: unknown, origin?: RemixOrigin) => Promise<Project>
+  createFromAiDraft: (snapshot: unknown) => Promise<Project>
   duplicate: (id: string) => Promise<Project>
   remove: (id: string) => Promise<void>
   get: (id: string) => Promise<Project | undefined>
@@ -51,6 +53,12 @@ export function createProjectStore(
     },
     async remixImport(snapshot, origin) {
       const project = importRemixedProject(snapshot, createId(), now(), origin)
+      await repository.save(project)
+      set({ projects: [project, ...get().projects] })
+      return project
+    },
+    async createFromAiDraft(snapshot) {
+      const project = materializeAiDraftProject(snapshot, createId(), now())
       await repository.save(project)
       set({ projects: [project, ...get().projects] })
       return project
