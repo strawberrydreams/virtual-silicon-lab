@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createProject } from '../../domain/projectFactory'
-import { AiApiError, AiServerUnreachableError } from '../specs/aiCopyApi'
+import { AiServerUnreachableError } from '../specs/aiCopyApi'
 import { liveAiDraftApi } from './aiDraftApi'
 
 afterEach(() => {

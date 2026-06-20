@@ -8,9 +8,9 @@ import { migrateProject } from '../projectMigration'
  */
 export function materializeAiDraftProject(snapshot: unknown, id: string, now: number): Project {
   const migrated = structuredClone(migrateProject(snapshot))
-  const { remixedFrom: _remixedFrom, ...original } = migrated
+  delete migrated.remixedFrom
   return {
-    ...original,
+    ...migrated,
     id,
     createdAt: now,
     updatedAt: now,
