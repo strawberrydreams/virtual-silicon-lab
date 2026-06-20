@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { AiChipContext } from '../../domain/ai/aiSpecDraft'
-import { AiApiError, AiServerUnreachableError, liveAiCopyApi } from './aiCopyApi'
+import { AiServerUnreachableError, liveAiCopyApi } from './aiCopyApi'
 
 const context: AiChipContext = { theme: 'neon', dieShape: 'rect', blockTypes: ['CPU'] }
 

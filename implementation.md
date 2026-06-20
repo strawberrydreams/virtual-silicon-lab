@@ -1775,3 +1775,52 @@ v8 "AI-Assisted Creation"의 첫 마일스톤. 서버 측 AI draft 생성 기반
 - **자동 게이트.** 최종 `npm test`는 client 90 files/459 tests, server 68 files/256 tests이며, `npm run
   build`(기존 >500kB 청크 경고만 — 신규 dependency나 client 코드 변경 없음), `npm run typecheck --workspace
   server`, `npm run lint`가 모두 통과했다.
+
+## V8-M1 AI Naming + Fake-Spec Copy (2026-06-19)
+
+v8의 첫 **사용자 노출** AI 기능. 사용자가 편집 중인 칩의 컨텍스트(theme/die shape/block types)만으로
+"Generate from this chip" 한 번 클릭 → 미리보기 → Apply/Discard로 이어지는 흐름이며, 프롬프트 입력칸은
+없다(zero-input). 스펙 `docs/superpowers/specs/2026-06-19-v8-m1-ai-naming-spec-copy-design.md`, 계획
+`docs/superpowers/plans/2026-06-19-v8-m1-ai-naming-spec-copy.md`.
+
+- **순수 valid-spec 보증.** `src/domain/ai/deriveAiChipContext.ts`가 `Project`에서 `AiChipContext`
+  (`theme`/`dieShape`/`blockTypes`/optional `name`)를 순수하게 파생한다. `src/domain/ai/
+  mapAiSpecDraftToFakeSpec.ts`가 M0의 `mapAiDraftToProject`와 동일한 역할을 `FakeSpec`에 대해 수행한다 —
+  모든 문자열 필드는 trim 후 길이 cap(`MAX_TEXT=80`, `description`은 280), `cores`는 유한수만 받아
+  0 이상 4096 이하 정수로 clamp, `features`는 비어있지 않은 trim된 문자열 최대 6개로 bound, 누락되거나
+  타입이 틀린 필드는 모두 고정 기본값(`AI FOUNDRY` / `GEN-1` / ... )으로 떨어진다. AI structured output은
+  shape만 보장하므로, 적대적이거나 형식이 깨진 draft가 와도 이 매핑 함수 하나가 항상 유효한 `FakeSpec`을
+  보장한다 — M0의 valid-project 보증을 `FakeSpec`으로 그대로 옮긴 것.
+- **`AiProvider.generateSpecCopy`.** M0의 provider 인터페이스에 `generateSpecCopy(input):
+  Promise<AiSpecDraft>`를 추가했다. fake provider는 컨텍스트(theme/dieShape/blockTypes)에서 결정적으로
+  카피를 만들어 키 없이도 전체 흐름을 테스트할 수 있게 했고, anthropic provider는 `claude-opus-4-8` +
+  `output_config.format` json_schema로 동일한 structured-output 패턴을 재사용한다(SDK는 anthropic
+  adapter 파일에만 import됨; 테스트는 SDK를 모킹하고 실제 호출은 하지 않는다).
+- **`POST /api/ai/generate-copy`.** M0의 인증 + quota 게이트를 그대로 재사용한다. quota는 M0과
+  **공유**된다 — `ai_prompt_log`에 새 마이그레이션 없이 `kind='generate-copy'`로 기록하며,
+  `countRecentGenerations`는 kind를 구분하지 않고 트레일링 24시간의 모든 행을 센다(즉 generate-draft와
+  generate-copy가 하루 quota를 나눠 쓴다). 인증/quota 체크를 공유하는 `requireUserWithinQuota` 헬퍼를
+  새로 뽑아 generate-draft와 generate-copy 라우트가 함께 쓰게 리팩터했다. prompt 로그는 provider 호출
+  **전에** 기록해 실패·거부된 호출도 quota에 포함된다. 라우트는 401(미인증)/429(quota 초과)/503(provider
+  비활성 또는 throw)/200(`{ spec: FakeSpec }`)을 반환하며, 어떤 경로로도 `projects`/`published_chips`에
+  쓰지 않는다(local-first 불변).
+- **클라이언트 `aiCopyApi` + `AiSpecPanel`.** `src/features/specs/aiCopyApi.ts`는 M3 publishApi와 같은
+  에러 매핑 패턴(오프라인/502~504 → `AiServerUnreachableError`, `{error}` 바디 → 코드를 보존하는
+  `AiApiError`)을 따른다. `AiSpecPanel`은 `EditorInspectorRail`에 `FakeSpecForm` **위에 추가로**
+  마운트되는 컴포넌트로, 클릭 전까지 아무 요청도 보내지 않고(lazy), 생성 결과를 미리보기로만 보여주다가
+  **Apply**를 누르면 기존 `setSpec` 커맨드 한 번으로 `FakeSpec`을 덮어쓴다(=undo 가능한 단일 커밋이며
+  새 에디터 커맨드나 스키마 변경 없음) — **Discard**는 아무 것도 바꾸지 않는다. 401/429/503/오프라인은
+  모두 패널 안의 안내 문구로만 표시되고 `FakeSpecForm`의 수동 편집은 항상 그대로 동작한다(로컬 우선
+  저하 동작 보존).
+- **스키마/마이그레이션 없음.** `ai_prompt_log`는 M0의 `013_ai`를 그대로 재사용하며 신규 마이그레이션이
+  없다(`server/src/migrations.ts`의 `id: '01*'` 목록은 `013_ai`에서 그대로 끝난다). `Project.schemaVersion`
+  도 `FakeSpec` 타입도 변경되지 않았다.
+- **키 유출 점검.** `npm run build` 후 `grep -rl "ANTHROPIC_API_KEY" dist/assets`가 아무 결과도 내지
+  않아 클라이언트 번들에 키가 전혀 포함되지 않음을 재확인했다(M0과 동일한 점검을 M1에도 반복).
+- **자동 게이트.** 최종 `npm test`는 client 94 files/475 tests, server 68 files/264 tests이며, `npm run
+  build`(기존 >500kB 청크 경고만), `npm run typecheck --workspace server`, `npm run lint`가 모두
+  통과했다(lint는 task 6의 테스트 파일에 남아있던 미사용 import 하나를 제거해 통과시켰다).
+- **브라우저 QA 보류.** 에디터에서 "Generate from this chip" 클릭 → 미리보기 → Apply → Spec Sheet 갱신 →
+  undo 복원, 그리고 서버 중단 시 안내 문구 + 수동 편집 유지를 확인하는 실제 브라우저 검증은 **오너 수동
+  QA로 보류**한다. 이번 단계의 근거는 자동 게이트(전체 테스트 통과)와 fake provider 기반 라우트/패널
+  단위·통합 테스트뿐이며, 실제 브라우저 세션은 수행하지 않았다.
