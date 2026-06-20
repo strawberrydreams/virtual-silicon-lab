@@ -125,6 +125,7 @@ export function ProjectDashboard({
                 className="v2-ai-prompt"
                 aria-label="AI chip prompt"
                 placeholder="Describe a chip…"
+                maxLength={2000}
                 value={aiPrompt}
                 onChange={(event) => setAiPrompt(event.target.value)}
               />

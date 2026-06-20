@@ -203,6 +203,25 @@ describe('ProjectDashboard', () => {
     expect(generateAiChip).toHaveBeenCalledWith('a calm mono chip')
   })
 
+  it('caps the AI prompt input length at 2000 characters', () => {
+    render(
+      <MemoryRouter>
+        <ProjectDashboard
+          projects={[]}
+          presets={PRESET_CATALOG}
+          createProject={vi.fn()}
+          createRandomProject={vi.fn()}
+          remixPreset={vi.fn()}
+          generateAiChip={vi.fn()}
+          duplicateProject={vi.fn()}
+          removeProject={vi.fn()}
+        />
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByLabelText('AI chip prompt')).toHaveAttribute('maxlength', '2000')
+  })
+
   it('shows an inline message and creates no project when generation fails', async () => {
     const generateAiChip = vi
       .fn()
