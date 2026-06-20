@@ -40,3 +40,46 @@ describe('createAnthropicProvider', () => {
     await expect(provider.generateChipDraft({ prompt: 'x' })).rejects.toThrow()
   })
 })
+
+describe('createAnthropicProvider.generateSpecCopy', () => {
+  it('requests opus-4-8 with a json_schema format and parses the spec draft', async () => {
+    create.mockResolvedValue({
+      stop_reason: 'end_turn',
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify({
+            brand: 'NOCTURNE',
+            series: 'X-2',
+            generation: 'AI-II',
+            process: '0.3nm',
+            cores: 64,
+            bandwidth: '9 TB/s',
+            features: ['Lucid Cache'],
+            description: 'Dreams in parallel.',
+          }),
+        },
+      ],
+    })
+    const provider = createAnthropicProvider({ apiKey: 'sk', model: 'claude-opus-4-8' })
+    const draft = await provider.generateSpecCopy({
+      context: { name: 'X', theme: 'neon', dieShape: 'rect', blockTypes: ['CPU'] },
+    })
+
+    expect(draft.brand).toBe('NOCTURNE')
+    expect(draft.cores).toBe(64)
+    const args = create.mock.calls.at(-1)?.[0]
+    expect(args.model).toBe('claude-opus-4-8')
+    expect(args.output_config.format.type).toBe('json_schema')
+  })
+
+  it('throws on a refusal stop reason', async () => {
+    create.mockResolvedValue({ stop_reason: 'refusal', content: [] })
+    const provider = createAnthropicProvider({ apiKey: 'sk', model: 'claude-opus-4-8' })
+    await expect(
+      provider.generateSpecCopy({
+        context: { theme: 'neon', dieShape: 'rect', blockTypes: [] },
+      }),
+    ).rejects.toThrow()
+  })
+})
