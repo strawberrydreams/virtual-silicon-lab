@@ -16,6 +16,7 @@ import { FakeSpecForm } from '../specs/FakeSpecForm'
 import { GeneratedSpecPanel } from '../specs/GeneratedSpecPanel'
 import { BlockVisualPanel } from './BlockVisualPanel'
 import { AiLayoutSuggestionsPanel } from './AiLayoutSuggestionsPanel'
+import { AiVariationsPanel } from './AiVariationsPanel'
 import { ColorSettingsPanel } from './ColorSettingsPanel'
 import { LayerVisibilityPanel } from './LayerVisibilityPanel'
 import { SelectedTilePanel } from './SelectedTilePanel'
@@ -44,6 +45,7 @@ type Props = {
   ) => void
   onSetSpec: (spec: Project['spec']) => void
   onApplyAiSuggestion: (suggestion: AiLayoutSuggestion) => void
+  onSaveVariation: (variation: Project) => Promise<unknown>
   onToggleLayerVisibility: (layer: ChipLayerId) => void
 }
 
@@ -59,6 +61,7 @@ export function EditorInspectorRail({
   onUpdateSpray,
   onSetSpec,
   onApplyAiSuggestion,
+  onSaveVariation,
   onToggleLayerVisibility,
 }: Props) {
   return (
@@ -103,6 +106,7 @@ export function EditorInspectorRail({
         />
         <AiSpecPanel project={project} onApply={onSetSpec} />
         <AiLayoutSuggestionsPanel project={project} onApply={onApplyAiSuggestion} />
+        <AiVariationsPanel project={project} onSaveVariation={onSaveVariation} />
         <FakeSpecForm spec={project.spec} onChange={onSetSpec} />
         {/* Exports always composite the full artwork from project data; the
             editor's ephemeral layer toggles must never leak into the PNGs. */}

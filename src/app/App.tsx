@@ -130,6 +130,7 @@ function EditorRoute() {
       key={project.id}
       project={project}
       persist={(nextProject) => void store.save(nextProject)}
+      onSaveVariation={store.createFromAiDraft}
     />
   )
 }

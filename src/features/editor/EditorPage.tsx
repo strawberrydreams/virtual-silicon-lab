@@ -18,9 +18,10 @@ import Chip3DPreviewToggle from './Chip3DPreviewToggle'
 type Props = {
   project: Project
   persist: (project: Project) => void
+  onSaveVariation: (variation: Project) => Promise<unknown>
 }
 
-export function EditorPage({ project, persist }: Props) {
+export function EditorPage({ project, persist, onSaveVariation }: Props) {
   const store = useMemo(() => createEditorStore(project), [project])
   const [layerVisibility, setLayerVisibility] = useState(DEFAULT_LAYER_VISIBILITY)
   const state = useStore(store)
@@ -170,6 +171,7 @@ export function EditorPage({ project, persist }: Props) {
         onUpdateSpray={state.updateSpray}
         onSetSpec={state.setSpec}
         onApplyAiSuggestion={state.applyAiSuggestion}
+        onSaveVariation={onSaveVariation}
         onToggleLayerVisibility={toggleLayerVisibility}
       />
     </main>

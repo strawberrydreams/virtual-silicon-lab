@@ -23,7 +23,11 @@ describe('EditorPage', () => {
   it('renders the v2 three-zone editor shell with existing commands reachable', () => {
     render(
       <MemoryRouter>
-        <EditorPage project={createHeroChip('editor-shell', 1700000000000)} persist={vi.fn()} />
+        <EditorPage
+          project={createHeroChip('editor-shell', 1700000000000)}
+          persist={vi.fn()}
+          onSaveVariation={vi.fn()}
+        />
       </MemoryRouter>,
     )
 
@@ -59,7 +63,11 @@ describe('EditorPage', () => {
     const user = userEvent.setup()
     render(
       <MemoryRouter>
-        <EditorPage project={createHeroChip('editor-inspector', 1700000000000)} persist={vi.fn()} />
+        <EditorPage
+          project={createHeroChip('editor-inspector', 1700000000000)}
+          persist={vi.fn()}
+          onSaveVariation={vi.fn()}
+        />
       </MemoryRouter>,
     )
 
@@ -90,7 +98,11 @@ describe('EditorPage', () => {
     const user = userEvent.setup()
     render(
       <MemoryRouter>
-        <EditorPage project={createHeroChip('editor-layers', 1700000000000)} persist={vi.fn()} />
+        <EditorPage
+          project={createHeroChip('editor-layers', 1700000000000)}
+          persist={vi.fn()}
+          onSaveVariation={vi.fn()}
+        />
       </MemoryRouter>,
     )
 

@@ -17,6 +17,10 @@ vi.mock('../publish/PublishPanel', () => ({
   PublishPanel: () => <div data-testid="publish-panel" />,
 }))
 
+vi.mock('./MobileChipPreview', () => ({
+  MobileChipPreview: () => <div />,
+}))
+
 describe('EditorInspectorRail', () => {
   it('never threads ephemeral editor layer toggles into the export panel', () => {
     render(
@@ -32,6 +36,7 @@ describe('EditorInspectorRail', () => {
         onUpdateSpray={vi.fn()}
         onSetSpec={vi.fn()}
         onApplyAiSuggestion={vi.fn()}
+        onSaveVariation={vi.fn()}
         onToggleLayerVisibility={vi.fn()}
       />,
     )
@@ -41,5 +46,6 @@ describe('EditorInspectorRail', () => {
     // hiding M3/Label for canvas inspection must not change the exported PNGs.
     expect(captured.props).not.toHaveProperty('layerVisibility')
     expect(screen.getByRole('heading', { name: 'AI Layout Suggestions' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /generate variations/i })).toBeInTheDocument()
   })
 })
