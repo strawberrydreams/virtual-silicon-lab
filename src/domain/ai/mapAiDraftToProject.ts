@@ -1,6 +1,6 @@
 import { buildBlock } from '../blockFactory'
 import { createProject } from '../projectFactory'
-import type { BlockType, DieShape, Project } from '../project'
+import type { BlockType, DieShape, Project, StyleTheme } from '../project'
 import type { AiChipDraft } from './aiChipDraft'
 
 const BLOCK_TYPES: ReadonlySet<string> = new Set<BlockType>([
@@ -11,6 +11,10 @@ const BLOCK_TYPES: ReadonlySet<string> = new Set<BlockType>([
 
 const DIE_SHAPES: ReadonlySet<string> = new Set<DieShape>([
   'rect', 'square', 'circle', 'hexagon',
+])
+
+const THEMES: ReadonlySet<string> = new Set<StyleTheme>([
+  'neon', 'retro', 'military', 'keynote', 'mono',
 ])
 
 const MIN_SIZE = 24
@@ -31,6 +35,9 @@ export function mapAiDraftToProject(draft: AiChipDraft, id?: string, now?: numbe
   const project = createProject(name, id, now)
   const shape = DIE_SHAPES.has(draft.dieShape) ? draft.dieShape : 'rect'
   project.die = { ...project.die, shape }
+  if (draft.theme !== undefined && THEMES.has(draft.theme)) {
+    project.theme = draft.theme
+  }
   const { width, height } = project.die
 
   let z = 0

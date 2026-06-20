@@ -60,4 +60,20 @@ describe('mapAiDraftToProject', () => {
     const project = mapAiDraftToProject({ dieShape: 'blob' as never, blocks: [] })
     expect(project.die.shape).toBe('rect')
   })
+
+  it('applies a valid draft theme to the project', () => {
+    const project = mapAiDraftToProject({ dieShape: 'rect', theme: 'mono', blocks: [] })
+    expect(project.theme).toBe('mono')
+  })
+
+  it('falls back to the default theme for a missing or invalid theme', () => {
+    const noTheme = mapAiDraftToProject({ dieShape: 'rect', blocks: [] })
+    expect(noTheme.theme).toBe('neon')
+    const bad = mapAiDraftToProject({
+      dieShape: 'rect',
+      theme: 'banana' as unknown as 'neon',
+      blocks: [],
+    })
+    expect(bad.theme).toBe('neon')
+  })
 })
