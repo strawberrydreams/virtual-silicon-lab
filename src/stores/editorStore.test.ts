@@ -459,7 +459,7 @@ describe('editor store AI suggestions', () => {
 
     const added = store.getState().project.blocks
     expect(added).toHaveLength(before + 1)
-    expect(added.at(-1)).toMatchObject({ id: 'sug-1', type: 'SRAM' })
+    expect(added[added.length - 1]).toMatchObject({ id: 'sug-1', type: 'SRAM' })
     expect(store.getState().selectedBlockId).toBe('sug-1')
     expect(store.getState().past).toHaveLength(1)
 
