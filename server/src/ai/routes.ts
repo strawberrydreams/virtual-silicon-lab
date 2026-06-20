@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 import type { Context } from 'hono'
 import { getSignedCookie } from 'hono/cookie'
+import type { AiLayoutContext } from '@domain/ai/aiLayoutSuggestion'
 import { mapAiDraftToProject } from '@domain/ai/mapAiDraftToProject'
 import { mapAiSpecDraftToFakeSpec } from '@domain/ai/mapAiSpecDraftToFakeSpec'
 import type { AiChipContext } from '@domain/ai/aiSpecDraft'
@@ -94,6 +95,40 @@ export function aiRoutes({
       return fail(c, 503, 'AI_UNAVAILABLE', 'AI provider is unavailable.')
     }
     return c.json({ spec: mapAiSpecDraftToFakeSpec(draft) })
+  })
+
+  routes.post('/ai/suggest-layout', async (c) => {
+    const guard = await requireUserWithinQuota(c)
+    if ('response' in guard) return guard.response
+    const user = guard.user
+
+    const body = (await c.req.json().catch(() => null)) as { context?: unknown } | null
+    const raw = body?.context
+    if (typeof raw !== 'object' || raw === null) {
+      return fail(c, 400, 'INVALID_CONTEXT', 'Chip context is required.')
+    }
+    const source = raw as Record<string, unknown>
+    const context: AiLayoutContext = {
+      dieShape: (typeof source.dieShape === 'string'
+        ? source.dieShape
+        : 'rect') as AiLayoutContext['dieShape'],
+      blocks: Array.isArray(source.blocks)
+        ? (source.blocks.filter(
+            (block) => typeof block === 'object' && block !== null,
+          ) as AiLayoutContext['blocks'])
+        : [],
+    }
+
+    // Log before calling out so failed attempts still count against the shared quota.
+    logPrompt(db, { userId: user.id, kind: 'suggest-layout', prompt: JSON.stringify(context) }, now)
+
+    let result
+    try {
+      result = await aiProvider.generateLayoutSuggestions({ context })
+    } catch {
+      return fail(c, 503, 'AI_UNAVAILABLE', 'AI provider is unavailable.')
+    }
+    return c.json({ suggestions: result.suggestions })
   })
 
   return routes

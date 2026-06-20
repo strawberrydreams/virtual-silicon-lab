@@ -109,3 +109,68 @@ describe('POST /api/ai/generate-copy', () => {
     expect(res.status).toBe(503)
   })
 })
+
+const SUGGEST_BODY = {
+  context: { dieShape: 'rect', blocks: [{ type: 'CPU', x: 0.1, y: 0.1, w: 0.2, h: 0.2 }] },
+}
+
+describe('POST /api/ai/suggest-layout', () => {
+  it('rejects unauthenticated requests with 401', async () => {
+    const { app } = createTestApp()
+    const res = await app.request('/api/ai/suggest-layout', jsonRequest('POST', SUGGEST_BODY))
+    expect(res.status).toBe(401)
+  })
+
+  it('returns suggestions and logs a suggest-layout prompt for an authed user', async () => {
+    const { app, db } = createTestApp()
+    const cookie = await signIn(app)
+    const res = await app.request(
+      '/api/ai/suggest-layout',
+      jsonRequest('POST', SUGGEST_BODY, cookie),
+    )
+    expect(res.status).toBe(200)
+    const body = (await res.json()) as { suggestions: unknown[] }
+    expect(Array.isArray(body.suggestions)).toBe(true)
+    const row = db.prepare('SELECT kind FROM ai_prompt_log').get() as { kind: string }
+    expect(row.kind).toBe('suggest-layout')
+  })
+
+  it('rejects a missing context with 400', async () => {
+    const { app } = createTestApp()
+    const cookie = await signIn(app)
+    const res = await app.request('/api/ai/suggest-layout', jsonRequest('POST', {}, cookie))
+    expect(res.status).toBe(400)
+  })
+
+  it('enforces the shared daily quota with 429', async () => {
+    const { app } = createTestApp(Date.now, { aiDailyQuota: 1 })
+    const cookie = await signIn(app)
+    await app.request('/api/ai/suggest-layout', jsonRequest('POST', SUGGEST_BODY, cookie))
+    const res = await app.request(
+      '/api/ai/suggest-layout',
+      jsonRequest('POST', SUGGEST_BODY, cookie),
+    )
+    expect(res.status).toBe(429)
+  })
+
+  it('returns 503 when the provider throws', async () => {
+    const failing = {
+      async generateChipDraft() {
+        throw new Error('down')
+      },
+      async generateSpecCopy() {
+        throw new Error('down')
+      },
+      async generateLayoutSuggestions() {
+        throw new Error('down')
+      },
+    }
+    const { app } = createTestApp(Date.now, { aiProvider: failing })
+    const cookie = await signIn(app)
+    const res = await app.request(
+      '/api/ai/suggest-layout',
+      jsonRequest('POST', SUGGEST_BODY, cookie),
+    )
+    expect(res.status).toBe(503)
+  })
+})
