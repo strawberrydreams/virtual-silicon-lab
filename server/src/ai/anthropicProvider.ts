@@ -74,6 +74,43 @@ const SUGGESTIONS_SCHEMA = {
   required: ['suggestions'],
 } as const
 
+const VARIATIONS_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    variations: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        properties: {
+          name: { type: 'string' },
+          dieShape: { type: 'string', enum: ['rect', 'square', 'circle', 'hexagon'] },
+          theme: { type: 'string', enum: ['neon', 'retro', 'military', 'keynote', 'mono'] },
+          blocks: {
+            type: 'array',
+            items: {
+              type: 'object',
+              additionalProperties: false,
+              properties: {
+                type: { type: 'string' },
+                label: { type: 'string' },
+                x: { type: 'number' },
+                y: { type: 'number' },
+                w: { type: 'number' },
+                h: { type: 'number' },
+              },
+              required: ['type', 'x', 'y', 'w', 'h'],
+            },
+          },
+        },
+        required: ['dieShape', 'blocks'],
+      },
+    },
+  },
+  required: ['variations'],
+} as const
+
 export function createAnthropicProvider(opts: { apiKey: string; model: string }): AiProvider {
   const client = new Anthropic({ apiKey: opts.apiKey })
   return {
@@ -150,6 +187,33 @@ export function createAnthropicProvider(opts: { apiKey: string; model: string })
       const text = response.content.find((block) => block.type === 'text')
       if (text === undefined || text.type !== 'text') throw new Error('No structured output returned')
       return JSON.parse(text.text) as { suggestions: AiLayoutSuggestion[] }
+    },
+
+    async generateVariations(input) {
+      const { context, count } = input
+      const summary =
+        `name=${context.name ?? 'unknown'}, theme=${context.theme}, dieShape=${context.dieShape}, ` +
+        `blocks=[${context.blocks.map((block) => block.type).join(', ')}]`
+      const response = await client.messages.create({
+        model: opts.model,
+        max_tokens: 4096,
+        output_config: { format: { type: 'json_schema', schema: VARIATIONS_SCHEMA } },
+        messages: [
+          {
+            role: 'user',
+            content:
+              `Return ONLY JSON: an array "variations" of exactly ${count} stylistic variations ` +
+              '(recolor / re-theme / re-arrange) of this surreal fictional chip. Each variation has a ' +
+              'name, a dieShape, a theme from neon/retro/military/keynote/mono, and blocks with ' +
+              `fractional x,y,w,h in [0,1]. Source chip: ${summary}`,
+          },
+        ],
+      } as unknown as Anthropic.MessageCreateParamsNonStreaming)
+
+      if ((response.stop_reason as string) === 'refusal') throw new Error('AI declined the request')
+      const text = response.content.find((block) => block.type === 'text')
+      if (text === undefined || text.type !== 'text') throw new Error('No structured output returned')
+      return JSON.parse(text.text) as { variations: AiChipDraft[] }
     },
   }
 }

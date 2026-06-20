@@ -141,3 +141,54 @@ describe('createAnthropicProvider.generateLayoutSuggestions', () => {
     ).rejects.toThrow()
   })
 })
+
+describe('createAnthropicProvider.generateVariations', () => {
+  it('requests opus-4-8 with a json_schema format and parses the variations', async () => {
+    create.mockResolvedValue({
+      stop_reason: 'end_turn',
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify({
+            variations: [
+              {
+                name: 'A',
+                dieShape: 'rect',
+                theme: 'retro',
+                blocks: [{ type: 'CPU', x: 0.1, y: 0.1, w: 0.2, h: 0.2 }],
+              },
+            ],
+          }),
+        },
+      ],
+    })
+    const provider = createAnthropicProvider({ apiKey: 'sk', model: 'claude-opus-4-8' })
+
+    const result = await provider.generateVariations({
+      context: {
+        name: 'A',
+        theme: 'neon',
+        dieShape: 'rect',
+        blocks: [{ type: 'CPU', x: 0.1, y: 0.1, w: 0.2, h: 0.2 }],
+      },
+      count: 2,
+    })
+
+    expect(result.variations[0].theme).toBe('retro')
+    const args = create.mock.calls.at(-1)?.[0]
+    expect(args.model).toBe('claude-opus-4-8')
+    expect(args.output_config.format.type).toBe('json_schema')
+  })
+
+  it('throws on a refusal stop reason', async () => {
+    create.mockResolvedValue({ stop_reason: 'refusal', content: [] })
+    const provider = createAnthropicProvider({ apiKey: 'sk', model: 'claude-opus-4-8' })
+
+    await expect(
+      provider.generateVariations({
+        context: { theme: 'neon', dieShape: 'rect', blocks: [] },
+        count: 3,
+      }),
+    ).rejects.toThrow()
+  })
+})
