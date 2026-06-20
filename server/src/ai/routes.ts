@@ -8,8 +8,10 @@ import type { AiChipContext } from '@domain/ai/aiSpecDraft'
 import type { AiVariationContext } from '@domain/ai/aiVariationContext'
 import type { AppDeps } from '../app'
 import { getSessionUser } from '../accounts/service'
+import { isAdminEmail } from '../moderation/adminAuth'
 import { createFakeProvider } from './fakeProvider'
 import { countRecentGenerations, logPrompt } from './quota'
+import { summarizeAiUsage } from './usage'
 
 const SESSION_COOKIE = 'vsl_session'
 const MAX_PROMPT_LENGTH = 2000
@@ -21,10 +23,11 @@ export function aiRoutes({
   now = Date.now,
   aiProvider = createFakeProvider(),
   aiDailyQuota = 20,
+  adminEmails = [],
 }: AppDeps) {
   const routes = new Hono()
 
-  function fail(c: Context, status: 400 | 401 | 429 | 503, code: string, message: string) {
+  function fail(c: Context, status: 400 | 401 | 403 | 429 | 503, code: string, message: string) {
     return c.json({ error: { code, message } }, status)
   }
 
@@ -207,6 +210,22 @@ export function aiRoutes({
       .slice(0, count)
       .map((draft) => mapAiDraftToProject(draft))
     return c.json({ variations })
+  })
+
+  routes.get('/ai/usage', async (c) => {
+    const token = await getSignedCookie(c, sessionSecret, SESSION_COOKIE)
+    const user = typeof token === 'string' && token !== '' ? getSessionUser(db, token, now) : null
+    if (user === null) return fail(c, 401, 'UNAUTHORIZED', 'Sign in required.')
+    if (!isAdminEmail(user.email, adminEmails)) {
+      return fail(c, 403, 'FORBIDDEN', 'Admin access required.')
+    }
+    const rawHours = Number(c.req.query('windowHours'))
+    const hours = Number.isFinite(rawHours) && rawHours > 0
+      ? Math.min(720, Math.floor(rawHours))
+      : 24
+    const until = now()
+    const since = until - hours * 60 * 60 * 1000
+    return c.json(summarizeAiUsage(db, { since, until }))
   })
 
   return routes

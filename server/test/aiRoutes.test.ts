@@ -360,3 +360,45 @@ describe('AI route abuse bounds', () => {
     expect(n).toBe(0)
   })
 })
+
+const USAGE_ADMIN_OPTS = { signupsOpen: true, adminEmails: ['ada@example.com'] }
+const USAGE_NON_ADMIN = {
+  email: 'eve@example.com',
+  displayName: 'Eve',
+  password: 'hunter22hunter22',
+}
+
+describe('GET /api/ai/usage', () => {
+  it('rejects anonymous callers with 401', async () => {
+    const { app } = createTestApp(Date.now, USAGE_ADMIN_OPTS)
+
+    expect((await app.request('/api/ai/usage')).status).toBe(401)
+  })
+
+  it('rejects non-admins with 403', async () => {
+    const { app } = createTestApp(Date.now, USAGE_ADMIN_OPTS)
+    const signup = await app.request('/api/auth/signup', jsonRequest('POST', USAGE_NON_ADMIN))
+    const cookie = sessionCookie(signup)
+
+    const res = await app.request('/api/ai/usage', { headers: { cookie } })
+
+    expect(res.status).toBe(403)
+  })
+
+  it('returns an aggregate usage summary for an admin', async () => {
+    const { app } = createTestApp(Date.now, USAGE_ADMIN_OPTS)
+    const signup = await app.request('/api/auth/signup', jsonRequest('POST', VALID_SIGNUP))
+    const cookie = sessionCookie(signup)
+    await app.request(
+      '/api/ai/generate-draft',
+      jsonRequest('POST', { prompt: 'a neon chip' }, cookie),
+    )
+
+    const res = await app.request('/api/ai/usage', { headers: { cookie } })
+
+    expect(res.status).toBe(200)
+    const body = (await res.json()) as { totalCalls: number; byKind: Record<string, number> }
+    expect(body.totalCalls).toBeGreaterThanOrEqual(1)
+    expect(body.byKind['generate-draft']).toBeGreaterThanOrEqual(1)
+  })
+})
