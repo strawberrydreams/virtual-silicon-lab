@@ -40,5 +40,21 @@ export function createFakeProvider(): AiProvider {
         description: `An AI-dreamed ${context.theme} chip with ${context.blockTypes.length} block types.`,
       }
     },
+    async generateLayoutSuggestions(input) {
+      const used = new Set(input.context.blocks.map((block) => block.type))
+      const candidates = ['Cache', 'GPU', 'PLL']
+      const suggestions = candidates
+        .filter((type) => !used.has(type))
+        .slice(0, 2)
+        .map((type, index) => ({
+          type,
+          reason: `Add a ${type} to balance the layout`,
+          x: 0.1 + index * 0.3,
+          y: 0.6,
+          w: 0.2,
+          h: 0.2,
+        }))
+      return { suggestions }
+    },
   }
 }
