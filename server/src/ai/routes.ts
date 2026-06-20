@@ -5,6 +5,7 @@ import type { AiLayoutContext } from '@domain/ai/aiLayoutSuggestion'
 import { mapAiDraftToProject } from '@domain/ai/mapAiDraftToProject'
 import { mapAiSpecDraftToFakeSpec } from '@domain/ai/mapAiSpecDraftToFakeSpec'
 import type { AiChipContext } from '@domain/ai/aiSpecDraft'
+import type { AiVariationContext } from '@domain/ai/aiVariationContext'
 import type { AppDeps } from '../app'
 import { getSessionUser } from '../accounts/service'
 import { createFakeProvider } from './fakeProvider'
@@ -129,6 +130,69 @@ export function aiRoutes({
       return fail(c, 503, 'AI_UNAVAILABLE', 'AI provider is unavailable.')
     }
     return c.json({ suggestions: result.suggestions })
+  })
+
+  routes.post('/ai/generate-variations', async (c) => {
+    const guard = await requireUserWithinQuota(c)
+    if ('response' in guard) return guard.response
+    const user = guard.user
+
+    const body = (await c.req.json().catch(() => null)) as
+      | { context?: unknown; count?: unknown }
+      | null
+    const raw = body?.context
+    if (typeof raw !== 'object' || raw === null) {
+      return fail(c, 400, 'INVALID_CONTEXT', 'Chip context is required.')
+    }
+    const source = raw as Record<string, unknown>
+    const context: AiVariationContext = {
+      name: typeof source.name === 'string' ? source.name : undefined,
+      theme: (typeof source.theme === 'string' ? source.theme : 'neon') as AiVariationContext['theme'],
+      dieShape: (typeof source.dieShape === 'string'
+        ? source.dieShape
+        : 'rect') as AiVariationContext['dieShape'],
+      blocks: Array.isArray(source.blocks)
+        ? source.blocks
+            .filter((block): block is Record<string, unknown> =>
+              typeof block === 'object' && block !== null,
+            )
+            .map((block) => ({
+              type: typeof block.type === 'string' ? block.type : '',
+              x: typeof block.x === 'number' ? block.x : 0,
+              y: typeof block.y === 'number' ? block.y : 0,
+              w: typeof block.w === 'number' ? block.w : 0,
+              h: typeof block.h === 'number' ? block.h : 0,
+            }))
+        : [],
+    }
+    const rawCount = body?.count
+    const requested =
+      typeof rawCount === 'number' && Number.isFinite(rawCount) && rawCount > 0
+        ? Math.floor(rawCount)
+        : 3
+    const count = Math.max(2, Math.min(4, requested))
+
+    // Log before calling out so failed/abused attempts still count against the shared quota.
+    logPrompt(
+      db,
+      {
+        userId: user.id,
+        kind: 'generate-variations',
+        prompt: JSON.stringify({ context, count }),
+      },
+      now,
+    )
+
+    let result
+    try {
+      result = await aiProvider.generateVariations({ context, count })
+    } catch {
+      return fail(c, 503, 'AI_UNAVAILABLE', 'AI provider is unavailable.')
+    }
+    const variations = result.variations
+      .slice(0, count)
+      .map((draft) => mapAiDraftToProject(draft))
+    return c.json({ variations })
   })
 
   return routes
