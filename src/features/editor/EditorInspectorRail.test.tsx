@@ -31,6 +31,7 @@ describe('EditorInspectorRail', () => {
         onUpdateSticker={vi.fn()}
         onUpdateSpray={vi.fn()}
         onSetSpec={vi.fn()}
+        onApplyAiSuggestion={vi.fn()}
         onToggleLayerVisibility={vi.fn()}
       />,
     )
@@ -39,5 +40,6 @@ describe('EditorInspectorRail', () => {
     // Exports must composite the FULL artwork from serializable project data;
     // hiding M3/Label for canvas inspection must not change the exported PNGs.
     expect(captured.props).not.toHaveProperty('layerVisibility')
+    expect(screen.getByRole('heading', { name: 'AI Layout Suggestions' })).toBeInTheDocument()
   })
 })

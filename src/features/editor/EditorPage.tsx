@@ -169,6 +169,7 @@ export function EditorPage({ project, persist }: Props) {
         onUpdateSticker={state.updateSticker}
         onUpdateSpray={state.updateSpray}
         onSetSpec={state.setSpec}
+        onApplyAiSuggestion={state.applyAiSuggestion}
         onToggleLayerVisibility={toggleLayerVisibility}
       />
     </main>
