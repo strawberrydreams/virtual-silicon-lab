@@ -14,5 +14,20 @@ export function createFakeProvider(): AiProvider {
         ],
       }
     },
+    async generateSpecCopy(input) {
+      const { context } = input
+      const themeWord = context.theme.toUpperCase()
+      const nameWord = (context.name ?? '').trim().toUpperCase()
+      return {
+        brand: nameWord !== '' ? `${nameWord} ${themeWord}` : themeWord,
+        series: context.dieShape.toUpperCase(),
+        generation: 'AI-I',
+        process: '0.5nm dream-etched',
+        cores: Math.max(1, context.blockTypes.length) * 8,
+        bandwidth: '4.2 TB/s',
+        features: context.blockTypes.slice(0, 3).map((type) => `${type} accelerator`),
+        description: `An AI-dreamed ${context.theme} chip with ${context.blockTypes.length} block types.`,
+      }
+    },
   }
 }
