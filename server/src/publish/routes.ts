@@ -225,6 +225,7 @@ export function publishRoutes({
   })
 
   routes.get('/gallery/:slug/lineage', (c) => {
+    if (galleryLockdown) return fail(c, 410, 'GALLERY_LOCKED', 'Gallery is temporarily locked.')
     const lineage = getChipLineage(db, c.req.param('slug'))
     if (lineage === null) return fail(c, 404, 'NOT_FOUND', 'Published chip not found.')
     const baseUrl = resolvePublicBaseUrl(c.req.url, publicBaseUrl)

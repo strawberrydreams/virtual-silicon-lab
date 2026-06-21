@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import type { Project } from '../../domain/project'
 import { isChip3DShowcaseAvailable } from '../../three/chip3dAvailability'
@@ -117,6 +117,14 @@ export function GalleryDetailPage({
       .catch(() => undefined)
   }
 
+  // Memoize the 3D-availability probe: it rebuilds the chip model and creates a
+  // throwaway WebGL context, so calling it inline on every re-render (likes,
+  // comments, lineage) churns GPU contexts. The result is stable per loaded chip.
+  const showcaseAvailable = useMemo(
+    () => (typeof chip === 'object' ? isChip3DShowcaseAvailable(chip.project) : false),
+    [chip],
+  )
+
   if (chip === 'loading') {
     return (
       <main className="v2-page gallery-detail">
@@ -178,7 +186,7 @@ export function GalleryDetailPage({
           >
             Remix into my projects
           </button>
-          {isChip3DShowcaseAvailable(chip.project) && (
+          {showcaseAvailable && (
             <button type="button" className="v2-inline-action" onClick={() => setShow3D(true)}>
               View in 3D
             </button>

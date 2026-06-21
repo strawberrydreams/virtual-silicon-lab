@@ -92,7 +92,12 @@ of scope.
 ## Risks & Open Questions (resolve in per-milestone specs)
 
 - **Valid-project guarantee.** The intermediate-shape schema + factory mapping must make invalid AI
-  output impossible to persist. M0 owns and unit-tests this contract; M2 stresses it.
+  output impossible to persist. M0 owns and unit-tests this contract; M2 stresses it. **Note:**
+  structured outputs (`output_config.format`) enforce *shape* (types, enums, required, nested
+  objects) but **not** numeric `minimum`/`maximum`, `minLength`/`maxLength`, or recursive schemas
+  (a documented json_schema limitation), and every object needs `additionalProperties: false`. So
+  domain invariants like die-clamp and coordinate bounds must be enforced by the `src/domain/`
+  factory mapping, **not** the AI schema — which is exactly why the factory stays the source of truth.
 - **Cost control.** Unbounded generation is expensive — per-user daily quota + rate-limit + (owner
   choice) Haiku for light tasks. M0 builds the levers; M5 tunes them.
 - **Safety.** User prompts go to an external LLM. Prompt logging + the existing moderation posture
