@@ -63,7 +63,11 @@ export function AiSpecPanel({ project, onApply, api = liveAiCopyApi }: Props) {
         {status === 'loading' ? 'Generating…' : '✨ Generate from this chip'}
       </button>
 
-      {error !== null && <p className="text-[11px] text-amber-400">{error}</p>}
+      {error !== null && (
+        <p className="text-[11px] text-amber-400" role="alert">
+          {error}
+        </p>
+      )}
 
       {preview !== null && (
         <div className="flex flex-col gap-1 rounded border border-cyan-800 bg-[#06121a] p-2 text-cyan-100">
