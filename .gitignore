@@ -22,8 +22,8 @@ server/data/
 backups/
 
 # local working-context / planning docs (kept locally, out of the repo)
-/CLAUDE.md
-/implementation.md
+CLAUDE.md
+implementation.md
 /docs/
 
 # stray screenshots / scratch images at the repo root (QA artifacts live under docs/ or images/)

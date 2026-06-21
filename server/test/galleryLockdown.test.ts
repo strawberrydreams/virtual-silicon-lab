@@ -39,4 +39,10 @@ describe('gallery lockdown', () => {
     expect((await app.request('/api/profiles/ada_lab')).status).toBe(410)
     expect((await app.request(`/s/${chip.slug}`)).status).toBe(410)
   })
+
+  it('locks down the lineage endpoint (no chip metadata leak during lockdown)', async () => {
+    const { app, chip } = seedPublicChip()
+
+    expect((await app.request(`/api/gallery/${chip.slug}/lineage`)).status).toBe(410)
+  })
 })

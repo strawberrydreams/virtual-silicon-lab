@@ -78,8 +78,8 @@ function rectProjectWithBlocks() {
   const project = createProject('3D Test')
   project.die = { shape: 'rect', width: 800, height: 500, background: '#101820' }
   project.blocks = [
-    { id: 'b-real', type: 'cpu', category: 'real', x: 100, y: 80, w: 120, h: 90, rotation: 0, zIndex: 0 },
-    { id: 'b-fan', type: 'consciousness', category: 'fantasy', x: 400, y: 200, w: 140, h: 100, rotation: 0, zIndex: 1 },
+    { id: 'b-real', type: 'CPU', category: 'real', x: 100, y: 80, w: 120, h: 90, rotation: 0, zIndex: 0 },
+    { id: 'b-fan', type: 'ConsciousnessProcessor', category: 'fantasy', x: 400, y: 200, w: 140, h: 100, rotation: 0, zIndex: 1 },
   ]
   return project
 }
@@ -353,6 +353,10 @@ export default function Chip3DViewer({ model }: { model: Chip3DModel }) {
     const camera = new THREE.PerspectiveCamera(45, width / height, 1, dist * 10)
     camera.position.set(dist, dist, dist)
     const controls = new OrbitControls(camera, renderer.domElement)
+    // buildChip3DScene recenters X/Z but leaves the stack on y∈[0, extent[1]];
+    // aim the orbit pivot at the model's vertical center so it frames centered.
+    controls.target.set(0, model.extent[1] / 2, 0)
+    controls.update()
 
     let raf = 0
     const tick = () => {
@@ -392,12 +396,12 @@ git commit -m "feat(v7): lazy Three.js Chip3DViewer rendering Chip3DModel"
 ### Task 4: Editor "3D preview" toggle + WebGL guard
 
 **Files:**
-- Modify: the editor shell component that hosts the canvas/preview (e.g. `src/features/editor/EditorPage.tsx` — confirm exact host with `grep -rn "ChipStage" src/features/editor`)
+- Modify: `src/features/editor/EditorPage.tsx` — the editor shell that hosts `<ChipStage>` (confirmed: `ChipStage` is mounted here; `EditorRoute` already gates this to desktop via `useIsMobile()`, so a desktop-only 3D preview belongs here). Mount the toggle adjacent to the canvas zone.
 - Create: `src/features/editor/Chip3DPreviewToggle.tsx` (toggle + lazy mount + palette resolution + WebGL guard)
 - Test: `src/features/editor/Chip3DPreviewToggle.test.tsx` (viewer mocked)
 
 **Interfaces:**
-- Consumes: current `Project`, `buildChipLayers`, `buildChip3DModel`, `resolveMaterialRecipe`/theme for palette; lazy `Chip3DViewer`.
+- Consumes: current `Project`, `buildChipLayers`, `buildChip3DModel`, `resolveTheme(project.theme)` (theme tokens for the flat palette); lazy `Chip3DViewer`.
 - Produces: `Chip3DPreviewToggle` mounted in the editor shell.
 
 - [ ] **Step 1: Write the failing test**
@@ -437,8 +441,7 @@ import { lazy, Suspense, useMemo, useState } from 'react'
 import type { Project } from '../../domain/project'
 import { buildChipLayers } from '../../visual/chipLayers'
 import { buildChip3DModel, type Chip3DPalette } from '../../visual/chip3d/chip3dModel'
-import { resolveMaterialRecipe } from '../../visual/materialRecipes'
-import { resolveStyleTheme } from '../../visual/...' // confirm the theme resolver used by the editor
+import { resolveTheme } from '../../themes/themeTokens'
 
 const Chip3DViewer = lazy(() => import('../../three/Chip3DViewer'))
 
@@ -454,11 +457,15 @@ export default function Chip3DPreviewToggle({ project }: { project: Project }) {
   const [open, setOpen] = useState(false)
 
   const model = useMemo(() => {
-    const recipe = resolveMaterialRecipe(resolveStyleTheme(project))
+    // Flat-color M0 palette pulled from the same theme tokens the 2D renderer
+    // uses (ChipArtwork resolves via resolveMaterialRecipe(project.theme)), so
+    // 3D die/block colors match the 2D editor. M1 replaces this with real PBR
+    // materials from materialRecipes.
+    const tokens = resolveTheme(project.theme)
     const palette: Chip3DPalette = {
-      die: recipe.dieBase.fillStops[0].color,
-      blockReal: recipe.microTile.fill,
-      blockFantasy: recipe.glassGlow.color,
+      die: tokens.dieFill[0].color,
+      blockReal: tokens.blockFill.real,
+      blockFantasy: tokens.blockFill.fantasy,
     }
     return buildChip3DModel(buildChipLayers(project), project.die, palette)
   }, [project])
@@ -481,7 +488,7 @@ export default function Chip3DPreviewToggle({ project }: { project: Project }) {
 }
 ```
 
-> The button label must match the test's `/3d preview/i`; adjust the accessible name if you change copy. Confirm the real theme-resolver import path (`resolveStyleTheme`) before implementing — `grep -rn "resolveMaterialRecipe(" src` to find how the editor resolves the current theme, and reuse that exact call. Palette field choices (microTile/glassGlow) are M0 flat-color stand-ins; M1 replaces them with real materials.
+> The button label must match the test's `/3d preview/i`; adjust the accessible name if you change copy. The palette reuses `resolveTheme(project.theme)` — the same theme-token source the 2D renderer reads (`ChipArtwork` resolves materials via `resolveMaterialRecipe(project.theme)`), so 3D colors track 2D. `dieFill[0].color`, `blockFill.real`, and `blockFill.fantasy` are guaranteed by `ThemeTokens`. These flat colors are M0 stand-ins; M1 replaces the whole palette path with real PBR materials from `materialRecipes`.
 
 - [ ] **Step 4: Run test to verify it passes**
 
@@ -490,7 +497,7 @@ Expected: PASS.
 
 - [ ] **Step 5: Mount the toggle in the editor shell**
 
-Add `<Chip3DPreviewToggle project={project} />` to the editor host found via grep. Verify in the browser that the toggle appears and, when opened, the chip renders in 3D.
+Add `<Chip3DPreviewToggle project={project} />` to `src/features/editor/EditorPage.tsx`, near the `<ChipStage>` canvas zone (line ~139). Verify in the browser that the toggle appears and, when opened, the chip renders in 3D.
 
 - [ ] **Step 6: Commit**
 
@@ -534,11 +541,11 @@ git commit -m "docs(impl): record v7-M0 3D showcase foundation"
 
 **1. Spec coverage:** derivation from `ChipLayerModel` (Task 2) ✓; `src/three` lazy renderer (Task 3) ✓; editor toggle + WebGL guard (Task 4) ✓; feasibility spike with go/no-go (Task 1) ✓; flat-color geometry-first (Task 2 depths/palette) ✓; bundle-isolation gate (Tasks 1/5) ✓; pure derivation unit-tested, Three browser-verified (Tasks 2–4) ✓.
 
-**2. Placeholder scan:** Task 4 has two confirm-before-implement notes (editor host file, theme-resolver import) — these are real grep-first steps, not placeholders; exact code is supplied for everything testable. The spike (Task 1) is intentionally throwaway, not bite-sized code.
+**2. Placeholder scan:** No phantom helpers remain — the editor host is confirmed as `EditorPage.tsx` (hosts `<ChipStage>`), and the palette resolves through the real `resolveTheme(project.theme)` (the 2D renderer's token source) rather than the earlier non-existent `resolveStyleTheme`. Exact code is supplied for everything testable; the spike (Task 1) is intentionally throwaway, not bite-sized code.
 
-**3. Type consistency:** `Chip3DModel`/`Chip3DPiece`/`Footprint`/`Chip3DPalette`/`buildChip3DModel` names match across Tasks 2–4; `buildChipLayers`/`ChipLayerModel`/`Bounds` match the real `src/visual/chipLayers.ts` exports; `Die` matches `src/domain/project.ts`.
+**3. Type consistency:** `Chip3DModel`/`Chip3DPiece`/`Footprint`/`Chip3DPalette`/`buildChip3DModel` names match across Tasks 2–4; `buildChipLayers`/`ChipLayerModel`/`Bounds` match the real `src/visual/chipLayers.ts` exports; `Die` matches `src/domain/project.ts`; the Task 2 fixture uses real `BlockType` values (`CPU`, `ConsciousnessProcessor`) and `BlockCategory` (`real`/`fantasy`), and the palette fields (`dieFill[0].color`, `blockFill.real/.fantasy`) match `ThemeTokens`.
 
 ## Notes
 
-- The palette field choices (`microTile.fill`, `glassGlow.color`) are M0 flat-color stand-ins; M1 (Material & Lighting) replaces the whole palette path with real PBR materials resolved from `materialRecipes`.
-- `OrbitControls` import path is `three/examples/jsm/controls/OrbitControls.js`; if tree-shaking/types complain, confirm against the installed `three` version.
+- The M0 palette pulls flat colors straight from `resolveTheme(project.theme)` tokens (`dieFill[0]`, `blockFill.real/.fantasy`) so the 3D fill matches the 2D editor; M1 (Material & Lighting) replaces the whole palette path with real PBR materials resolved from `materialRecipes`.
+- `OrbitControls` import path is `three/examples/jsm/controls/OrbitControls.js` (modern `three` also exposes the `three/addons/controls/OrbitControls.js` alias with bundled types); if tree-shaking/types complain, confirm against the installed `three` version.

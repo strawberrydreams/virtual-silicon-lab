@@ -21,8 +21,8 @@ code-split** so they never enter the core bundle (which already trips the >500 k
 
 **Spec:** `docs/superpowers/specs/2026-06-18-v7-v8-roadmap-design.md` (supersedes the v6-labelled
 `docs/superpowers/specs/2026-06-16-v5-v6-roadmap-design.md` Visual Depth section). This roadmap
-replaces `docs/superpowers/plans/2026-06-16-v6-visual-depth-roadmap.md` — add a "renumbered to v7,
-see this file" note there at v7-M0 start.
+replaces `docs/superpowers/plans/2026-06-16-v6-visual-depth-roadmap.md`, which already carries a
+"renumbered to v7, see this file" pointer back here.
 
 ---
 
@@ -109,7 +109,13 @@ applies to all 3D output (an amateurish 3D view is a milestone failure, not a sh
 
 ## Next Steps
 
-1. At v7 start, run a **v7-M0 brainstorm/spec** (3D derivation + spike scope), then write the M0
-   bite-sized plan. Add the "renumbered to v7" note to the old v6-visual-depth outline.
-2. Per-milestone: record decisions/outcomes in `implementation.md`, update `CLAUDE.md` Milestone
+1. v7-M0 is already brainstormed and planned — spec
+   `docs/superpowers/specs/2026-06-18-v7-m0-3d-showcase-foundation-design.md` + bite-sized plan
+   `docs/superpowers/plans/2026-06-18-v7-m0-3d-showcase-foundation.md` (feasibility spike first); the
+   "renumbered to v7" note already exists on the old v6-visual-depth outline. The next action is to
+   **execute v7-M0**, starting with its spike.
+2. At each of M1–M6's start, run that milestone's brainstorm/spec (see the task-level detail in
+   `docs/superpowers/plans/2026-06-18-v7-m1-m6-detailed-plans.md`) before expanding it into a
+   bite-sized TDD plan.
+3. Per-milestone: record decisions/outcomes in `implementation.md`, update `CLAUDE.md` Milestone
    Status, and re-confirm the next milestone's detail before building.
