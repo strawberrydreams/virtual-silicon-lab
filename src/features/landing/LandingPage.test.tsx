@@ -62,4 +62,20 @@ describe('LandingPage', () => {
     expect(screen.getByRole('region', { name: 'Hero chip preview' })).toBeInTheDocument()
     expect(screen.getByText('Press Image Lab')).toBeInTheDocument()
   })
+
+  it('uses palette labels instead of raw theme ids for featured preset metadata', () => {
+    render(
+      <MemoryRouter>
+        <LandingPage
+          projectsCount={0}
+          presets={PRESET_CATALOG}
+          createProject={vi.fn()}
+          remixPreset={vi.fn()}
+        />
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByText('square / Neon')).toBeInTheDocument()
+    expect(screen.queryByText('square / neon')).not.toBeInTheDocument()
+  })
 })

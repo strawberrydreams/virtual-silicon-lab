@@ -11,6 +11,7 @@ import {
   type Project,
   type StyleTheme,
 } from '../domain/project'
+import { defaultFinishForTheme } from '../domain/material/chipFinish'
 import { createDefaultStudioState } from '../domain/studioDefaults'
 import { createHeroSetProject, isHeroSetId } from '../visual/heroSetCatalog'
 import type { BasePresetId, PresetId } from './presetCatalog'
@@ -253,6 +254,7 @@ export function createPresetProject(
       materializeDecoration(decoration, `${id}-decoration-${index}`, index),
     ),
     theme: blueprint.theme,
+    finish: defaultFinishForTheme(blueprint.theme),
     spec: { ...blueprint.spec, features: [...blueprint.spec.features] },
     studio: createDefaultStudioState(),
   }

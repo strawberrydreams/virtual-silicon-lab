@@ -7,6 +7,8 @@ import {
   snapToGrid,
 } from './geometry'
 import type { Die } from '../../../domain/project'
+import { outlineToPolygon, resolveDieOutline } from '../../../domain/die/dieOutline'
+import { pointInPolygon } from '../../../domain/die/polygonClamp'
 
 describe('snapToGrid', () => {
   it('rounds coordinates to the nearest grid interval', () => {
@@ -116,6 +118,14 @@ describe('clampBlockToDie', () => {
     const incircle = 300 * (Math.sqrt(3) / 2)
     expect(farthestCornerDistance(result, { x: 300, y: 300 })).toBeLessThanOrEqual(incircle + 1e-6)
   })
+
+  it('polygon-clamps blocks out of a parametric L-shape notch', () => {
+    const die: Die = { shape: 'l-shape', width: 960, height: 640, background: 'grid-cyan' }
+    const result = clampBlockToDie({ x: 780, y: 500, w: 120, h: 80 }, die)
+    const polygon = outlineToPolygon(resolveDieOutline(die))
+
+    expect(rotatedCorners(result).every((corner) => pointInPolygon(corner, polygon))).toBe(true)
+  })
 })
 
 describe('normalizeDie', () => {
@@ -129,6 +139,35 @@ describe('normalizeDie', () => {
     expect(normalizeDie(die, 'circle')).toEqual({
       shape: 'circle',
       width: 640,
+      height: 640,
+      background: 'grid-cyan',
+    })
+  })
+
+  it('uses the semantic dimension policy for parametric shapes', () => {
+    const die: Die = {
+      shape: 'rect',
+      width: 960,
+      height: 640,
+      background: 'grid-cyan',
+      dieShapeParams: { chamfer: 0.2 },
+    }
+
+    expect(normalizeDie(die, 'octagon')).toEqual({
+      shape: 'octagon',
+      width: 640,
+      height: 640,
+      background: 'grid-cyan',
+    })
+    expect(normalizeDie(die, 'plus')).toEqual({
+      shape: 'plus',
+      width: 640,
+      height: 640,
+      background: 'grid-cyan',
+    })
+    expect(normalizeDie(die, 'rounded-rect')).toEqual({
+      shape: 'rounded-rect',
+      width: 960,
       height: 640,
       background: 'grid-cyan',
     })

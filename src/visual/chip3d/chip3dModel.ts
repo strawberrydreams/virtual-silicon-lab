@@ -1,4 +1,5 @@
 import type { Die } from '../../domain/project'
+import { outlineToPolygon, resolveDieOutline } from '../../domain/die/dieOutline'
 import type { Bounds, ChipLayerModel } from '../chipLayers'
 import type { Chip3DEnvironment, Chip3DMaterial, Chip3DStyle } from './chip3dMaterials'
 
@@ -43,10 +44,15 @@ export type Chip3DModel = {
   environment: Chip3DEnvironment
 }
 
+export type Chip3DModelOptions = {
+  blockStylesById?: Record<string, Chip3DStyle>
+}
+
 const PACKAGE_DEPTH = 24
 const DIE_DEPTH = 16
 const BLOCK_REAL_DEPTH = 10
 const BLOCK_FANTASY_DEPTH = 18
+const DIE_OUTLINE_SEGMENTS_PER_CIRCLE = 64
 
 function rectFootprint(bounds: Bounds): Footprint {
   return {
@@ -59,23 +65,11 @@ function rectFootprint(bounds: Bounds): Footprint {
 }
 
 function dieFootprint(die: Die, bounds: Bounds): Footprint {
-  if (die.shape !== 'circle' && die.shape !== 'hexagon') {
-    return rectFootprint(bounds)
-  }
-
-  const cx = bounds.x + bounds.width / 2
-  const cy = bounds.y + bounds.height / 2
-  const rx = bounds.width / 2
-  const ry = bounds.height / 2
-  const segments = die.shape === 'hexagon' ? 6 : 48
-  const offset = die.shape === 'hexagon' ? Math.PI / 6 : 0
-  const points: [number, number][] = []
-
-  for (let index = 0; index < segments; index += 1) {
-    const angle = offset + (index / segments) * Math.PI * 2
-    points.push([cx + Math.cos(angle) * rx, cy + Math.sin(angle) * ry])
-  }
-
+  const scaleX = bounds.width / die.width
+  const scaleY = bounds.height / die.height
+  const points = outlineToPolygon(resolveDieOutline(die), DIE_OUTLINE_SEGMENTS_PER_CIRCLE).map(
+    ({ x, y }): [number, number] => [bounds.x + x * scaleX, bounds.y + y * scaleY],
+  )
   return { type: 'polygon', points }
 }
 
@@ -83,6 +77,7 @@ export function buildChip3DModel(
   layers: ChipLayerModel,
   die: Die,
   style: Chip3DStyle,
+  options: Chip3DModelOptions = {},
 ): Chip3DModel {
   const pieces: Chip3DPiece[] = []
 
@@ -109,6 +104,7 @@ export function buildChip3DModel(
   const blockZ = dieZ + DIE_DEPTH
   for (const surface of layers.blockSurfaces) {
     const fantasy = surface.emphasis === 'fantasy'
+    const blockStyle = options.blockStylesById?.[surface.blockId] ?? style
     pieces.push({
       id: surface.id,
       kind: 'blockSurface',
@@ -116,7 +112,7 @@ export function buildChip3DModel(
       footprint: rectFootprint(surface.bounds),
       baseZ: blockZ,
       depth: fantasy ? BLOCK_FANTASY_DEPTH : BLOCK_REAL_DEPTH,
-      material: fantasy ? style.materials.blockFantasy : style.materials.blockReal,
+      material: fantasy ? blockStyle.materials.blockFantasy : blockStyle.materials.blockReal,
       emphasis: surface.emphasis,
     })
   }

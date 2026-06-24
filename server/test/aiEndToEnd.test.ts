@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { CURRENT_SCHEMA_VERSION } from '@domain/project'
 import { createTestApp, jsonRequest, sessionCookie, VALID_SIGNUP } from './helpers'
 
 const DRAFT = { prompt: 'a neon dream chip' }
@@ -36,14 +37,11 @@ describe('AI surface end-to-end (fake provider)', () => {
     const { app, db } = createTestApp()
     const cookie = await signIn(app)
 
-    const draft = await app.request(
-      '/api/ai/generate-draft',
-      jsonRequest('POST', DRAFT, cookie),
-    )
+    const draft = await app.request('/api/ai/generate-draft', jsonRequest('POST', DRAFT, cookie))
     expect(draft.status).toBe(200)
     expect(
       ((await draft.json()) as { project: { schemaVersion: number } }).project.schemaVersion,
-    ).toBe(5)
+    ).toBe(CURRENT_SCHEMA_VERSION)
 
     const copy = await app.request('/api/ai/generate-copy', jsonRequest('POST', COPY, cookie))
     expect(copy.status).toBe(200)
@@ -54,9 +52,9 @@ describe('AI surface end-to-end (fake provider)', () => {
       jsonRequest('POST', SUGGEST, cookie),
     )
     expect(suggest.status).toBe(200)
-    expect(
-      Array.isArray(((await suggest.json()) as { suggestions: unknown[] }).suggestions),
-    ).toBe(true)
+    expect(Array.isArray(((await suggest.json()) as { suggestions: unknown[] }).suggestions)).toBe(
+      true,
+    )
 
     const variations = await app.request(
       '/api/ai/generate-variations',
@@ -85,18 +83,11 @@ describe('AI surface end-to-end (fake provider)', () => {
       (await app.request('/api/ai/suggest-layout', jsonRequest('POST', SUGGEST, cookie))).status,
     ).toBe(200)
     expect(
-      (
-        await app.request(
-          '/api/ai/generate-variations',
-          jsonRequest('POST', VARIATIONS, cookie),
-        )
-      ).status,
+      (await app.request('/api/ai/generate-variations', jsonRequest('POST', VARIATIONS, cookie)))
+        .status,
     ).toBe(200)
 
-    const fifth = await app.request(
-      '/api/ai/generate-draft',
-      jsonRequest('POST', DRAFT, cookie),
-    )
+    const fifth = await app.request('/api/ai/generate-draft', jsonRequest('POST', DRAFT, cookie))
     expect(fifth.status).toBe(429)
   })
 })

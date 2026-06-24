@@ -1,7 +1,16 @@
-import { CURRENT_SCHEMA_VERSION, type Project, type RemixOrigin } from './project'
+import {
+  CURRENT_SCHEMA_VERSION,
+  isStyleTheme,
+  type Block,
+  type Die,
+  type Project,
+  type RemixOrigin,
+} from './project'
+import { isDieShape, isParametricDieShape, resolveDieShapeParams } from './die/dieShapeParams'
+import { isChipFinish, resolveChipFinish } from './material/chipFinish'
 import { cloneStudioState, createDefaultStudioState } from './studioDefaults'
 
-const SUPPORTED_SCHEMA_VERSIONS = new Set([1, 2, 3, 4, CURRENT_SCHEMA_VERSION])
+const SUPPORTED_SCHEMA_VERSIONS = new Set([1, 2, 3, 4, 5, 6, 7, CURRENT_SCHEMA_VERSION])
 
 export function migrateProject(value: unknown): Project {
   if (
@@ -22,7 +31,7 @@ export function migrateProject(value: unknown): Project {
     candidate.die === null ||
     !Array.isArray(candidate.blocks) ||
     !Array.isArray(candidate.decorations) ||
-    typeof candidate.theme !== 'string' ||
+    !isStyleTheme(candidate.theme) ||
     typeof candidate.spec !== 'object' ||
     candidate.spec === null
   ) {
@@ -30,11 +39,21 @@ export function migrateProject(value: unknown): Project {
   }
 
   const project = value as Project
+  const die = normalizePersistedDie(candidate.die)
+  const finish = resolveChipFinish(candidate.finish, project.theme)
+  const blocks = normalizePersistedBlocks(candidate.blocks)
   // Schema 1 predates studio data; everything from schema 2 onward carries a
   // studio object, which cloneStudioState normalizes (e.g. defaulting spray blend).
   if (candidate.schemaVersion === 1) {
     return withNormalizedRemixOrigin(
-      { ...project, schemaVersion: CURRENT_SCHEMA_VERSION, studio: createDefaultStudioState() },
+      {
+        ...project,
+        schemaVersion: CURRENT_SCHEMA_VERSION,
+        die,
+        blocks,
+        finish,
+        studio: createDefaultStudioState(),
+      },
       candidate.remixedFrom,
     )
   }
@@ -43,9 +62,49 @@ export function migrateProject(value: unknown): Project {
     ? cloneStudioState(candidate.studio)
     : createDefaultStudioState()
   return withNormalizedRemixOrigin(
-    { ...project, schemaVersion: CURRENT_SCHEMA_VERSION, studio },
+    { ...project, schemaVersion: CURRENT_SCHEMA_VERSION, die, blocks, finish, studio },
     candidate.remixedFrom,
   )
+}
+
+function normalizePersistedDie(value: unknown): Die {
+  if (typeof value !== 'object' || value === null) throw new Error('Corrupt project record')
+  const candidate = value as Record<string, unknown>
+  if (
+    !isDieShape(candidate.shape) ||
+    typeof candidate.width !== 'number' ||
+    !Number.isFinite(candidate.width) ||
+    typeof candidate.height !== 'number' ||
+    !Number.isFinite(candidate.height) ||
+    typeof candidate.background !== 'string'
+  ) {
+    throw new Error('Corrupt project record')
+  }
+
+  const die: Die = {
+    shape: candidate.shape,
+    width: candidate.width,
+    height: candidate.height,
+    background: candidate.background,
+  }
+  if (isParametricDieShape(die.shape)) {
+    die.dieShapeParams = resolveDieShapeParams(die.shape, candidate.dieShapeParams)
+  }
+  return die
+}
+
+function normalizePersistedBlocks(value: unknown): Block[] {
+  if (!Array.isArray(value)) throw new Error('Corrupt project record')
+  return value.map((block) => {
+    if (typeof block !== 'object' || block === null) throw new Error('Corrupt project record')
+    const candidate = block as Block & Record<string, unknown>
+    if (!isChipFinish(candidate.finish)) {
+      const normalized = { ...candidate }
+      delete normalized.finish
+      return normalized as Block
+    }
+    return { ...candidate, finish: candidate.finish }
+  })
 }
 
 function validateStudio(value: unknown): value is Project['studio'] {

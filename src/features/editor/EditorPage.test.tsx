@@ -1,13 +1,23 @@
-import { render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createHeroChip } from '../../domain/heroChip'
 import { EditorPage } from './EditorPage'
 
 vi.mock('./canvas/ChipStage', () => ({
-  ChipStage: ({ layerVisibility }: { layerVisibility: { M2: boolean } }) => (
-    <div data-testid="chip-stage" data-m2-visible={String(layerVisibility.M2)} />
+  ChipStage: ({
+    layerVisibility,
+    ambientMotionEnabled,
+  }: {
+    layerVisibility: { M2: boolean }
+    ambientMotionEnabled: boolean
+  }) => (
+    <div
+      data-ambient-motion-enabled={String(ambientMotionEnabled)}
+      data-testid="chip-stage"
+      data-m2-visible={String(layerVisibility.M2)}
+    />
   ),
 }))
 
@@ -18,6 +28,10 @@ vi.mock('../export/ExportPanel', () => ({
 vi.mock('../publish/PublishPanel', () => ({
   PublishPanel: () => <button type="button">Publish Snapshot</button>,
 }))
+
+afterEach(() => {
+  vi.unstubAllGlobals()
+})
 
 describe('EditorPage', () => {
   it('renders the v2 three-zone editor shell with existing commands reachable', () => {
@@ -111,5 +125,165 @@ describe('EditorPage', () => {
     await user.click(screen.getByRole('button', { name: 'M2' }))
 
     expect(screen.getByTestId('chip-stage')).toHaveAttribute('data-m2-visible', 'false')
+  })
+
+  it('previews and commits die parameters through the editor store', async () => {
+    const user = userEvent.setup()
+    const project = createHeroChip('editor-params', 1700000000000)
+    project.die = { ...project.die, shape: 'rounded-rect' }
+    render(
+      <MemoryRouter>
+        <EditorPage project={project} persist={vi.fn()} onSaveVariation={vi.fn()} />
+      </MemoryRouter>,
+    )
+
+    const slider = screen.getByRole('slider', { name: 'Corner Radius' })
+    fireEvent.change(slider, { target: { value: '0.2' } })
+    expect(screen.getByText('20%')).toBeInTheDocument()
+    fireEvent.pointerUp(slider)
+
+    const topBar = screen.getByRole('region', { name: 'Editor top command bar' })
+    await user.click(within(topBar).getByRole('button', { name: 'Undo' }))
+    expect(screen.getByRole('slider', { name: 'Corner Radius' })).toHaveValue('0.12')
+  })
+
+  it('changes chip finish through the inspector and supports undo', async () => {
+    const user = userEvent.setup()
+    const project = createHeroChip('editor-finish', 1700000000000)
+    project.finish = 'gloss'
+
+    render(
+      <MemoryRouter>
+        <EditorPage project={project} persist={vi.fn()} onSaveVariation={vi.fn()} />
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByRole('button', { name: 'Gloss glass' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Brushed metal' }))
+
+    expect(screen.getByRole('button', { name: 'Brushed metal' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+
+    const topBar = screen.getByRole('region', { name: 'Editor top command bar' })
+    await user.click(within(topBar).getByRole('button', { name: 'Undo' }))
+
+    expect(screen.getByRole('button', { name: 'Gloss glass' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+  })
+
+  it('changes a selected tile finish override through the inspector and supports undo', async () => {
+    const user = userEvent.setup()
+    const project = createHeroChip('editor-block-finish', 1700000000000)
+    project.finish = 'gloss'
+
+    render(
+      <MemoryRouter>
+        <EditorPage project={project} persist={vi.fn()} onSaveVariation={vi.fn()} />
+      </MemoryRouter>,
+    )
+
+    await user.click(screen.getByRole('button', { name: 'CPU' }))
+
+    const group = screen.getByRole('group', { name: 'Selected tile material controls' })
+    expect(
+      within(group).getByRole('button', { name: 'Inherit chip finish: Gloss glass' }),
+    ).toHaveAttribute('aria-pressed', 'true')
+
+    await user.click(within(group).getByRole('button', { name: 'Brushed metal' }))
+    expect(within(group).getByRole('button', { name: 'Brushed metal' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+
+    const topBar = screen.getByRole('region', { name: 'Editor top command bar' })
+    await user.click(within(topBar).getByRole('button', { name: 'Undo' }))
+    expect(
+      within(group).getByRole('button', { name: 'Inherit chip finish: Gloss glass' }),
+    ).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('shows separate theme and finish readouts', () => {
+    const project = createHeroChip('editor-readouts', 1700000000000)
+    project.theme = 'keynote'
+    project.finish = 'metallic'
+
+    render(
+      <MemoryRouter>
+        <EditorPage project={project} persist={vi.fn()} onSaveVariation={vi.fn()} />
+      </MemoryRouter>,
+    )
+
+    const readouts = screen.getByLabelText('Project readouts')
+    expect(readouts).toHaveTextContent('ThemeKeynote')
+    expect(readouts).toHaveTextContent('FinishBrushed metal')
+  })
+
+  it('enables ambient motion by default when reduced motion is not requested', () => {
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn(() => ({
+        matches: false,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      })),
+    )
+
+    render(
+      <MemoryRouter>
+        <EditorPage
+          project={createHeroChip('ambient-default', 1)}
+          persist={vi.fn()}
+          onSaveVariation={vi.fn()}
+        />
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByRole('switch', { name: 'Ambient motion' })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    )
+    expect(screen.getByTestId('chip-stage')).toHaveAttribute('data-ambient-motion-enabled', 'true')
+  })
+
+  it('starts ambient motion disabled under reduced motion without touching undo history', async () => {
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn(() => ({
+        matches: true,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      })),
+    )
+    const user = userEvent.setup()
+
+    render(
+      <MemoryRouter>
+        <EditorPage
+          project={createHeroChip('ambient-reduced', 1)}
+          persist={vi.fn()}
+          onSaveVariation={vi.fn()}
+        />
+      </MemoryRouter>,
+    )
+
+    const topBar = screen.getByRole('region', { name: 'Editor top command bar' })
+    expect(within(topBar).getByRole('button', { name: 'Undo' })).toBeDisabled()
+    expect(screen.getByRole('switch', { name: 'Ambient motion' })).toHaveAttribute(
+      'aria-checked',
+      'false',
+    )
+
+    await user.click(screen.getByRole('switch', { name: 'Ambient motion' }))
+
+    expect(screen.getByTestId('chip-stage')).toHaveAttribute('data-ambient-motion-enabled', 'true')
+    expect(within(topBar).getByRole('button', { name: 'Undo' })).toBeDisabled()
   })
 })

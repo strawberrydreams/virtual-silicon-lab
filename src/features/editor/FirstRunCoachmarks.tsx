@@ -11,7 +11,7 @@ export function FirstRunCoachmarks() {
         <h2>Build a chip in four moves</h2>
         <ol>
           <li>Add a block from the left rail.</li>
-          <li>Pick a finish in the command bar.</li>
+          <li>Choose a palette in the command bar, then tune surface finish in Appearance.</li>
           <li>Edit the fake spec in the inspector.</li>
           <li>Export a poster when the layout reads clean.</li>
         </ol>

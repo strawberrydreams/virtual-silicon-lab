@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { CURRENT_SCHEMA_VERSION } from '@domain/project'
 import { createTestApp, jsonRequest, sessionCookie, VALID_SIGNUP } from './helpers'
 
 async function signIn(app: ReturnType<typeof createTestApp>['app']) {
@@ -22,7 +23,7 @@ describe('POST /api/ai/generate-draft', () => {
     )
     expect(res.status).toBe(200)
     const body = (await res.json()) as { project: { schemaVersion: number; blocks: unknown[] } }
-    expect(body.project.schemaVersion).toBe(5)
+    expect(body.project.schemaVersion).toBe(CURRENT_SCHEMA_VERSION)
     expect(body.project.blocks.length).toBeGreaterThan(0)
     const n = (db.prepare('SELECT COUNT(*) AS n FROM ai_prompt_log').get() as { n: number }).n
     expect(n).toBe(1)
@@ -68,7 +69,9 @@ describe('POST /api/ai/generate-copy', () => {
     const cookie = await signIn(app)
     const res = await app.request('/api/ai/generate-copy', jsonRequest('POST', COPY_BODY, cookie))
     expect(res.status).toBe(200)
-    const body = (await res.json()) as { spec: { brand: string; features: unknown[]; cores: number } }
+    const body = (await res.json()) as {
+      spec: { brand: string; features: unknown[]; cores: number }
+    }
     expect(typeof body.spec.brand).toBe('string')
     expect(Array.isArray(body.spec.features)).toBe(true)
     expect(Number.isInteger(body.spec.cores)).toBe(true)
@@ -212,7 +215,9 @@ describe('POST /api/ai/generate-variations', () => {
     expect(res.status).toBe(200)
     const body = (await res.json()) as { variations: { schemaVersion: number }[] }
     expect(body.variations).toHaveLength(3)
-    expect(body.variations.every((variation) => variation.schemaVersion === 5)).toBe(true)
+    expect(
+      body.variations.every((variation) => variation.schemaVersion === CURRENT_SCHEMA_VERSION),
+    ).toBe(true)
     const rows = db.prepare('SELECT kind FROM ai_prompt_log').all() as { kind: string }[]
     expect(rows).toEqual([{ kind: 'generate-variations' }])
   })
@@ -248,10 +253,7 @@ describe('POST /api/ai/generate-variations', () => {
   it('enforces the shared daily quota with 429', async () => {
     const { app } = createTestApp(Date.now, { aiDailyQuota: 1 })
     const cookie = await signIn(app)
-    await app.request(
-      '/api/ai/generate-variations',
-      jsonRequest('POST', VARIATIONS_BODY, cookie),
-    )
+    await app.request('/api/ai/generate-variations', jsonRequest('POST', VARIATIONS_BODY, cookie))
     const res = await app.request(
       '/api/ai/generate-variations',
       jsonRequest('POST', VARIATIONS_BODY, cookie),
@@ -348,11 +350,7 @@ describe('AI route abuse bounds', () => {
     const blockTypes = Array.from({ length: 65 }, () => 'CPU')
     const res = await app.request(
       '/api/ai/generate-copy',
-      jsonRequest(
-        'POST',
-        { context: { theme: 'neon', dieShape: 'rect', blockTypes } },
-        cookie,
-      ),
+      jsonRequest('POST', { context: { theme: 'neon', dieShape: 'rect', blockTypes } }, cookie),
     )
 
     expect(res.status).toBe(400)

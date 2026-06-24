@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { createProject } from '../domain/projectFactory'
 import { buildBlock } from '../domain/blockFactory'
-import type { Project } from '../domain/project'
+import type { DieShape, Project } from '../domain/project'
+import type { ChipFinish } from '../domain/material/chipFinish'
+import { outlineToPolygon, resolveDieOutline } from '../domain/die/dieOutline'
+import { pointInPolygon } from '../domain/die/polygonClamp'
 import { createEditorStore } from './editorStore'
 
 function seededProject(): Project {
@@ -14,6 +17,24 @@ function seededProject(): Project {
 
 function fixedIds(...ids: string[]) {
   return () => ids.shift() ?? 'extra-id'
+}
+
+function parameterProject(shape: DieShape = 'l-shape'): Project {
+  const base = createProject('Parameter Chip', 'parameter-chip', 100)
+  return {
+    ...base,
+    die: { ...base.die, shape, dieShapeParams: undefined },
+    blocks: [
+      {
+        ...buildBlock(base, 'CPU', 'cpu'),
+        x: 330,
+        y: 350,
+        w: 100,
+        h: 80,
+        rotation: 0,
+      },
+    ],
+  }
 }
 
 describe('editor store selection and history', () => {
@@ -151,9 +172,7 @@ describe('editor store commands', () => {
     const store = createEditorStore(createProject('p', 'p1', 0))
     const initialProject = store.getState().project
 
-    store
-      .getState()
-      .transformBlock('missing-block', { x: 40, y: 40, w: 120, h: 80, rotation: 0 })
+    store.getState().transformBlock('missing-block', { x: 40, y: 40, w: 120, h: 80, rotation: 0 })
     store.getState().updateBlockVisual('missing-block', { colorOverride: '#ff00ff' })
     store.getState().transformSticker('missing-sticker', { x: 24, y: 48, rotation: 12 })
     store.getState().updateSticker('missing-sticker', { text: 'STALE' })
@@ -214,6 +233,143 @@ describe('editor store commands', () => {
     }
   })
 
+  it('changes to a parametric shape as one undoable clamp and clears stale params', () => {
+    const project = seededProject()
+    project.die.dieShapeParams = { chamfer: 0.2 }
+    project.blocks[0] = { ...project.blocks[0], x: 820, y: 520, w: 120, h: 80 }
+    const store = createEditorStore(project)
+
+    store.getState().setDieShape('l-shape')
+
+    const changed = store.getState().project
+    const polygon = outlineToPolygon(resolveDieOutline(changed.die))
+    expect(changed.die.shape).toBe('l-shape')
+    expect(changed.die.dieShapeParams).toBeUndefined()
+    expect(
+      changed.blocks.every((block) =>
+        rotatedCorners(block).every((corner) => pointInPolygon(corner, polygon)),
+      ),
+    ).toBe(true)
+    expect(store.getState().past).toHaveLength(1)
+
+    store.getState().undo()
+    expect(store.getState().project).toEqual(project)
+  })
+
+  it('does not create history when selecting the active die shape', () => {
+    const store = createEditorStore(seededProject())
+    store.getState().setDieShape('rect')
+    expect(store.getState().past).toHaveLength(0)
+  })
+
+  it('previews die parameters without history and commits the gesture once', () => {
+    const project = parameterProject()
+    const store = createEditorStore(project)
+
+    store.getState().previewDieShapeParams({ notch: { corner: 'bottom-right', size: 0.58 } })
+
+    expect(store.getState().project.die.dieShapeParams).toEqual({
+      notch: { corner: 'bottom-right', size: 0.58 },
+    })
+    expect(store.getState().past).toHaveLength(0)
+    expect(store.getState().dieParameterEditActive).toBe(true)
+
+    store.getState().commitDieShapeParamEdit()
+
+    expect(store.getState().past).toEqual([project])
+    expect(store.getState().dieParameterEditActive).toBe(false)
+    store.getState().undo()
+    expect(store.getState().project).toEqual(project)
+  })
+
+  it('derives every preview from the original block baseline', () => {
+    const project = parameterProject()
+    const originalBlock = project.blocks[0]
+    const store = createEditorStore(project)
+
+    store.getState().previewDieShapeParams({ notch: { corner: 'bottom-right', size: 0.65 } })
+    expect(store.getState().project.blocks[0]).not.toEqual(originalBlock)
+
+    store.getState().previewDieShapeParams({ notch: { corner: 'bottom-right', size: 0.3 } })
+
+    expect(store.getState().project.blocks[0]).toEqual(originalBlock)
+    expect(store.getState().past).toHaveLength(0)
+  })
+
+  it('cancels a die parameter preview without history', () => {
+    const project = parameterProject()
+    const store = createEditorStore(project)
+    store.getState().previewDieShapeParams({ notch: { corner: 'top-left', size: 0.62 } })
+
+    store.getState().cancelDieShapeParamEdit()
+
+    expect(store.getState().project).toEqual(project)
+    expect(store.getState().past).toHaveLength(0)
+    expect(store.getState().dieParameterEditActive).toBe(false)
+  })
+
+  it('sets a corner or reset as one atomic parameter command', () => {
+    const project = parameterProject()
+    const store = createEditorStore(project)
+
+    store.getState().setDieShapeParams({ notch: { corner: 'top-right', size: 0.5 } })
+    expect(store.getState().project.die.dieShapeParams).toEqual({
+      notch: { corner: 'top-right', size: 0.5 },
+    })
+    expect(store.getState().past).toHaveLength(1)
+
+    store.getState().setDieShapeParams({ notch: { corner: 'bottom-right', size: 0.5 } })
+    expect(store.getState().past).toHaveLength(2)
+    store.getState().undo()
+    expect(store.getState().project.die.dieShapeParams).toEqual({
+      notch: { corner: 'top-right', size: 0.5 },
+    })
+  })
+
+  it('ignores equal and legacy die parameter commands', () => {
+    const parametric = createEditorStore(parameterProject())
+    parametric.getState().setDieShapeParams({ notch: { corner: 'bottom-right', size: 0.5 } })
+    expect(parametric.getState().past).toHaveLength(0)
+
+    const legacyProject = parameterProject('rect')
+    const legacy = createEditorStore(legacyProject)
+    legacy.getState().previewDieShapeParams({ cornerRadius: 0.2 })
+    legacy.getState().setDieShapeParams({ cornerRadius: 0.2 })
+    expect(legacy.getState().project).toBe(legacyProject)
+    expect(legacy.getState().past).toHaveLength(0)
+    expect(legacy.getState().dieParameterEditActive).toBe(false)
+  })
+
+  it('finalizes an active parameter preview before another project command', () => {
+    const project = parameterProject()
+    const store = createEditorStore(project)
+    store.getState().previewDieShapeParams({ notch: { corner: 'bottom-right', size: 0.62 } })
+
+    store.getState().setTheme('military')
+
+    expect(store.getState().past).toHaveLength(2)
+    expect(store.getState().dieParameterEditActive).toBe(false)
+    store.getState().undo()
+    expect(store.getState().project.theme).toBe(project.theme)
+    expect(store.getState().project.die.dieShapeParams).toEqual({
+      notch: { corner: 'bottom-right', size: 0.62 },
+    })
+    store.getState().undo()
+    expect(store.getState().project).toEqual(project)
+  })
+
+  it('finalizes and immediately undoes an active parameter preview', () => {
+    const project = parameterProject()
+    const store = createEditorStore(project)
+    store.getState().previewDieShapeParams({ notch: { corner: 'bottom-right', size: 0.62 } })
+
+    store.getState().undo()
+
+    expect(store.getState().project).toEqual(project)
+    expect(store.getState().future).toHaveLength(1)
+    expect(store.getState().dieParameterEditActive).toBe(false)
+  })
+
   it('re-clamps studio stickers and sprays when the die shape shrinks', () => {
     const store = createEditorStore(seededProject(), { createId: fixedIds('sticker-1', 'spray-1') })
     store.getState().addSticker('badge')
@@ -259,6 +415,84 @@ describe('editorStore visual commands', () => {
   it('setTheme is a no-op when the theme is unchanged', () => {
     const store = createEditorStore(createProject('p', 'p1', 0))
     store.getState().setTheme('neon')
+    expect(store.getState().past).toHaveLength(0)
+  })
+
+  it('sets the chip finish as one undoable project command', () => {
+    const store = createEditorStore(seededProject())
+
+    store.getState().setFinish('metallic')
+
+    expect(store.getState().project.finish).toBe('metallic')
+    expect(store.getState().past).toHaveLength(1)
+
+    store.getState().undo()
+    expect(store.getState().project.finish).toBe('gloss')
+
+    store.getState().redo()
+    expect(store.getState().project.finish).toBe('metallic')
+  })
+
+  it('does not create history when selecting the active finish', () => {
+    const project = { ...seededProject(), finish: 'satin' as ChipFinish }
+    const store = createEditorStore(project)
+
+    store.getState().setFinish('satin')
+
+    expect(store.getState().project).toBe(project)
+    expect(store.getState().past).toHaveLength(0)
+  })
+
+  it('sets a block finish override as one undoable command', () => {
+    const store = createEditorStore(seededProject())
+
+    store.getState().setBlockFinish('cpu', 'metallic')
+
+    expect(store.getState().project.blocks.find((block) => block.id === 'cpu')?.finish).toBe(
+      'metallic',
+    )
+    expect(store.getState().past).toHaveLength(1)
+
+    store.getState().undo()
+    expect(store.getState().project.blocks.find((block) => block.id === 'cpu')?.finish).toBe(
+      undefined,
+    )
+
+    store.getState().redo()
+    expect(store.getState().project.blocks.find((block) => block.id === 'cpu')?.finish).toBe(
+      'metallic',
+    )
+  })
+
+  it('clears a block finish override back to inherited without leaving a persisted key', () => {
+    const project = {
+      ...seededProject(),
+      blocks: seededProject().blocks.map((block) =>
+        block.id === 'cpu' ? { ...block, finish: 'satin' as ChipFinish } : block,
+      ),
+    }
+    const store = createEditorStore(project)
+
+    store.getState().setBlockFinish('cpu', undefined)
+
+    const cpu = store.getState().project.blocks.find((block) => block.id === 'cpu')!
+    expect(cpu).not.toHaveProperty('finish')
+    expect(store.getState().past).toHaveLength(1)
+  })
+
+  it('does not create history for stale or unchanged block finish commands', () => {
+    const project = {
+      ...seededProject(),
+      blocks: seededProject().blocks.map((block) =>
+        block.id === 'cpu' ? { ...block, finish: 'satin' as ChipFinish } : block,
+      ),
+    }
+    const store = createEditorStore(project)
+
+    store.getState().setBlockFinish('cpu', 'satin')
+    store.getState().setBlockFinish('missing', 'metallic')
+
+    expect(store.getState().project).toBe(project)
     expect(store.getState().past).toHaveLength(0)
   })
 
@@ -471,9 +705,7 @@ describe('editor store AI suggestions', () => {
     const store = createEditorStore(seededProject())
     const before = store.getState().project.blocks.length
 
-    store
-      .getState()
-      .applyAiSuggestion({ type: 'Nonsense', x: 0.1, y: 0.1, w: 0.2, h: 0.2 })
+    store.getState().applyAiSuggestion({ type: 'Nonsense', x: 0.1, y: 0.1, w: 0.2, h: 0.2 })
 
     expect(store.getState().project.blocks).toHaveLength(before)
     expect(store.getState().past).toHaveLength(0)

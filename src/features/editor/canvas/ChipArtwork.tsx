@@ -41,6 +41,13 @@ import { resolveStickerLayout } from './stickerLayout'
 import { busBundle, routedBusPairs } from './busRouting'
 import { blocksByZIndex, splitTileLabel } from './artworkLayout'
 import { DEFAULT_LAYER_VISIBILITY, type ChipLayerVisibility } from '../layerVisibility'
+import { resolveDieOutline } from '../../../domain/die/dieOutline'
+import { isParametricDieShape } from '../../../domain/die/dieShapeParams'
+import { traceDieOutline } from './dieOutlinePath'
+import {
+  AMBIENT_TRACE_DASH,
+  type AmbientAnimationFrame,
+} from '../../../visual/ambientEditorAnimation'
 
 const GRID = 16
 
@@ -63,6 +70,10 @@ function clipForDie(context: Konva.Context, die: Die) {
     context.closePath()
     return
   }
+  if (isParametricDieShape(die.shape)) {
+    traceDieOutline(context, resolveDieOutline(die))
+    return
+  }
   context.rect(0, 0, die.width, die.height)
 }
 
@@ -81,11 +92,11 @@ function paintRectProps(paint: StudioColorPaint, width: number, height: number) 
 
 function DieShape({
   die,
-  tokens,
+  recipe,
   colors,
 }: {
   die: Die
-  tokens: ThemeTokens
+  recipe: ChipMaterialRecipe
   colors: StudioColorSettings
 }) {
   const gradient =
@@ -97,18 +108,27 @@ function DieShape({
         ])
   const common = {
     ...gradient,
-    stroke: tokens.dieStroke,
-    strokeWidth: tokens.dieStrokeWidth,
-    shadowColor: tokens.glow.shadowColor,
-    shadowBlur: tokens.dieStrokeWidth * 6,
+    stroke: recipe.dieBase.stroke,
+    strokeWidth: recipe.dieBase.strokeWidth,
+    shadowColor: recipe.glassGlow.color,
+    shadowBlur: recipe.dieBase.strokeWidth * 6,
     shadowOpacity: 0.25,
   }
   if (die.shape === 'circle') {
-    return <Circle x={die.width / 2} y={die.height / 2} radius={die.width / 2} {...common} />
+    return (
+      <Circle
+        name="chip-die-base"
+        x={die.width / 2}
+        y={die.height / 2}
+        radius={die.width / 2}
+        {...common}
+      />
+    )
   }
   if (die.shape === 'hexagon') {
     return (
       <RegularPolygon
+        name="chip-die-base"
         x={die.width / 2}
         y={die.height / 2}
         sides={6}
@@ -117,7 +137,21 @@ function DieShape({
       />
     )
   }
-  return <Rect width={die.width} height={die.height} {...common} />
+  if (isParametricDieShape(die.shape)) {
+    const outline = resolveDieOutline(die)
+    return (
+      <Shape
+        name="parametric-die-shape"
+        {...common}
+        sceneFunc={(context, shape) => {
+          context.beginPath()
+          traceDieOutline(context, outline)
+          context.fillStrokeShape(shape)
+        }}
+      />
+    )
+  }
+  return <Rect name="chip-die-base" width={die.width} height={die.height} {...common} />
 }
 
 function PackageShape({
@@ -135,11 +169,42 @@ function PackageShape({
   const packageFill = paintColor(colors.package)
   if (die.shape === 'circle') {
     return (
-      <Circle
-        x={die.width / 2}
-        y={die.height / 2}
-        radius={radius}
-        fill={packageFill}
+      <Group listening={false}>
+        <Circle
+          name="chip-package"
+          x={die.width / 2}
+          y={die.height / 2}
+          radius={radius}
+          fill={packageFill}
+          stroke={recipe.package.stroke}
+          strokeWidth={1}
+          shadowColor={recipe.package.shadowColor}
+          shadowBlur={recipe.package.shadowBlur}
+          shadowOpacity={recipe.package.shadowOpacity}
+          listening={false}
+        />
+        <Circle
+          name="chip-package-highlight"
+          x={die.width / 2 - radius * 0.18}
+          y={die.height / 2 - radius * 0.22}
+          radius={radius * 0.64}
+          fill="#ffffff"
+          opacity={recipe.package.highlightOpacity}
+          listening={false}
+        />
+      </Group>
+    )
+  }
+  return (
+    <Group listening={false}>
+      <Rect
+        name="chip-package"
+        x={bounds.x}
+        y={bounds.y}
+        width={bounds.width}
+        height={bounds.height}
+        cornerRadius={radius}
+        {...paintRectProps(colors.package, bounds.width, bounds.height)}
         stroke={recipe.package.stroke}
         strokeWidth={1}
         shadowColor={recipe.package.shadowColor}
@@ -147,23 +212,18 @@ function PackageShape({
         shadowOpacity={recipe.package.shadowOpacity}
         listening={false}
       />
-    )
-  }
-  return (
-    <Rect
-      x={bounds.x}
-      y={bounds.y}
-      width={bounds.width}
-      height={bounds.height}
-      cornerRadius={radius}
-      {...paintRectProps(colors.package, bounds.width, bounds.height)}
-      stroke={recipe.package.stroke}
-      strokeWidth={1}
-      shadowColor={recipe.package.shadowColor}
-      shadowBlur={recipe.package.shadowBlur}
-      shadowOpacity={recipe.package.shadowOpacity}
-      listening={false}
-    />
+      <Rect
+        name="chip-package-highlight"
+        x={bounds.x + bounds.width * 0.08}
+        y={bounds.y + bounds.height * 0.08}
+        width={bounds.width * 0.84}
+        height={Math.max(18, bounds.height * 0.16)}
+        cornerRadius={Math.max(10, radius * 0.45)}
+        fill="#ffffff"
+        opacity={recipe.package.highlightOpacity}
+        listening={false}
+      />
+    </Group>
   )
 }
 
@@ -218,6 +278,37 @@ function SealRingLayer({ die, color }: { die: Die; color: string }) {
           opacity={0.4}
           {...ring}
         />
+      </Group>
+    )
+  }
+  if (isParametricDieShape(die.shape)) {
+    const outline = resolveDieOutline(die)
+    const shapeRing = (ringInset: number, strokeWidth: number, opacity: number) => (
+      <Group
+        key={ringInset}
+        x={ringInset}
+        y={ringInset}
+        scaleX={(die.width - ringInset * 2) / die.width}
+        scaleY={(die.height - ringInset * 2) / die.height}
+        listening={false}
+      >
+        <Shape
+          name="parametric-seal-ring"
+          strokeWidth={strokeWidth}
+          opacity={opacity}
+          {...ring}
+          sceneFunc={(context, shape) => {
+            context.beginPath()
+            traceDieOutline(context, outline)
+            context.strokeShape(shape)
+          }}
+        />
+      </Group>
+    )
+    return (
+      <Group listening={false}>
+        {shapeRing(inset, 2, 0.72)}
+        {shapeRing(inset + gap, 1, 0.4)}
       </Group>
     )
   }
@@ -425,10 +516,12 @@ function TraceLayer({
   die,
   layers,
   colors,
+  ambientAnimation,
 }: {
   die: Die
   layers: ChipLayerModel
   colors: StudioColorSettings
+  ambientAnimation?: AmbientAnimationFrame
 }) {
   const traceColor = paintColor(colors.trace)
   return (
@@ -439,11 +532,14 @@ function TraceLayer({
     >
       {layers.traces.map((trace) => (
         <Line
+          name="ambient-trace-line"
           key={trace.id}
           points={trace.points}
           stroke={traceColor}
           strokeWidth={trace.width}
-          opacity={trace.opacity}
+          opacity={trace.opacity * (ambientAnimation?.traceOpacityScale ?? 1)}
+          dash={ambientAnimation ? [...AMBIENT_TRACE_DASH] : undefined}
+          dashOffset={ambientAnimation?.traceDashOffset ?? 0}
           lineCap="round"
           shadowColor={traceColor}
           shadowBlur={6}
@@ -454,19 +550,28 @@ function TraceLayer({
   )
 }
 
-function GlassGlowOverlay({ die, layers }: { die: Die; layers: ChipLayerModel }) {
+function GlassGlowOverlay({
+  die,
+  layers,
+  ambientAnimation,
+}: {
+  die: Die
+  layers: ChipLayerModel
+  ambientAnimation?: AmbientAnimationFrame
+}) {
   const glow = layers.glowOverlay
   return (
     <Group clipFunc={(context) => clipForDie(context, die)} listening={false}>
       <Rect
+        name="chip-glass-glow"
         x={glow.bounds.x}
         y={glow.bounds.y}
         width={glow.bounds.width}
         height={glow.bounds.height}
         fill={glow.color}
-        opacity={glow.opacity}
+        opacity={glow.opacity * (ambientAnimation?.glowOpacityScale ?? 1)}
         shadowColor={glow.color}
-        shadowBlur={glow.blur}
+        shadowBlur={glow.blur * (ambientAnimation?.glowBlurScale ?? 1)}
         globalCompositeOperation="screen"
       />
     </Group>
@@ -1308,6 +1413,7 @@ export function BlockArtwork({
   block,
   tokens,
   selected = false,
+  finish,
   detail,
   colors,
   showLabel = true,
@@ -1317,13 +1423,14 @@ export function BlockArtwork({
   block: Block
   tokens: ThemeTokens
   selected?: boolean
+  finish?: Project['finish']
   detail?: TileDetail
   colors?: StudioColorSettings
   showLabel?: boolean
   groupRef?: (node: Konva.Group | null) => void
   groupProps?: ComponentProps<typeof Group>
 }) {
-  const style = resolveBlockStyle(block, tokens, selected)
+  const style = resolveBlockStyle(block, tokens, selected, finish)
   const blockFill = block.colorOverride ?? (colors ? paintColor(colors.block) : style.fill)
   const labelFill = colors ? paintColor(colors.label) : tokens.text
   const blockStride = detail?.blockStride ?? 18
@@ -1338,6 +1445,7 @@ export function BlockArtwork({
       {...groupProps}
     >
       <Rect
+        name="chip-block-body"
         width={block.w}
         height={block.h}
         cornerRadius={2}
@@ -1472,6 +1580,7 @@ type Props = {
   project: Project
   renderMode?: 'full' | 'die-only'
   layerVisibility?: ChipLayerVisibility
+  ambientAnimation?: AmbientAnimationFrame
   renderBlock?: (block: Block, tokens: ThemeTokens) => ReactNode
   renderStudioSpray?: (spray: StudioSpray) => ReactNode
   renderStudioSticker?: (sticker: StudioSticker) => ReactNode
@@ -1484,12 +1593,13 @@ export const ChipArtwork = memo(function ChipArtwork({
   project,
   renderMode = 'full',
   layerVisibility = DEFAULT_LAYER_VISIBILITY,
+  ambientAnimation,
   renderBlock,
   renderStudioSpray,
   renderStudioSticker,
 }: Props) {
   const tokens = resolveTheme(project.theme)
-  const recipe = resolveMaterialRecipe(project.theme)
+  const recipe = resolveMaterialRecipe(project.theme, project.finish)
   const layers = useMemo(() => buildChipLayers(project), [project])
   const detail = useMemo(
     () => resolveTileDetail(project.studio.tileSettings),
@@ -1501,7 +1611,7 @@ export const ChipArtwork = memo(function ChipArtwork({
       {layerVisibility.M5 && renderMode === 'full' ? (
         <PackageShape die={project.die} layers={layers} recipe={recipe} colors={colors} />
       ) : null}
-      {layerVisibility.M5 ? <DieShape die={project.die} tokens={tokens} colors={colors} /> : null}
+      {layerVisibility.M5 ? <DieShape die={project.die} recipe={recipe} colors={colors} /> : null}
       {layerVisibility.M5 ? <SealRingLayer die={project.die} color={tokens.dieStroke} /> : null}
       {layerVisibility.M5 ? <SoCPeripheryLayer project={project} colors={colors} /> : null}
       {layerVisibility.M1 ? (
@@ -1514,7 +1624,14 @@ export const ChipArtwork = memo(function ChipArtwork({
       {layerVisibility.M1 ? (
         <FabricDetailLayer die={project.die} layers={layers} colors={colors} />
       ) : null}
-      {layerVisibility.M2 ? <TraceLayer die={project.die} layers={layers} colors={colors} /> : null}
+      {layerVisibility.M2 ? (
+        <TraceLayer
+          die={project.die}
+          layers={layers}
+          colors={colors}
+          ambientAnimation={ambientAnimation}
+        />
+      ) : null}
       {layerVisibility.M2 ? <BusInterconnectLayer project={project} colors={colors} /> : null}
       {layerVisibility.M3
         ? blocksByZIndex(project.blocks).map((block) => (
@@ -1523,6 +1640,7 @@ export const ChipArtwork = memo(function ChipArtwork({
                 <BlockArtwork
                   block={block}
                   tokens={tokens}
+                  finish={block.finish ?? project.finish}
                   detail={detail}
                   colors={colors}
                   showLabel={layerVisibility.Label}
@@ -1561,7 +1679,9 @@ export const ChipArtwork = memo(function ChipArtwork({
       {layerVisibility.Label ? (
         <ReadoutLayer layers={layers} recipe={recipe} colors={colors} />
       ) : null}
-      {layerVisibility.M5 ? <GlassGlowOverlay die={project.die} layers={layers} /> : null}
+      {layerVisibility.M5 ? (
+        <GlassGlowOverlay die={project.die} layers={layers} ambientAnimation={ambientAnimation} />
+      ) : null}
     </>
   )
 })

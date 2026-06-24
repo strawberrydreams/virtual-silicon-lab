@@ -1,6 +1,6 @@
-import { render, screen } from '@testing-library/react'
+import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createProject } from '../../../domain/projectFactory'
 import { ChipStage } from './ChipStage'
 
@@ -37,6 +37,10 @@ vi.mock('react-konva', async () => {
     Text: node('Text'),
     Transformer: node('Transformer'),
   }
+})
+
+afterEach(() => {
+  vi.unstubAllGlobals()
 })
 
 describe('ChipStage canvas chrome', () => {
@@ -104,5 +108,70 @@ describe('ChipStage canvas chrome', () => {
     )
 
     expect(document.querySelector('[data-name="chip-layer-traces"]')).not.toBeInTheDocument()
+  })
+
+  it('starts one ambient rAF loop when editor ambient motion is enabled', () => {
+    let rafCallback: FrameRequestCallback | null = null
+    const requestAnimationFrame = vi.fn((callback: FrameRequestCallback) => {
+      rafCallback = callback
+      return 10
+    })
+    const cancelAnimationFrame = vi.fn()
+    vi.stubGlobal('requestAnimationFrame', requestAnimationFrame)
+    vi.stubGlobal('cancelAnimationFrame', cancelAnimationFrame)
+
+    render(
+      <ChipStage
+        project={createProject('Ambient Loop', 'ambient-loop', 1700000000000)}
+        selectedBlockId={null}
+        selectedStudioItem={null}
+        ambientMotionEnabled={true}
+        ambientMotionBudget={{ tier: 'full', animateGlow: true, animateTraces: true, reason: null }}
+        onSelectBlock={vi.fn()}
+        onSelectStudioItem={vi.fn()}
+        onTransformBlock={vi.fn()}
+        onTransformSticker={vi.fn()}
+        onTransformSpray={vi.fn()}
+      />,
+    )
+
+    expect(requestAnimationFrame).toHaveBeenCalledTimes(1)
+    expect(screen.getByRole('region', { name: 'Canvas status readouts' })).toHaveTextContent(
+      'MOTION FULL',
+    )
+
+    act(() => rafCallback?.(6000))
+
+    expect(requestAnimationFrame).toHaveBeenCalledTimes(2)
+  })
+
+  it('does not start rAF when ambient motion is disabled or degraded to static', () => {
+    const requestAnimationFrame = vi.fn()
+    vi.stubGlobal('requestAnimationFrame', requestAnimationFrame)
+
+    render(
+      <ChipStage
+        project={createProject('Ambient Static', 'ambient-static', 1700000000000)}
+        selectedBlockId={null}
+        selectedStudioItem={null}
+        ambientMotionEnabled={true}
+        ambientMotionBudget={{
+          tier: 'static',
+          animateGlow: false,
+          animateTraces: false,
+          reason: 'Project is too dense for editor ambient motion.',
+        }}
+        onSelectBlock={vi.fn()}
+        onSelectStudioItem={vi.fn()}
+        onTransformBlock={vi.fn()}
+        onTransformSticker={vi.fn()}
+        onTransformSpray={vi.fn()}
+      />,
+    )
+
+    expect(requestAnimationFrame).not.toHaveBeenCalled()
+    expect(screen.getByRole('region', { name: 'Canvas status readouts' })).toHaveTextContent(
+      'MOTION OFF',
+    )
   })
 })

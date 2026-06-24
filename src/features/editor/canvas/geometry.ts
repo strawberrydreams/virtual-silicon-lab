@@ -1,4 +1,6 @@
 import type { Die, DieShape } from '../../../domain/project'
+import { outlineToPolygon, resolveDieOutline } from '../../../domain/die/dieOutline'
+import { clampBlockToPolygon } from '../../../domain/die/polygonClamp'
 
 type BlockRect = { x: number; y: number; w: number; h: number; rotation?: number }
 type DieRect = { width: number; height: number }
@@ -97,13 +99,30 @@ export function clampBlockToDie(block: BlockRect, die: Die): BlockRect {
       return clampBlockToRadial(block, die, die.width / 2)
     case 'hexagon':
       return clampBlockToRadial(block, die, (die.width / 2) * HEXAGON_INCIRCLE_RATIO)
+    case 'octagon':
+    case 'rounded-rect':
+    case 'chamfered-rect':
+    case 'keyed':
+    case 'l-shape':
+    case 'plus': {
+      const outline = resolveDieOutline(die)
+      return clampBlockToPolygon(block, outlineToPolygon(outline), outline.centroid)
+    }
   }
 }
 
 export function normalizeDie(die: Die, shape: DieShape): Die {
-  if (shape === 'rect') {
-    return { ...die, shape }
+  const next = { ...die, shape }
+  delete next.dieShapeParams
+  if (
+    shape === 'rect' ||
+    shape === 'rounded-rect' ||
+    shape === 'chamfered-rect' ||
+    shape === 'keyed' ||
+    shape === 'l-shape'
+  ) {
+    return next
   }
   const side = Math.min(die.width, die.height)
-  return { ...die, shape, width: side, height: side }
+  return { ...next, width: side, height: side }
 }

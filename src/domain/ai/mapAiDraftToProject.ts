@@ -1,20 +1,36 @@
 import { buildBlock } from '../blockFactory'
+import { defaultFinishForTheme } from '../material/chipFinish'
 import { createProject } from '../projectFactory'
 import type { BlockType, DieShape, Project, StyleTheme } from '../project'
 import type { AiChipDraft } from './aiChipDraft'
 
 const BLOCK_TYPES: ReadonlySet<string> = new Set<BlockType>([
-  'CPU', 'GPU', 'DSP', 'SRAM', 'Cache', 'DAC', 'ADC', 'PLL', 'IO', 'USB',
-  'EmotionEngine', 'DreamSynth', 'QuantumMemory', 'ConsciousnessProcessor',
-  'RealityDistortionUnit', 'TimeCore',
+  'CPU',
+  'GPU',
+  'DSP',
+  'SRAM',
+  'Cache',
+  'DAC',
+  'ADC',
+  'PLL',
+  'IO',
+  'USB',
+  'EmotionEngine',
+  'DreamSynth',
+  'QuantumMemory',
+  'ConsciousnessProcessor',
+  'RealityDistortionUnit',
+  'TimeCore',
 ])
 
-const DIE_SHAPES: ReadonlySet<string> = new Set<DieShape>([
-  'rect', 'square', 'circle', 'hexagon',
-])
+const DIE_SHAPES: ReadonlySet<string> = new Set<DieShape>(['rect', 'square', 'circle', 'hexagon'])
 
 const THEMES: ReadonlySet<string> = new Set<StyleTheme>([
-  'neon', 'retro', 'military', 'keynote', 'mono',
+  'neon',
+  'retro',
+  'military',
+  'keynote',
+  'mono',
 ])
 
 const MIN_SIZE = 24
@@ -37,6 +53,7 @@ export function mapAiDraftToProject(draft: AiChipDraft, id?: string, now?: numbe
   project.die = { ...project.die, shape }
   if (draft.theme !== undefined && THEMES.has(draft.theme)) {
     project.theme = draft.theme
+    project.finish = defaultFinishForTheme(project.theme)
   }
   const { width, height } = project.die
 

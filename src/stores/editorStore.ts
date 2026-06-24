@@ -4,6 +4,7 @@ import { resolveAiSuggestionBlock } from '../domain/ai/resolveAiSuggestionBlock'
 import type {
   Block,
   BlockType,
+  DieShapeParams,
   DieShape,
   FakeSpec,
   Project,
@@ -17,6 +18,8 @@ import type {
 } from '../domain/project'
 import { buildBlock, nextZIndex } from '../domain/blockFactory'
 import { buildDecoration, type DecorationKind } from '../domain/decorationFactory'
+import { isParametricDieShape, resolveDieShapeParams } from '../domain/die/dieShapeParams'
+import type { ChipFinish } from '../domain/material/chipFinish'
 import { clampBlockToDie, normalizeDie } from '../features/editor/canvas/geometry'
 import { reflowBlocksGlobally } from '../studio/globalReflow'
 
@@ -60,6 +63,7 @@ export type EditorState = {
   selectedStudioItem: SelectedStudioItem | null
   past: Project[]
   future: Project[]
+  dieParameterEditActive: boolean
   select: (id: string | null) => void
   selectStudioItem: (item: SelectedStudioItem | null) => void
   addBlock: (type: BlockType) => void
@@ -88,7 +92,13 @@ export type EditorState = {
   bringForward: () => void
   sendBackward: () => void
   setDieShape: (shape: DieShape) => void
+  previewDieShapeParams: (params: DieShapeParams) => void
+  commitDieShapeParamEdit: () => void
+  cancelDieShapeParamEdit: () => void
+  setDieShapeParams: (params: DieShapeParams) => void
   setTheme: (theme: StyleTheme) => void
+  setFinish: (finish: ChipFinish) => void
+  setBlockFinish: (id: string, finish: ChipFinish | undefined) => void
   setSpec: (spec: FakeSpec) => void
   addDecoration: (kind: DecorationKind) => void
   undo: () => void
@@ -106,15 +116,23 @@ export function createEditorStore(initialProject: Project, options: Options = {}
     // Consecutive commits sharing a tag (e.g. dragging a color picker or typing in
     // a sticker field) collapse into one undo step instead of one per keystroke.
     let lastCommitTag: string | null = null
+    let dieParameterBaseline: Project | null = null
 
     function commit(next: Project, extra: Partial<EditorState> = {}, tag: string | null = null) {
       const { project, past } = get()
-      const coalesce = tag !== null && tag === lastCommitTag
+      const previewBaseline = dieParameterBaseline
+      const coalesce = previewBaseline === null && tag !== null && tag === lastCommitTag
       lastCommitTag = tag
+      dieParameterBaseline = null
+      const history =
+        previewBaseline === null || previewBaseline === project
+          ? [...past, project]
+          : [...past, previewBaseline, project]
       set({
         project: next,
-        past: coalesce ? past : [...past, project].slice(-MAX_HISTORY),
+        past: coalesce ? past : history.slice(-MAX_HISTORY),
         future: [],
+        dieParameterEditActive: false,
         ...extra,
       })
     }
@@ -129,6 +147,26 @@ export function createEditorStore(initialProject: Project, options: Options = {}
 
     function clampToDie(block: Block, project: Project): Block {
       return { ...block, ...clampBlockToDie(block, project.die) }
+    }
+
+    function sameDieShapeParams(
+      left: DieShapeParams | undefined,
+      right: DieShapeParams | undefined,
+    ) {
+      return JSON.stringify(left) === JSON.stringify(right)
+    }
+
+    function projectWithDieShapeParams(baseline: Project, value: unknown): Project {
+      if (!isParametricDieShape(baseline.die.shape)) return baseline
+      const current = resolveDieShapeParams(baseline.die.shape, baseline.die.dieShapeParams)
+      const dieShapeParams = resolveDieShapeParams(baseline.die.shape, value)
+      if (sameDieShapeParams(current, dieShapeParams)) return baseline
+      const die = { ...baseline.die, dieShapeParams }
+      const blocks = baseline.blocks.map((block) => ({
+        ...block,
+        ...clampBlockToDie(block, die),
+      }))
+      return { ...baseline, die, blocks }
     }
 
     function clampPoint(die: Project['die'], x: number, y: number) {
@@ -195,6 +233,7 @@ export function createEditorStore(initialProject: Project, options: Options = {}
       selectedStudioItem: null,
       past: [],
       future: [],
+      dieParameterEditActive: false,
 
       select(id) {
         resetCoalesce()
@@ -567,6 +606,7 @@ export function createEditorStore(initialProject: Project, options: Options = {}
 
       setDieShape(shape) {
         const { project } = get()
+        if (project.die.shape === shape) return
         const die = normalizeDie(project.die, shape)
         const blocks = project.blocks.map((block) => ({
           ...block,
@@ -586,10 +626,70 @@ export function createEditorStore(initialProject: Project, options: Options = {}
         commit({ ...project, die, blocks, studio: { ...project.studio, stickers, sprays } })
       },
 
+      previewDieShapeParams(params) {
+        const { project } = get()
+        const baseline = dieParameterBaseline ?? project
+        const next = projectWithDieShapeParams(baseline, params)
+        if (dieParameterBaseline === null && next === baseline) return
+        dieParameterBaseline = baseline
+        set({ project: next, dieParameterEditActive: true })
+      },
+
+      commitDieShapeParamEdit() {
+        const baseline = dieParameterBaseline
+        if (baseline === null) return
+        const { project, past } = get()
+        dieParameterBaseline = null
+        resetCoalesce()
+        if (project === baseline) {
+          set({ dieParameterEditActive: false })
+          return
+        }
+        set({
+          past: [...past, baseline].slice(-MAX_HISTORY),
+          future: [],
+          dieParameterEditActive: false,
+        })
+      },
+
+      cancelDieShapeParamEdit() {
+        const baseline = dieParameterBaseline
+        if (baseline === null) return
+        dieParameterBaseline = null
+        resetCoalesce()
+        set({ project: baseline, dieParameterEditActive: false })
+      },
+
+      setDieShapeParams(params) {
+        const { project } = get()
+        const next = projectWithDieShapeParams(project, params)
+        if (next === project) return
+        commit(next)
+      },
+
       setTheme(theme) {
         const { project } = get()
         if (project.theme === theme) return
         commit({ ...project, theme })
+      },
+
+      setFinish(finish) {
+        const { project } = get()
+        if (project.finish === finish) return
+        commit({ ...project, finish })
+      },
+
+      setBlockFinish(id, finish) {
+        const { project } = get()
+        const current = project.blocks.find((block) => block.id === id)
+        if (current === undefined || current.finish === finish) return
+        const blocks = project.blocks.map((block) => {
+          if (block.id !== id) return block
+          const next = { ...block, finish }
+          if (finish === undefined) delete next.finish
+          return next
+        })
+        commit(replaceBlocks(project, blocks))
       },
 
       setSpec(spec) {
@@ -604,6 +704,7 @@ export function createEditorStore(initialProject: Project, options: Options = {}
       },
 
       undo() {
+        if (dieParameterBaseline !== null) get().commitDieShapeParamEdit()
         const { past, project, future, selectedBlockId, selectedStudioItem } = get()
         if (past.length === 0) return
         resetCoalesce()
@@ -622,6 +723,7 @@ export function createEditorStore(initialProject: Project, options: Options = {}
       },
 
       redo() {
+        if (dieParameterBaseline !== null) get().commitDieShapeParamEdit()
         const { past, project, future, selectedBlockId, selectedStudioItem } = get()
         if (future.length === 0) return
         resetCoalesce()

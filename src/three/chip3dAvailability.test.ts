@@ -1,5 +1,25 @@
 import { describe, expect, it, vi } from 'vitest'
-import { webglAvailable } from './chip3dAvailability'
+import type { DieShape } from '../domain/project'
+import { createProject } from '../domain/projectFactory'
+import { resolveChip3DStyle } from '../visual/chip3d/chip3dMaterials'
+import {
+  buildChip3DShowcaseModel,
+  isChip3DShapeSupported,
+  webglAvailable,
+} from './chip3dAvailability'
+
+const ALL_DIE_SHAPES = [
+  'rect',
+  'square',
+  'circle',
+  'hexagon',
+  'octagon',
+  'rounded-rect',
+  'chamfered-rect',
+  'keyed',
+  'l-shape',
+  'plus',
+] as const satisfies readonly DieShape[]
 
 describe('webglAvailable', () => {
   it('does not probe canvas when the runtime exposes no WebGL constructors', () => {
@@ -11,5 +31,38 @@ describe('webglAvailable', () => {
     expect(typeof WebGL2RenderingContext).toBe('undefined')
     expect(webglAvailable()).toBe(false)
     expect(getContext).not.toHaveBeenCalled()
+  })
+})
+
+describe('isChip3DShapeSupported', () => {
+  it.each(ALL_DIE_SHAPES)('supports %s in the 3D showcase', (shape) => {
+    expect(isChip3DShapeSupported(shape)).toBe(true)
+  })
+})
+
+describe('buildChip3DShowcaseModel', () => {
+  it('threads block material overrides into the shared 3D model', () => {
+    const project = createProject('3D Override', '3d-override', 100)
+    project.theme = 'neon'
+    project.finish = 'gloss'
+    project.blocks = [
+      {
+        id: 'cpu',
+        type: 'CPU',
+        category: 'real',
+        x: 40,
+        y: 40,
+        w: 120,
+        h: 80,
+        rotation: 0,
+        finish: 'matte',
+        zIndex: 0,
+      },
+    ]
+
+    const model = buildChip3DShowcaseModel(project)
+    const block = model.pieces.find((piece) => piece.kind === 'blockSurface')!
+
+    expect(block.material).toEqual(resolveChip3DStyle('neon', 'matte').materials.blockReal)
   })
 })

@@ -1,6 +1,7 @@
+import { useEffect, useRef, useState } from 'react'
 import type { DieShape, StyleTheme } from '../../domain/project'
 import type { DecorationKind } from '../../domain/decorationFactory'
-import { chipFinishLabel } from '../../visual/themeFinish'
+import { chipThemeLabel } from '../../visual/themeFinish'
 import { MoveIcon, RedoIcon, ResizeIcon, RotateIcon, SelectIcon, UndoIcon } from './icons'
 
 type Props = {
@@ -28,9 +29,18 @@ const SHAPES: { shape: DieShape; label: string }[] = [
   { shape: 'hexagon', label: 'Hexagon' },
 ]
 
+const PARAMETRIC_SHAPES: { shape: DieShape; label: string }[] = [
+  { shape: 'octagon', label: 'Octagon' },
+  { shape: 'rounded-rect', label: 'Rounded Rect' },
+  { shape: 'chamfered-rect', label: 'Chamfered Rect' },
+  { shape: 'keyed', label: 'Keyed' },
+  { shape: 'l-shape', label: 'L-Shape' },
+  { shape: 'plus', label: 'Plus' },
+]
+
 const THEME_OPTIONS: { theme: StyleTheme; label: string }[] = (
   ['neon', 'retro', 'military', 'keynote', 'mono'] as StyleTheme[]
-).map((theme) => ({ theme, label: chipFinishLabel(theme) }))
+).map((theme) => ({ theme, label: chipThemeLabel(theme) }))
 
 const DECORATIONS: { kind: DecorationKind; label: string }[] = [
   { kind: 'neonLine', label: 'Glow Route' },
@@ -59,10 +69,33 @@ export function EditorToolbar({
   onBringForward,
   onSendBackward,
 }: Props) {
+  const [parametricOpen, setParametricOpen] = useState(false)
+  const parametricRootRef = useRef<HTMLDivElement>(null)
+  const parametricTriggerRef = useRef<HTMLButtonElement>(null)
+  const activeParametric = PARAMETRIC_SHAPES.find(({ shape }) => shape === dieShape)
+
+  useEffect(() => {
+    if (!parametricOpen) return
+    const onPointerDown = (event: PointerEvent) => {
+      if (!parametricRootRef.current?.contains(event.target as Node)) setParametricOpen(false)
+    }
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return
+      setParametricOpen(false)
+      parametricTriggerRef.current?.focus()
+    }
+    document.addEventListener('pointerdown', onPointerDown)
+    document.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown)
+      document.removeEventListener('keydown', onKeyDown)
+    }
+  }, [parametricOpen])
+
   return (
     <div className="editor-toolbar" aria-label="Editor command toolbar">
       <section
-        aria-label="Shape and finish controls"
+        aria-label="Shape and theme controls"
         className="editor-toolbar__row editor-toolbar__row--tabs"
       >
         <div
@@ -80,10 +113,55 @@ export function EditorToolbar({
               {label}
             </button>
           ))}
+          <div className="editor-parametric-picker" ref={parametricRootRef}>
+            <button
+              ref={parametricTriggerRef}
+              aria-controls="parametric-die-shape-menu"
+              aria-expanded={parametricOpen}
+              aria-label="Parametric die shapes"
+              className={activeParametric ? activeButtonClass : buttonClass}
+              onClick={() => setParametricOpen((open) => !open)}
+              type="button"
+            >
+              Parametric ▾
+            </button>
+            {activeParametric ? (
+              <span
+                aria-label="Current parametric shape"
+                className="editor-parametric-picker__chip"
+              >
+                {activeParametric.label}
+              </span>
+            ) : null}
+            {parametricOpen ? (
+              <div
+                aria-label="Parametric die shapes"
+                className="editor-parametric-picker__menu"
+                id="parametric-die-shape-menu"
+                role="menu"
+              >
+                {PARAMETRIC_SHAPES.map(({ shape, label }) => (
+                  <button
+                    key={shape}
+                    aria-current={shape === dieShape ? 'true' : undefined}
+                    className={shape === dieShape ? activeButtonClass : buttonClass}
+                    onClick={() => {
+                      onSetDieShape(shape)
+                      setParametricOpen(false)
+                    }}
+                    role="menuitem"
+                    type="button"
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </div>
         </div>
         <div
           aria-label="Chip theme controls"
-          className="editor-tool-group editor-tool-group--finish"
+          className="editor-tool-group editor-tool-group--theme"
           role="group"
         >
           {THEME_OPTIONS.map(({ theme: option, label }) => (
@@ -91,7 +169,7 @@ export function EditorToolbar({
               key={option}
               aria-pressed={option === theme}
               className={option === theme ? activeButtonClass : buttonClass}
-              data-finish={option}
+              data-theme={option}
               onClick={() => onSetTheme(option)}
             >
               <span aria-hidden="true" className="editor-tool-button__swatch" />

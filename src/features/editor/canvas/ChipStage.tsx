@@ -15,6 +15,13 @@ import type {
 } from '../../../stores/editorStore'
 import { reflowBlocksGlobally } from '../../../studio/globalReflow'
 import { rafThrottle } from '../../../lib/rafThrottle'
+import {
+  AMBIENT_CANONICAL_FRAME,
+  ambientFrameAt,
+  shouldRunAmbientRaf,
+  type AmbientAnimationFrame,
+  type AmbientMotionBudget,
+} from '../../../visual/ambientEditorAnimation'
 import { resolveTileDetail } from '../../../visual/tileDetail'
 import { DEFAULT_LAYER_VISIBILITY, type ChipLayerVisibility } from '../layerVisibility'
 
@@ -22,6 +29,12 @@ const GRID = 16
 const MIN_BLOCK = 48
 const COLUMN_COORDS = Array.from({ length: 16 }, (_, index) => String(index + 1).padStart(2, '0'))
 const ROW_COORDS = Array.from({ length: 16 }, (_, index) => String.fromCharCode(65 + index))
+const DEFAULT_AMBIENT_MOTION_BUDGET: AmbientMotionBudget = {
+  tier: 'full',
+  animateGlow: true,
+  animateTraces: true,
+  reason: null,
+}
 
 type Props = {
   project: Project
@@ -30,6 +43,8 @@ type Props = {
   onSelectBlock: (id: string | null) => void
   onSelectStudioItem: (item: SelectedStudioItem | null) => void
   layerVisibility?: ChipLayerVisibility
+  ambientMotionEnabled?: boolean
+  ambientMotionBudget?: AmbientMotionBudget
   onTransformBlock: (id: string, transform: BlockTransform) => void
   onTransformSticker: (id: string, transform: StickerTransform) => void
   onTransformSpray: (id: string, transform: SprayTransform) => void
@@ -42,6 +57,8 @@ export function ChipStage({
   onSelectBlock,
   onSelectStudioItem,
   layerVisibility = DEFAULT_LAYER_VISIBILITY,
+  ambientMotionEnabled,
+  ambientMotionBudget,
   onTransformBlock,
   onTransformSticker,
   onTransformSpray,
@@ -49,6 +66,9 @@ export function ChipStage({
   const [scale, setScale] = useState(1)
   const [position, setPosition] = useState({ x: 0, y: 0 })
   const [previewBlocks, setPreviewBlocks] = useState<Project['blocks'] | null>(null)
+  const [ambientFrame, setAmbientFrame] = useState<AmbientAnimationFrame | null>(null)
+  const budget = ambientMotionBudget ?? DEFAULT_AMBIENT_MOTION_BUDGET
+  const runAmbientRaf = shouldRunAmbientRaf(Boolean(ambientMotionEnabled), budget)
   // Pointer-move events can outpace the display; coalesce the reflow + preview
   // re-render to one per animation frame so dragging stays at frame rate.
   const scheduleReflowPreview = useMemo(
@@ -56,6 +76,22 @@ export function ChipStage({
     [],
   )
   useEffect(() => () => scheduleReflowPreview.cancel(), [scheduleReflowPreview])
+  useEffect(() => {
+    if (!runAmbientRaf || typeof requestAnimationFrame !== 'function') {
+      return
+    }
+
+    let raf = 0
+    let start: number | null = null
+    const tick = (now: number) => {
+      if (start === null) start = now
+      setAmbientFrame(ambientFrameAt(now - start))
+      raf = requestAnimationFrame(tick)
+    }
+
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [runAmbientRaf])
   const blockRefs = useRef(new Map<string, Konva.Group>())
   const studioRefs = useRef(new Map<string, Konva.Group>())
   const transformerRef = useRef<Konva.Transformer>(null)
@@ -95,6 +131,24 @@ export function ChipStage({
     () => resolveTileDetail(project.studio.tileSettings),
     [project.studio.tileSettings],
   )
+  const visibleAmbientFrame =
+    runAmbientRaf && ambientFrame
+      ? {
+          ...ambientFrame,
+          traceOpacityScale: budget.animateTraces
+            ? ambientFrame.traceOpacityScale
+            : AMBIENT_CANONICAL_FRAME.traceOpacityScale,
+          traceDashOffset: budget.animateTraces
+            ? ambientFrame.traceDashOffset
+            : AMBIENT_CANONICAL_FRAME.traceDashOffset,
+          glowOpacityScale: budget.animateGlow
+            ? ambientFrame.glowOpacityScale
+            : AMBIENT_CANONICAL_FRAME.glowOpacityScale,
+          glowBlurScale: budget.animateGlow
+            ? ambientFrame.glowBlurScale
+            : AMBIENT_CANONICAL_FRAME.glowBlurScale,
+        }
+      : null
 
   // The render props are memoized so the memoized ChipArtwork can skip
   // re-rendering its multi-thousand-node tree on zoom/pan state changes.
@@ -104,6 +158,7 @@ export function ChipStage({
         block={block}
         tokens={blockTokens}
         selected={block.id === selectedBlockId}
+        finish={block.finish ?? project.finish}
         detail={tileDetail}
         colors={project.studio.colorSettings}
         showLabel={layerVisibility.Label}
@@ -338,6 +393,7 @@ export function ChipStage({
               <ChipArtwork
                 project={displayProject}
                 layerVisibility={layerVisibility}
+                ambientAnimation={visibleAmbientFrame ?? undefined}
                 renderBlock={renderBlock}
                 renderStudioSpray={renderStudioSpray}
                 renderStudioSticker={renderStudioSticker}
@@ -374,6 +430,7 @@ export function ChipStage({
           <span>GRID 10µm</span>
           <span>SNAP ON</span>
           <span>DRC OFF</span>
+          <span>MOTION {runAmbientRaf ? budget.tier.toUpperCase() : 'OFF'}</span>
         </div>
       </div>
     </div>

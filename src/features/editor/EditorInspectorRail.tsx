@@ -1,5 +1,6 @@
 import type {
   Block,
+  DieShapeParams,
   Project,
   StudioColorPaint,
   StudioColorTarget,
@@ -8,7 +9,9 @@ import type {
   StudioTileSettings,
 } from '../../domain/project'
 import type { AiLayoutSuggestion } from '../../domain/ai/aiLayoutSuggestion'
+import type { ChipFinish } from '../../domain/material/chipFinish'
 import type { SelectedStudioItem } from '../../stores/editorStore'
+import type { AmbientMotionBudget } from '../../visual/ambientEditorAnimation'
 import { ExportPanel } from '../export/ExportPanel'
 import { PublishPanel } from '../publish/PublishPanel'
 import { AiSpecPanel } from '../specs/AiSpecPanel'
@@ -22,6 +25,9 @@ import { LayerVisibilityPanel } from './LayerVisibilityPanel'
 import { SelectedTilePanel } from './SelectedTilePanel'
 import { StudioInspector } from './StudioInspector'
 import { TileSettingsPanel } from './TileSettingsPanel'
+import { DieParameterPanel } from './DieParameterPanel'
+import { ChipFinishPanel } from './ChipFinishPanel'
+import { AmbientMotionPanel } from './AmbientMotionPanel'
 import type { ChipLayerId, ChipLayerVisibility } from './layerVisibility'
 
 type Props = {
@@ -29,7 +35,16 @@ type Props = {
   selectedBlock: Block | null
   selectedStudioItem: SelectedStudioItem | null
   layerVisibility: ChipLayerVisibility
+  ambientMotionEnabled: boolean
+  prefersReducedMotion: boolean
+  ambientMotionBudget: AmbientMotionBudget
   onSetTileSettings: (patch: Partial<StudioTileSettings>) => void
+  onPreviewDieShapeParams: (params: DieShapeParams) => void
+  onCommitDieShapeParamEdit: () => void
+  onCancelDieShapeParamEdit: () => void
+  onSetDieShapeParams: (params: DieShapeParams) => void
+  onSetFinish: (finish: ChipFinish) => void
+  onSetBlockFinish: (id: string, finish: ChipFinish | undefined) => void
   onSetColorPaint: (target: StudioColorTarget, paint: StudioColorPaint) => void
   onUpdateBlockVisual: (
     id: string,
@@ -46,6 +61,7 @@ type Props = {
   onSetSpec: (spec: Project['spec']) => void
   onApplyAiSuggestion: (suggestion: AiLayoutSuggestion) => void
   onSaveVariation: (variation: Project) => Promise<unknown>
+  onSetAmbientMotionEnabled: (enabled: boolean) => void
   onToggleLayerVisibility: (layer: ChipLayerId) => void
 }
 
@@ -54,7 +70,16 @@ export function EditorInspectorRail({
   selectedBlock,
   selectedStudioItem,
   layerVisibility,
+  ambientMotionEnabled,
+  prefersReducedMotion,
+  ambientMotionBudget,
   onSetTileSettings,
+  onPreviewDieShapeParams,
+  onCommitDieShapeParamEdit,
+  onCancelDieShapeParamEdit,
+  onSetDieShapeParams,
+  onSetFinish,
+  onSetBlockFinish,
   onSetColorPaint,
   onUpdateBlockVisual,
   onUpdateSticker,
@@ -62,6 +87,7 @@ export function EditorInspectorRail({
   onSetSpec,
   onApplyAiSuggestion,
   onSaveVariation,
+  onSetAmbientMotionEnabled,
   onToggleLayerVisibility,
 }: Props) {
   return (
@@ -79,6 +105,20 @@ export function EditorInspectorRail({
           <p className="editor-kicker">Appearance</p>
           <h2>Appearance</h2>
         </div>
+        <DieParameterPanel
+          die={project.die}
+          onPreview={onPreviewDieShapeParams}
+          onCommit={onCommitDieShapeParamEdit}
+          onCancel={onCancelDieShapeParamEdit}
+          onSet={onSetDieShapeParams}
+        />
+        <ChipFinishPanel finish={project.finish} onChange={onSetFinish} />
+        <AmbientMotionPanel
+          enabled={ambientMotionEnabled}
+          prefersReducedMotion={prefersReducedMotion}
+          budget={ambientMotionBudget}
+          onChange={onSetAmbientMotionEnabled}
+        />
         <TileSettingsPanel
           tileSettings={project.studio.tileSettings}
           onChange={onSetTileSettings}
@@ -87,7 +127,12 @@ export function EditorInspectorRail({
           colorSettings={project.studio.colorSettings}
           onChange={onSetColorPaint}
         />
-        <BlockVisualPanel block={selectedBlock} onChange={onUpdateBlockVisual} />
+        <BlockVisualPanel
+          block={selectedBlock}
+          chipFinish={project.finish}
+          onChange={onUpdateBlockVisual}
+          onSetBlockFinish={onSetBlockFinish}
+        />
       </section>
       <LayerVisibilityPanel visibility={layerVisibility} onToggle={onToggleLayerVisibility} />
       <section

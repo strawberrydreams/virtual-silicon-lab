@@ -1,4 +1,5 @@
 import { CURRENT_SCHEMA_VERSION, type Project } from './project'
+import { defaultFinishForTheme } from './material/chipFinish'
 import { createDefaultStudioState } from './studioDefaults'
 
 export function createProject(
@@ -6,6 +7,7 @@ export function createProject(
   id: string = crypto.randomUUID(),
   now = Date.now(),
 ): Project {
+  const theme = 'neon'
   return {
     schemaVersion: CURRENT_SCHEMA_VERSION,
     id,
@@ -15,7 +17,8 @@ export function createProject(
     die: { shape: 'rect', width: 960, height: 640, background: 'grid-cyan' },
     blocks: [],
     decorations: [],
-    theme: 'neon',
+    theme,
+    finish: defaultFinishForTheme(theme),
     spec: {
       brand: 'NOCTURNE',
       series: 'ONEIRIC',

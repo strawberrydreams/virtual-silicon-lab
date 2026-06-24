@@ -7,6 +7,7 @@ import {
   type Project,
   type StyleTheme,
 } from '../domain/project'
+import { defaultFinishForTheme } from '../domain/material/chipFinish'
 import { createDefaultStudioState } from '../domain/studioDefaults'
 
 const REAL_BLOCKS: BlockType[] = [
@@ -131,6 +132,7 @@ export function generateRandomChipProject(
       },
     ],
     theme,
+    finish: defaultFinishForTheme(theme),
     spec: {
       brand: 'RANDOM FAB',
       series: seed.slice(0, 6).toUpperCase() || 'LOCAL',
