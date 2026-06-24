@@ -5,6 +5,7 @@ coverage
 .worktrees
 .playwright-mcp
 .claude
+.superpowers/
 
 # env files
 .env

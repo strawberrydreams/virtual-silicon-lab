@@ -33,6 +33,42 @@ describe('EditorToolbar', () => {
     expect(props.onSetDieShape).toHaveBeenCalledWith('circle')
   })
 
+  it('selects a shape from the parametric menu', async () => {
+    const user = userEvent.setup()
+    const props = renderToolbar()
+    await user.click(screen.getByRole('button', { name: 'Parametric die shapes' }))
+    expect(screen.getByRole('menu', { name: 'Parametric die shapes' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('menuitem', { name: 'L-Shape' }))
+
+    expect(props.onSetDieShape).toHaveBeenCalledWith('l-shape')
+    expect(screen.queryByRole('menu', { name: 'Parametric die shapes' })).not.toBeInTheDocument()
+  })
+
+  it('shows the active parametric shape beside the menu', () => {
+    renderToolbar({ dieShape: 'plus' })
+    expect(screen.getByLabelText('Current parametric shape')).toHaveTextContent('Plus')
+  })
+
+  it('closes the parametric menu on Escape and restores trigger focus', async () => {
+    const user = userEvent.setup()
+    renderToolbar()
+    const trigger = screen.getByRole('button', { name: 'Parametric die shapes' })
+    await user.click(trigger)
+    await user.keyboard('{Escape}')
+
+    expect(screen.queryByRole('menu', { name: 'Parametric die shapes' })).not.toBeInTheDocument()
+    expect(trigger).toHaveFocus()
+  })
+
+  it('closes the parametric menu on an outside pointer click', async () => {
+    const user = userEvent.setup()
+    renderToolbar()
+    await user.click(screen.getByRole('button', { name: 'Parametric die shapes' }))
+    await user.click(screen.getByRole('region', { name: 'Editor operation strip' }))
+    expect(screen.queryByRole('menu', { name: 'Parametric die shapes' })).not.toBeInTheDocument()
+  })
+
   it('disables redo when there is nothing to redo', () => {
     renderToolbar({ canRedo: false })
     expect(screen.getByRole('button', { name: 'Redo' })).toBeDisabled()
@@ -60,9 +96,13 @@ describe('EditorToolbar', () => {
     expect(props.onDelete).toHaveBeenCalledTimes(1)
   })
 
-  it('switches chip color preset', async () => {
+  it('switches chip theme', async () => {
     const props = renderToolbar()
-    await userEvent.click(screen.getByRole('button', { name: 'Graphite gradient' }))
+    const keynoteButton = screen.getByRole('button', { name: 'Keynote' })
+    expect(keynoteButton).toHaveAttribute('data-theme', 'keynote')
+    expect(keynoteButton).not.toHaveAttribute('data-finish')
+
+    await userEvent.click(keynoteButton)
     expect(props.onSetTheme).toHaveBeenCalledWith('keynote')
   })
 
@@ -75,7 +115,7 @@ describe('EditorToolbar', () => {
   it('groups controls into stable tool clusters', () => {
     renderToolbar()
 
-    expect(screen.getByRole('region', { name: 'Shape and finish controls' })).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Shape and theme controls' })).toBeInTheDocument()
     expect(screen.getByRole('region', { name: 'Editor operation strip' })).toBeInTheDocument()
     expect(screen.getByRole('group', { name: 'Die shape controls' })).toBeInTheDocument()
     expect(screen.getByRole('group', { name: 'Chip theme controls' })).toBeInTheDocument()

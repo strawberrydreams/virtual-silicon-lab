@@ -1,14 +1,21 @@
 import type { StyleTheme } from '../domain/project'
+import {
+  defaultFinishForTheme,
+  resolveChipFinishDescriptor,
+  type ChipFinish,
+} from '../domain/material/chipFinish'
 import { resolveTheme, type ColorStop } from '../themes/themeTokens'
 
 export type ChipMaterialRecipe = {
   theme: StyleTheme
+  finish: ChipFinish
   package: {
     fill: string
     stroke: string
     shadowColor: string
     shadowBlur: number
     shadowOpacity: number
+    highlightOpacity: number
   }
   substrate: {
     fill: string
@@ -55,18 +62,27 @@ const PACKAGE_FILL: Record<StyleTheme, string> = {
   mono: '#111417',
 }
 
-export function resolveMaterialRecipe(theme: StyleTheme): ChipMaterialRecipe {
+export function resolveMaterialRecipe(
+  theme: StyleTheme,
+  finish: ChipFinish = defaultFinishForTheme(theme),
+): ChipMaterialRecipe {
   const tokens = resolveTheme(theme)
+  const descriptor = resolveChipFinishDescriptor(finish)
   const accent = tokens.accents[0]
   const secondary = tokens.accents[1] ?? accent
   return {
     theme,
+    finish,
     package: {
       fill: PACKAGE_FILL[theme],
       stroke: tokens.dieStroke,
       shadowColor: tokens.glow.shadowColor,
-      shadowBlur: Math.max(10, tokens.glow.shadowBlur * 0.55),
-      shadowOpacity: Math.max(0.18, tokens.glow.shadowOpacity * 0.42),
+      shadowBlur: Math.max(6, tokens.glow.shadowBlur * 0.55 * descriptor.twoD.shadowScale),
+      shadowOpacity: Math.min(
+        1,
+        Math.max(0.12, tokens.glow.shadowOpacity * 0.42 * descriptor.twoD.shadowScale),
+      ),
+      highlightOpacity: descriptor.twoD.packageHighlightOpacity,
     },
     substrate: {
       fill: tokens.blockFill.real,
@@ -76,29 +92,40 @@ export function resolveMaterialRecipe(theme: StyleTheme): ChipMaterialRecipe {
     dieBase: {
       fillStops: tokens.dieFill,
       stroke: tokens.dieStroke,
-      strokeWidth: tokens.dieStrokeWidth,
+      strokeWidth: tokens.dieStrokeWidth * descriptor.twoD.dieStrokeScale,
     },
     metalTrace: {
       color: accent,
       secondaryColor: secondary,
       width: theme === 'military' || theme === 'mono' ? 1.5 : 2,
-      opacity: theme === 'mono' ? 0.42 : 0.58,
+      opacity: Math.min(1, (theme === 'mono' ? 0.42 : 0.58) * descriptor.twoD.traceOpacityScale),
     },
     microTile: {
       fill: accent,
       stroke: tokens.gridColor,
-      opacity: theme === 'military' || theme === 'mono' ? 0.08 : 0.12,
+      opacity: Math.min(
+        1,
+        (theme === 'military' || theme === 'mono' ? 0.08 : 0.12) *
+          descriptor.twoD.microTileOpacityScale,
+      ),
     },
     glassGlow: {
       color: tokens.glow.shadowColor,
-      blur: Math.max(8, tokens.glow.shadowBlur),
-      opacity: Math.max(0.12, tokens.glow.shadowOpacity * 0.35),
+      blur: Math.max(6, tokens.glow.shadowBlur * descriptor.twoD.glowScale),
+      opacity: Math.min(
+        1,
+        Math.max(0.08, tokens.glow.shadowOpacity * 0.35 * descriptor.twoD.glowScale),
+      ),
     },
     fillerCell: {
       fill: tokens.dieFill[1].color,
       stroke: tokens.gridColor,
       accentColors: tokens.accents,
-      opacity: theme === 'military' || theme === 'mono' ? 0.5 : 0.6,
+      opacity: Math.min(
+        1,
+        (theme === 'military' || theme === 'mono' ? 0.5 : 0.6) *
+          descriptor.twoD.microTileOpacityScale,
+      ),
     },
     readoutLabel: {
       subduedColor: tokens.gridColor,

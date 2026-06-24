@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { CURRENT_SCHEMA_VERSION, type RemixOrigin } from './project'
 
 describe('schema version', () => {
-  it('is 5 for v4-m4 remix lineage', () => {
-    expect(CURRENT_SCHEMA_VERSION).toBe(5)
+  it('is 8 for v9 per-block material overrides', () => {
+    expect(CURRENT_SCHEMA_VERSION).toBe(8)
   })
 
   it('RemixOrigin carries chip id, slug, and title', () => {

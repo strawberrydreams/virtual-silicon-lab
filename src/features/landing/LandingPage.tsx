@@ -1,19 +1,14 @@
 import { Link, useNavigate } from 'react-router-dom'
 import type { Project } from '../../domain/project'
+import { dieShapePreviewClass } from '../projects/dieShapePreview'
 import type { PresetId, PresetMetadata } from '../../presets/presetCatalog'
+import { chipThemeLabel } from '../../visual/themeFinish'
 
 type Props = {
   projectsCount: number
   presets: readonly PresetMetadata[]
   createProject: (name: string) => Promise<Project>
   remixPreset: (id: PresetId) => Promise<Project>
-}
-
-const SHAPE_CLASSES: Record<PresetMetadata['dieShape'], string> = {
-  rect: 'aspect-[3/2]',
-  square: 'aspect-square',
-  circle: 'aspect-square rounded-full',
-  hexagon: 'aspect-square [clip-path:polygon(50%_0%,93%_25%,93%_75%,50%_100%,7%_75%,7%_25%)]',
 }
 
 export function LandingPage({ projectsCount, presets, createProject, remixPreset }: Props) {
@@ -91,7 +86,7 @@ export function LandingPage({ projectsCount, presets, createProject, remixPreset
                 style={{ boxShadow: `inset 0 0 36px ${preset.accent}22` }}
               >
                 <div
-                  className={`v2-mini-chip ${SHAPE_CLASSES[preset.dieShape]}`}
+                  className={`v2-mini-chip ${dieShapePreviewClass(preset.dieShape)}`}
                   style={{ boxShadow: `0 0 26px ${preset.accent}44` }}
                 >
                   {preset.previewBlocks.slice(0, 4).map((block) => (
@@ -103,7 +98,7 @@ export function LandingPage({ projectsCount, presets, createProject, remixPreset
               </div>
               <div>
                 <p className="v2-meta">
-                  {preset.dieShape} / {preset.theme}
+                  {preset.dieShape} / {chipThemeLabel(preset.theme)}
                 </p>
                 <h3 className="v2-featured-card__title">{preset.name}</h3>
                 <p className="v2-featured-card__tagline">{preset.tagline}</p>

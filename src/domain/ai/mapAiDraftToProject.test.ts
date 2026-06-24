@@ -61,9 +61,10 @@ describe('mapAiDraftToProject', () => {
     expect(project.die.shape).toBe('rect')
   })
 
-  it('applies a valid draft theme to the project', () => {
-    const project = mapAiDraftToProject({ dieShape: 'rect', theme: 'mono', blocks: [] })
-    expect(project.theme).toBe('mono')
+  it('applies a valid draft theme and matching default finish to the project', () => {
+    const project = mapAiDraftToProject({ dieShape: 'rect', theme: 'military', blocks: [] })
+    expect(project.theme).toBe('military')
+    expect(project.finish).toBe('matte')
   })
 
   it('falls back to the default theme for a missing or invalid theme', () => {

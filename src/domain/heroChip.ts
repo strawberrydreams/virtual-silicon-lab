@@ -1,9 +1,11 @@
 import { CURRENT_SCHEMA_VERSION, type Block, type Decoration, type Project } from './project'
+import { defaultFinishForTheme } from './material/chipFinish'
 import { createDefaultStudioState } from './studioDefaults'
 
 const DIE = 720
 
 export function createHeroChip(id: string = crypto.randomUUID(), now = Date.now()): Project {
+  const theme = 'keynote'
   const blocks: Block[] = [
     {
       id: `${id}-cpu`,
@@ -90,7 +92,8 @@ export function createHeroChip(id: string = crypto.randomUUID(), now = Date.now(
     die: { shape: 'square', width: DIE, height: DIE, background: 'keynote-graphite' },
     blocks,
     decorations,
-    theme: 'keynote',
+    theme,
+    finish: defaultFinishForTheme(theme),
     spec: {
       brand: 'AURORA',
       series: 'C-1',

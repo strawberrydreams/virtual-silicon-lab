@@ -13,6 +13,7 @@ import {
   type Project,
   type StyleTheme,
 } from '../domain/project'
+import { defaultFinishForTheme } from '../domain/material/chipFinish'
 import type { PosterFormat } from '../features/export/posterCompositions'
 import type { PageThemeName } from './pageThemes'
 
@@ -488,6 +489,7 @@ export function createHeroSetProject(heroSetId: HeroSetId, id: string, now: numb
       materializeDecoration(decoration, `${id}-decoration-${index}`, index),
     ),
     theme: hero.theme,
+    finish: defaultFinishForTheme(hero.theme),
     spec: { ...hero.spec, features: [...hero.spec.features] },
     studio: createDefaultStudioState(),
   }

@@ -1,6 +1,6 @@
 import type { PresetId, PresetMetadata } from '../../presets/presetCatalog'
 import { MiniChipPreview } from './MiniChipPreview'
-import { chipFinishLabel } from '../../visual/themeFinish'
+import { chipThemeLabel } from '../../visual/themeFinish'
 
 type Props = {
   preset: PresetMetadata
@@ -12,7 +12,7 @@ export function PresetCard({ preset, onRemix }: Props) {
     <article className="v2-preset-card">
       <div className="v2-preset-card__top">
         <div>
-          <p className="v2-meta">{chipFinishLabel(preset.theme)}</p>
+          <p className="v2-meta">{chipThemeLabel(preset.theme)}</p>
           <h3>{preset.name}</h3>
           <p>{preset.tagline}</p>
         </div>
@@ -22,7 +22,7 @@ export function PresetCard({ preset, onRemix }: Props) {
         <MiniChipPreview shape={preset.dieShape} blocks={preset.previewBlocks} />
       </div>
       <p className="v2-meta">
-        {preset.dieShape} / {chipFinishLabel(preset.theme)}
+        {preset.dieShape} / {chipThemeLabel(preset.theme)}
       </p>
       <button
         className="v2-inline-action"

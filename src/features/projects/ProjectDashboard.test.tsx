@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it, vi } from 'vitest'
@@ -143,6 +143,10 @@ describe('ProjectDashboard', () => {
 
     expect(screen.getByText('1 Local Project')).toBeInTheDocument()
     expect(screen.getByLabelText('Dream Chip render preview')).toBeInTheDocument()
+    const projectCard = screen.getByRole('heading', { name: 'Dream Chip' }).closest('article')
+    if (projectCard === null) throw new Error('Expected Dream Chip project card')
+    expect(within(projectCard).getByText('rect / Neon')).toBeInTheDocument()
+    expect(screen.queryByText('rect / Cyan gradient')).not.toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Duplicate Dream Chip' }))
     await userEvent.click(screen.getByRole('button', { name: 'Delete Dream Chip' }))
 
@@ -223,9 +227,7 @@ describe('ProjectDashboard', () => {
   })
 
   it('shows an inline message and creates no project when generation fails', async () => {
-    const generateAiChip = vi
-      .fn()
-      .mockRejectedValue(new AiApiError('QUOTA_EXCEEDED', 'too many'))
+    const generateAiChip = vi.fn().mockRejectedValue(new AiApiError('QUOTA_EXCEEDED', 'too many'))
     render(
       <MemoryRouter>
         <ProjectDashboard

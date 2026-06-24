@@ -1,4 +1,5 @@
 import type { Block, Decoration } from '../domain/project'
+import { resolveChipFinishDescriptor, type ChipFinish } from '../domain/material/chipFinish'
 import type { ThemeTokens } from './themeTokens'
 
 export type BlockStyle = {
@@ -14,17 +15,22 @@ export function resolveBlockStyle(
   block: Block,
   tokens: ThemeTokens,
   isSelected: boolean,
+  finish?: ChipFinish,
 ): BlockStyle {
   const isFantasy = block.category === 'fantasy'
   const glowing = block.glow ?? false
   const baseBlur = isFantasy ? tokens.glow.shadowBlur : tokens.glow.shadowBlur * 0.5
+  const finishDescriptor = finish === undefined ? undefined : resolveChipFinishDescriptor(finish)
+  const strokeScale = finishDescriptor?.twoD.dieStrokeScale ?? 1
+  const shadowScale = finishDescriptor?.twoD.shadowScale ?? 1
+  const glowScale = finishDescriptor?.twoD.glowScale ?? 1
   return {
     fill: block.colorOverride ?? tokens.blockFill[block.category],
     stroke: isSelected ? tokens.selectStroke : tokens.blockStroke[block.category],
-    strokeWidth: isSelected ? 2.5 : 1.25,
+    strokeWidth: (isSelected ? 2.5 : 1.25) * strokeScale,
     shadowColor: block.colorOverride ?? (isFantasy ? tokens.accents[0] : tokens.glow.shadowColor),
-    shadowBlur: glowing ? baseBlur : 0,
-    shadowOpacity: glowing ? tokens.glow.shadowOpacity : 0,
+    shadowBlur: glowing ? baseBlur * shadowScale : 0,
+    shadowOpacity: glowing ? tokens.glow.shadowOpacity * glowScale : 0,
   }
 }
 

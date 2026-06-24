@@ -1,16 +1,16 @@
 import type { StyleTheme } from '../domain/project'
 
-// Single source of the human-readable finish label per theme. Shared by the
-// dashboard/preset cards, the editor command bar, and the toolbar theme buttons
-// so the copy never drifts between surfaces.
-export const THEME_FINISH_LABELS: Record<StyleTheme, string> = {
-  neon: 'Cyan gradient',
-  retro: 'Amber solid',
-  military: 'Moss solid',
-  keynote: 'Graphite gradient',
-  mono: 'Glass solid',
+// Single source of the human-readable palette label per theme. Finish/surface
+// labels live in domain/material/chipFinish because they describe the persisted
+// Project.finish field instead of the visual theme preset.
+export const THEME_LABELS: Record<StyleTheme, string> = {
+  neon: 'Neon',
+  retro: 'Retro',
+  military: 'Military',
+  keynote: 'Keynote',
+  mono: 'Mono',
 }
 
-export function chipFinishLabel(theme: StyleTheme): string {
-  return THEME_FINISH_LABELS[theme]
+export function chipThemeLabel(theme: StyleTheme): string {
+  return THEME_LABELS[theme]
 }

@@ -34,6 +34,7 @@ describe('ExportPanel', () => {
       'true',
     )
     expect(screen.getByTestId('poster-stage')).toHaveAttribute('data-format', 'product-closeup')
+    expect(screen.getByTestId('poster-stage')).not.toHaveAttribute('data-ambient-motion-enabled')
   })
 
   it('resets the poster format to the new project default when the project changes', async () => {

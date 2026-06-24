@@ -1,7 +1,30 @@
-export const CURRENT_SCHEMA_VERSION = 5 as const
+import type { ChipFinish } from './material/chipFinish'
 
-export type DieShape = 'rect' | 'square' | 'circle' | 'hexagon'
+export const CURRENT_SCHEMA_VERSION = 8 as const
+
+export type DieShape =
+  | 'rect'
+  | 'square'
+  | 'circle'
+  | 'hexagon'
+  | 'octagon'
+  | 'rounded-rect'
+  | 'chamfered-rect'
+  | 'keyed'
+  | 'l-shape'
+  | 'plus'
+export type DieCorner = 'top-left' | 'top-right' | 'bottom-right' | 'bottom-left'
+export type DieShapeParams = {
+  cornerRadius?: number
+  chamfer?: number
+  notch?: { corner?: DieCorner; size?: number }
+  armWidth?: number
+}
+export const STYLE_THEMES = ['neon', 'retro', 'military', 'keynote', 'mono'] as const
 export type StyleTheme = 'neon' | 'retro' | 'military' | 'keynote' | 'mono'
+export function isStyleTheme(value: unknown): value is StyleTheme {
+  return typeof value === 'string' && STYLE_THEMES.includes(value as StyleTheme)
+}
 export type BlockCategory = 'real' | 'fantasy'
 
 export type BlockType =
@@ -27,6 +50,7 @@ export type Die = {
   width: number
   height: number
   background: string
+  dieShapeParams?: DieShapeParams
 }
 
 export type Block = {
@@ -42,6 +66,7 @@ export type Block = {
   glow?: boolean
   colorOverride?: string
   imageDataUrl?: string
+  finish?: ChipFinish
   zIndex: number
 }
 
@@ -135,6 +160,7 @@ export type Project = {
   blocks: Block[]
   decorations: Decoration[]
   theme: StyleTheme
+  finish: ChipFinish
   spec: FakeSpec
   studio: StudioState
   remixedFrom?: RemixOrigin

@@ -58,6 +58,16 @@ describe('resolveBlockStyle', () => {
     )
     expect(styled.shadowColor).toBe('#ff2bd6')
   })
+
+  it('scales block stroke and shadow from an effective material finish', () => {
+    const matte = resolveBlockStyle(block(), tokens, false, 'matte')
+    const gloss = resolveBlockStyle(block(), tokens, false, 'gloss')
+    const metallic = resolveBlockStyle(block(), tokens, false, 'metallic')
+
+    expect(metallic.strokeWidth).toBeGreaterThan(matte.strokeWidth)
+    expect(gloss.shadowBlur).toBeGreaterThan(matte.shadowBlur)
+    expect(gloss.shadowOpacity).toBeGreaterThan(matte.shadowOpacity)
+  })
 })
 
 describe('resolveDecorationStyle', () => {

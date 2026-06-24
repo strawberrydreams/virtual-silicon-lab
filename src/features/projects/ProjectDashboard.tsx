@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import type { Project } from '../../domain/project'
 import type { PresetId, PresetMetadata } from '../../presets/presetCatalog'
 import { MiniChipPreview } from './MiniChipPreview'
-import { chipFinishLabel } from '../../visual/themeFinish'
+import { chipThemeLabel } from '../../visual/themeFinish'
 import { PresetCard } from './PresetCard'
 import { AiApiError, AiServerUnreachableError } from '../specs/aiCopyApi'
 
@@ -202,7 +202,7 @@ export function ProjectDashboard({
                     label={`${project.name} render preview`}
                   />
                   <p className="v2-meta">
-                    {project.die.shape} / {chipFinishLabel(project.theme)}
+                    {project.die.shape} / {chipThemeLabel(project.theme)}
                   </p>
                   <h2>{project.name}</h2>
                   <p>

@@ -1,9 +1,14 @@
 import { Component, lazy, Suspense, useEffect, useMemo, useRef } from 'react'
 import type { ErrorInfo, ReactNode } from 'react'
 import type { Project } from '../domain/project'
+import { PosterExportStage } from '../features/export/PosterExportStage'
 import { resolveChip3DRenderMode } from '../visual/chip3d/chip3dBudget'
 import type { Chip3DModel } from '../visual/chip3d/chip3dModel'
-import { buildChip3DShowcaseModel, webglAvailable } from './chip3dAvailability'
+import {
+  buildChip3DShowcaseModel,
+  isChip3DShapeSupported,
+  webglAvailable,
+} from './chip3dAvailability'
 
 const Chip3DViewer = lazy(() => import('./Chip3DViewer'))
 
@@ -35,7 +40,8 @@ export function Chip3DShowcase({
   const closeButtonRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
-    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    const previousFocus =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') onClose()
     }
@@ -48,7 +54,9 @@ export function Chip3DShowcase({
   }, [onClose])
 
   const model = useMemo(() => buildChip3DShowcaseModel(project), [project])
+  const shapeSupported = isChip3DShapeSupported(project.die.shape)
   const interactive =
+    shapeSupported &&
     resolveChip3DRenderMode({
       pieceCount: model.pieces.length,
       webglAvailable: webglAvailable(),
@@ -78,7 +86,16 @@ export function Chip3DShowcase({
           </Suspense>
         </ShowcaseErrorBoundary>
       ) : (
-        <p>3D is not available in this browser.</p>
+        <div className="chip-3d-showcase__fallback">
+          <p>3D is not available in this browser.</p>
+          <div
+            aria-label={`${project.name} 2D poster fallback`}
+            className="chip-3d-showcase__poster"
+            role="img"
+          >
+            <PosterExportStage project={project} />
+          </div>
+        </div>
       )}
     </section>
   )

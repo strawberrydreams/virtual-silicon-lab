@@ -95,7 +95,7 @@ function buildTraces(
   project: Project,
   detail: TileDetail,
 ): Extract<ChipLayer, { kind: 'trace' }>[] {
-  const recipe = resolveMaterialRecipe(project.theme)
+  const recipe = resolveMaterialRecipe(project.theme, project.finish)
   const ordered = project.blocks.slice().sort((left, right) => left.zIndex - right.zIndex)
   return ordered.slice(1).map((block, index) => {
     const [fromX, fromY] = center(ordered[index])
@@ -238,7 +238,7 @@ function buildFabricDetails(project: Project, detail: TileDetail): FabricDetail[
 }
 
 export function buildChipLayers(project: Project): ChipLayerModel {
-  const recipe = resolveMaterialRecipe(project.theme)
+  const recipe = resolveMaterialRecipe(project.theme, project.finish)
   const detail = resolveTileDetail(project.studio.tileSettings)
   const margin = Math.max(28, Math.round(Math.min(project.die.width, project.die.height) * 0.05))
   return {

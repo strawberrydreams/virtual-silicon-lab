@@ -16,6 +16,7 @@ describe('createProject', () => {
       blocks: [],
       decorations: [],
       theme: 'neon',
+      finish: 'gloss',
       studio: {
         layoutMode: 'global-reflow',
         detailMode: 'semi-auto',

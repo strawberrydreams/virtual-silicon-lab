@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { CURRENT_SCHEMA_VERSION } from './project'
+import { defaultFinishForTheme } from './material/chipFinish'
 import { migrateProject, migrateProjects } from './projectMigration'
 
 function validProject(id: string) {
@@ -238,6 +239,191 @@ describe('migrateProject', () => {
     const twice = migrateProject(once)
 
     expect(twice).toEqual(once)
+  })
+
+  it('migrates a schema version 5 project to schema 8 without adding params', () => {
+    const migrated = migrateProject({
+      ...validProject('v5-project'),
+      schemaVersion: 5,
+      studio: undefined,
+    })
+
+    expect(migrated.schemaVersion).toBe(8)
+    expect(migrated.finish).toBe('gloss')
+    expect(migrated.die).toEqual({
+      shape: 'rect',
+      width: 960,
+      height: 640,
+      background: 'grid-cyan',
+    })
+  })
+
+  it('preserves and normalizes schema 6 parametric die parameters', () => {
+    const base = validProject('v6-project')
+    const migrated = migrateProject({
+      ...base,
+      schemaVersion: 6,
+      die: {
+        ...base.die,
+        shape: 'rounded-rect',
+        dieShapeParams: { cornerRadius: 0.2, chamfer: 0.3 },
+      },
+      studio: undefined,
+    })
+
+    expect(migrated.die.dieShapeParams).toEqual({ cornerRadius: 0.2 })
+    expect(migrateProject(migrated)).toEqual(migrated)
+  })
+
+  it('migrates a schema version 6 project to schema 8 with the theme-derived default finish', () => {
+    const migrated = migrateProject({
+      ...validProject('v6-finish-default'),
+      schemaVersion: 6,
+      theme: 'military',
+      studio: undefined,
+    })
+
+    expect(migrated.schemaVersion).toBe(8)
+    expect(migrated.finish).toBe('matte')
+    expect(migrated.finish).toBe(defaultFinishForTheme('military'))
+  })
+
+  it('preserves a valid schema 7 finish while migrating to schema 8', () => {
+    const migrated = migrateProject({
+      ...validProject('v7-finish'),
+      schemaVersion: 7,
+      theme: 'neon',
+      finish: 'metallic',
+      studio: undefined,
+    })
+
+    expect(migrated.schemaVersion).toBe(8)
+    expect(migrated.finish).toBe('metallic')
+  })
+
+  it('defaults malformed schema 7 finish without rejecting the project', () => {
+    const migrated = migrateProject({
+      ...validProject('bad-finish'),
+      schemaVersion: 7,
+      theme: 'retro',
+      finish: 'mirror',
+      studio: undefined,
+    })
+
+    expect(migrated.finish).toBe('satin')
+  })
+
+  it('rejects an invalid persisted theme before resolving a default finish', () => {
+    expect(() =>
+      migrateProject({
+        ...validProject('bad-theme'),
+        schemaVersion: 7,
+        theme: 'vaporwave',
+        finish: 'mirror',
+        studio: undefined,
+      }),
+    ).toThrow('Corrupt project record')
+  })
+
+  it('migrates schema 7 blocks to schema 8 without adding block overrides', () => {
+    const base = validProject('v7-block-inherit')
+    const migrated = migrateProject({
+      ...base,
+      schemaVersion: 7,
+      finish: 'gloss',
+      studio: undefined,
+      blocks: [
+        {
+          id: 'cpu-1',
+          type: 'CPU',
+          category: 'real',
+          x: 16,
+          y: 16,
+          w: 120,
+          h: 80,
+          rotation: 0,
+          zIndex: 0,
+        },
+      ],
+    })
+
+    expect(migrated.schemaVersion).toBe(8)
+    expect(migrated.blocks[0]).not.toHaveProperty('finish')
+  })
+
+  it('preserves valid schema 8 block finish overrides', () => {
+    const base = validProject('v8-block-finish')
+    const migrated = migrateProject({
+      ...base,
+      schemaVersion: 8,
+      finish: 'gloss',
+      studio: undefined,
+      blocks: [
+        {
+          id: 'gpu-1',
+          type: 'GPU',
+          category: 'real',
+          x: 32,
+          y: 32,
+          w: 140,
+          h: 96,
+          rotation: 0,
+          zIndex: 0,
+          finish: 'metallic',
+        },
+      ],
+    })
+
+    expect(migrated.blocks[0]).toMatchObject({ id: 'gpu-1', finish: 'metallic' })
+  })
+
+  it('drops malformed schema 8 block finish overrides so the block inherits', () => {
+    const base = validProject('v8-bad-block-finish')
+    const migrated = migrateProject({
+      ...base,
+      schemaVersion: 8,
+      finish: 'gloss',
+      studio: undefined,
+      blocks: [
+        {
+          id: 'cache-1',
+          type: 'Cache',
+          category: 'real',
+          x: 48,
+          y: 48,
+          w: 100,
+          h: 72,
+          rotation: 0,
+          zIndex: 0,
+          finish: 'mirror',
+        },
+      ],
+    })
+
+    expect(migrated.blocks[0]).not.toHaveProperty('finish')
+  })
+
+  it('defaults malformed schema 6 params without rejecting the project', () => {
+    const base = validProject('bad-param')
+    const migrated = migrateProject({
+      ...base,
+      schemaVersion: 6,
+      die: { ...base.die, shape: 'plus', dieShapeParams: { armWidth: Infinity } },
+      studio: undefined,
+    })
+
+    expect(migrated.die.dieShapeParams).toEqual({ armWidth: 0.36 })
+  })
+
+  it('rejects an unknown persisted die shape', () => {
+    const base = validProject('bad-shape')
+    expect(() =>
+      migrateProject({
+        ...base,
+        schemaVersion: 6,
+        die: { ...base.die, shape: 'triangle' },
+      }),
+    ).toThrow('Corrupt project record')
   })
 
   it('rejects data without a supported schema version', () => {

@@ -2,18 +2,24 @@ import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useStore } from 'zustand'
 import type { Project } from '../../domain/project'
+import { resolveChipFinishDescriptor } from '../../domain/material/chipFinish'
 import { createEditorStore } from '../../stores/editorStore'
+import {
+  ambientMotionBudgetForProject,
+  resolveAmbientMotionDefault,
+} from '../../visual/ambientEditorAnimation'
+import { chipThemeLabel } from '../../visual/themeFinish'
 import { BlockPalette } from './BlockPalette'
 import { EditorInspectorRail } from './EditorInspectorRail'
 import { EditorToolbar } from './EditorToolbar'
 import { PlayIcon, RedoIcon, UndoIcon } from './icons'
 import { ChipStage } from './canvas/ChipStage'
 import { DEFAULT_LAYER_VISIBILITY, type ChipLayerId } from './layerVisibility'
-import { chipFinishLabel } from '../../visual/themeFinish'
 import { useAutosave } from './useAutosave'
 import { useEditorShortcuts } from './useEditorShortcuts'
 import { FirstRunCoachmarks } from './FirstRunCoachmarks'
 import Chip3DPreviewToggle from './Chip3DPreviewToggle'
+import { usePrefersReducedMotion } from './usePrefersReducedMotion'
 
 type Props = {
   project: Project
@@ -24,6 +30,10 @@ type Props = {
 export function EditorPage({ project, persist, onSaveVariation }: Props) {
   const store = useMemo(() => createEditorStore(project), [project])
   const [layerVisibility, setLayerVisibility] = useState(DEFAULT_LAYER_VISIBILITY)
+  const prefersReducedMotion = usePrefersReducedMotion()
+  const [ambientMotionEnabled, setAmbientMotionEnabled] = useState(() =>
+    resolveAmbientMotionDefault(prefersReducedMotion),
+  )
   const state = useStore(store)
 
   useAutosave(store, persist)
@@ -39,6 +49,12 @@ export function EditorPage({ project, persist, onSaveVariation }: Props) {
 
   const blockCount = state.project.blocks.length
   const dieLabel = `${state.project.die.shape} ${state.project.die.width}x${state.project.die.height}`
+  const themeLabel = chipThemeLabel(state.project.theme)
+  const finishLabel = resolveChipFinishDescriptor(state.project.finish).label
+  const ambientMotionBudget = useMemo(
+    () => ambientMotionBudgetForProject(state.project),
+    [state.project],
+  )
   const selectedBlock =
     state.selectedBlockId === null
       ? null
@@ -80,7 +96,11 @@ export function EditorPage({ project, persist, onSaveVariation }: Props) {
               </span>
               <span>
                 <strong>Theme</strong>
-                {chipFinishLabel(state.project.theme)}
+                {themeLabel}
+              </span>
+              <span>
+                <strong>Finish</strong>
+                {finishLabel}
               </span>
             </div>
             <div className="editor-topbar-actions">
@@ -144,6 +164,8 @@ export function EditorPage({ project, persist, onSaveVariation }: Props) {
               selectedBlockId={state.selectedBlockId}
               selectedStudioItem={state.selectedStudioItem}
               layerVisibility={layerVisibility}
+              ambientMotionEnabled={ambientMotionEnabled}
+              ambientMotionBudget={ambientMotionBudget}
               onSelectBlock={state.select}
               onSelectStudioItem={state.selectStudioItem}
               onTransformBlock={state.transformBlock}
@@ -164,7 +186,16 @@ export function EditorPage({ project, persist, onSaveVariation }: Props) {
         selectedBlock={selectedBlock}
         selectedStudioItem={state.selectedStudioItem}
         layerVisibility={layerVisibility}
+        ambientMotionEnabled={ambientMotionEnabled}
+        prefersReducedMotion={prefersReducedMotion}
+        ambientMotionBudget={ambientMotionBudget}
         onSetTileSettings={state.setTileSettings}
+        onPreviewDieShapeParams={state.previewDieShapeParams}
+        onCommitDieShapeParamEdit={state.commitDieShapeParamEdit}
+        onCancelDieShapeParamEdit={state.cancelDieShapeParamEdit}
+        onSetDieShapeParams={state.setDieShapeParams}
+        onSetFinish={state.setFinish}
+        onSetBlockFinish={state.setBlockFinish}
         onSetColorPaint={state.setColorPaint}
         onUpdateBlockVisual={state.updateBlockVisual}
         onUpdateSticker={state.updateSticker}
@@ -172,6 +203,7 @@ export function EditorPage({ project, persist, onSaveVariation }: Props) {
         onSetSpec={state.setSpec}
         onApplyAiSuggestion={state.applyAiSuggestion}
         onSaveVariation={onSaveVariation}
+        onSetAmbientMotionEnabled={setAmbientMotionEnabled}
         onToggleLayerVisibility={toggleLayerVisibility}
       />
     </main>

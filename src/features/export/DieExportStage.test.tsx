@@ -23,8 +23,18 @@ vi.mock('react-konva', async () => {
 })
 
 vi.mock('../editor/canvas/ChipArtwork', () => ({
-  ChipArtwork: ({ renderMode }: { renderMode?: string }) => (
-    <div data-render-mode={renderMode ?? 'full'} data-testid="chip-artwork" />
+  ChipArtwork: ({
+    renderMode,
+    ambientAnimation,
+  }: {
+    renderMode?: string
+    ambientAnimation?: unknown
+  }) => (
+    <div
+      data-ambient-animation={ambientAnimation ? 'present' : 'absent'}
+      data-render-mode={renderMode ?? 'full'}
+      data-testid="chip-artwork"
+    />
   ),
 }))
 
@@ -43,5 +53,6 @@ describe('DieExportStage', () => {
       String(project.die.height),
     )
     expect(screen.getByTestId('chip-artwork')).toHaveAttribute('data-render-mode', 'die-only')
+    expect(screen.getByTestId('chip-artwork')).toHaveAttribute('data-ambient-animation', 'absent')
   })
 })

@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createProject } from '../../domain/projectFactory'
+import type { Chip3DModel } from '../../visual/chip3d/chip3dModel'
 import Chip3DPreviewToggle from './Chip3DPreviewToggle'
 
 const { viewerState } = vi.hoisted(() => ({ viewerState: { throws: false } }))
@@ -9,6 +10,17 @@ vi.mock('../../three/Chip3DViewer', () => ({
   default: ({ model }: { model: { pieces: unknown[] } }) => {
     if (viewerState.throws) throw new Error('viewer failed')
     return <div data-testid="mock-viewer">pieces:{model.pieces.length}</div>
+  },
+}))
+
+vi.mock('../export/PosterExportStage', () => ({
+  PosterExportStage: () => <div data-testid="poster-export-stage" />,
+}))
+
+vi.mock('../export/VideoExportPanel', () => ({
+  VideoExportPanel: ({ model }: { model: Chip3DModel }) => {
+    const die = model.pieces.find((piece) => piece.kind === 'dieBase')
+    return <div data-testid="video-export-model">{die?.footprint.type}</div>
   },
 }))
 
@@ -59,9 +71,7 @@ describe('Chip3DPreviewToggle', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Open 3D showcase' }))
 
-    expect(
-      await screen.findByText('3D is not available in this browser.'),
-    ).toBeInTheDocument()
+    expect(await screen.findByText('3D is not available in this browser.')).toBeInTheDocument()
     expect(screen.queryByTestId('mock-viewer')).toBeNull()
   })
 
@@ -82,10 +92,39 @@ describe('Chip3DPreviewToggle', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Open 3D showcase' }))
 
-    expect(
-      await screen.findByText('3D is not available in this browser.'),
-    ).toBeInTheDocument()
+    expect(await screen.findByText('3D is not available in this browser.')).toBeInTheDocument()
     expect(screen.queryByTestId('mock-viewer')).toBeNull()
+  })
+
+  it('opens a parametric shape in the interactive 3D showcase', async () => {
+    const project = createProject('Parametric')
+    project.die = {
+      ...project.die,
+      shape: 'rounded-rect',
+      dieShapeParams: { cornerRadius: 0.24 },
+    }
+    render(<Chip3DPreviewToggle project={project} />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open 3D showcase' }))
+
+    expect(await screen.findByTestId('mock-viewer')).toBeInTheDocument()
+    expect(screen.queryByText('Parametric 3D geometry arrives in M3.')).toBeNull()
+    expect(screen.queryByRole('img', { name: 'Parametric 2D poster fallback' })).toBeNull()
+  })
+
+  it('gives MP4 export the same parametric polygon model shown in 3D', async () => {
+    const project = createProject('Parametric MP4')
+    project.die = {
+      ...project.die,
+      shape: 'rounded-rect',
+      dieShapeParams: { cornerRadius: 0.24 },
+    }
+    render(<Chip3DPreviewToggle project={project} />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open 3D showcase' }))
+
+    expect(await screen.findByTestId('mock-viewer')).toBeInTheDocument()
+    expect(screen.getByTestId('video-export-model')).toHaveTextContent('polygon')
   })
 
   it('keeps the modal recoverable when the viewer fails to load', async () => {

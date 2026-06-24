@@ -13,6 +13,7 @@ function makeProject(overrides: Partial<Project> = {}): Project {
     blocks: [],
     decorations: [],
     theme: 'neon',
+    finish: 'gloss',
     spec: {
       brand: 'TEST',
       series: 'X',

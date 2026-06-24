@@ -1,16 +1,20 @@
 import { useState } from 'react'
+import type { ChipFinish } from '../../domain/material/chipFinish'
 import type { Block } from '../../domain/project'
+import { BlockFinishPanel } from './BlockFinishPanel'
 
 type Props = {
   block: Block | null
+  chipFinish: ChipFinish
   onChange: (id: string, patch: Partial<Pick<Block, 'colorOverride' | 'imageDataUrl'>>) => void
+  onSetBlockFinish: (id: string, finish: ChipFinish | undefined) => void
 }
 
 const fieldClass =
   'mt-1 w-full rounded border border-cyan-900 bg-[#050d12] px-2 py-1 text-sm text-cyan-100 outline-none focus:border-cyan-500'
 const labelClass = 'block text-[11px] uppercase tracking-wider text-cyan-400'
 
-export function BlockVisualPanel({ block, onChange }: Props) {
+export function BlockVisualPanel({ block, chipFinish, onChange, onSetBlockFinish }: Props) {
   const [imageUrl, setImageUrl] = useState(block?.imageDataUrl ?? '')
   // Reset the editable field when the selected tile (or its stored image) changes
   // from outside, derived during render rather than in an effect.
@@ -28,10 +32,13 @@ export function BlockVisualPanel({ block, onChange }: Props) {
         <h2>Tile Visual</h2>
       </div>
       {block === null ? (
-        <p className="studio-item-inspector__empty">Select a tile to add a custom image.</p>
+        <p className="studio-item-inspector__empty">
+          Select a tile to add a custom image or material override.
+        </p>
       ) : (
         <div className="studio-item-inspector__fields">
           <p className="studio-item-inspector__empty">{block.type}</p>
+          <BlockFinishPanel block={block} chipFinish={chipFinish} onChange={onSetBlockFinish} />
           <label className={labelClass}>
             Tile image URL
             <input
