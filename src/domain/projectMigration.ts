@@ -9,8 +9,9 @@ import {
 import { isDieShape, isParametricDieShape, resolveDieShapeParams } from './die/dieShapeParams'
 import { isChipFinish, resolveChipFinish } from './material/chipFinish'
 import { cloneStudioState, createDefaultStudioState } from './studioDefaults'
+import { normalizeScene3DSettings } from './scene3d/scene3d'
 
-const SUPPORTED_SCHEMA_VERSIONS = new Set([1, 2, 3, 4, 5, 6, 7, CURRENT_SCHEMA_VERSION])
+const SUPPORTED_SCHEMA_VERSIONS = new Set([1, 2, 3, 4, 5, 6, 7, 8, CURRENT_SCHEMA_VERSION])
 
 export function migrateProject(value: unknown): Project {
   if (
@@ -61,8 +62,12 @@ export function migrateProject(value: unknown): Project {
   const studio = validateStudio(candidate.studio)
     ? cloneStudioState(candidate.studio)
     : createDefaultStudioState()
+  const scene3d = normalizeScene3DSettings(candidate.scene3d)
+  const normalized = { ...project, schemaVersion: CURRENT_SCHEMA_VERSION, die, blocks, finish, studio }
+  if (scene3d !== undefined) normalized.scene3d = scene3d
+  else delete normalized.scene3d
   return withNormalizedRemixOrigin(
-    { ...project, schemaVersion: CURRENT_SCHEMA_VERSION, die, blocks, finish, studio },
+    normalized,
     candidate.remixedFrom,
   )
 }

@@ -125,6 +125,46 @@ function normalizeCameraSettings(
   }
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
+}
+
+function normalizePersistedCameraSettings(value: unknown): Scene3DCameraSettings | undefined {
+  if (!isRecord(value)) return undefined
+  if (
+    typeof value.azimuthRadians !== 'number' ||
+    !Number.isFinite(value.azimuthRadians) ||
+    typeof value.elevationRadians !== 'number' ||
+    !Number.isFinite(value.elevationRadians) ||
+    typeof value.zoom !== 'number' ||
+    !Number.isFinite(value.zoom)
+  ) {
+    return undefined
+  }
+
+  const targetNudge =
+    Array.isArray(value.targetNudge) &&
+    value.targetNudge.length === 3 &&
+    value.targetNudge.every((component) => typeof component === 'number' && Number.isFinite(component))
+      ? ([value.targetNudge[0], value.targetNudge[1], value.targetNudge[2]] as const)
+      : undefined
+  const fov = typeof value.fov === 'number' && Number.isFinite(value.fov) ? value.fov : undefined
+  return normalizeCameraSettings({
+    azimuthRadians: value.azimuthRadians,
+    elevationRadians: value.elevationRadians,
+    zoom: value.zoom,
+    ...(targetNudge === undefined ? {} : { targetNudge }),
+    ...(fov === undefined ? {} : { fov }),
+  })
+}
+
+export function normalizeScene3DSettings(value: unknown): Scene3DSettings | undefined {
+  if (!isRecord(value)) return undefined
+  const camera = normalizePersistedCameraSettings(value.camera)
+  if (camera === undefined) return undefined
+  return { camera }
+}
+
 function resolveCamera(
   settings: Scene3DCameraSettings | undefined,
   derived: SceneDerivedInputs,

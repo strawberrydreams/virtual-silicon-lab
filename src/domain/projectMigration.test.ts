@@ -248,7 +248,7 @@ describe('migrateProject', () => {
       studio: undefined,
     })
 
-    expect(migrated.schemaVersion).toBe(8)
+    expect(migrated.schemaVersion).toBe(9)
     expect(migrated.finish).toBe('gloss')
     expect(migrated.die).toEqual({
       shape: 'rect',
@@ -283,7 +283,7 @@ describe('migrateProject', () => {
       studio: undefined,
     })
 
-    expect(migrated.schemaVersion).toBe(8)
+    expect(migrated.schemaVersion).toBe(9)
     expect(migrated.finish).toBe('matte')
     expect(migrated.finish).toBe(defaultFinishForTheme('military'))
   })
@@ -297,7 +297,7 @@ describe('migrateProject', () => {
       studio: undefined,
     })
 
-    expect(migrated.schemaVersion).toBe(8)
+    expect(migrated.schemaVersion).toBe(9)
     expect(migrated.finish).toBe('metallic')
   })
 
@@ -347,7 +347,7 @@ describe('migrateProject', () => {
       ],
     })
 
-    expect(migrated.schemaVersion).toBe(8)
+    expect(migrated.schemaVersion).toBe(9)
     expect(migrated.blocks[0]).not.toHaveProperty('finish')
   })
 
@@ -401,6 +401,59 @@ describe('migrateProject', () => {
     })
 
     expect(migrated.blocks[0]).not.toHaveProperty('finish')
+  })
+
+  it('migrates schema 8 projects to schema 9 without adding scene3d', () => {
+    const migrated = migrateProject({
+      ...validProject('v8-no-scene'),
+      schemaVersion: 8,
+      finish: 'gloss',
+      studio: undefined,
+    })
+
+    expect(migrated.schemaVersion).toBe(9)
+    expect(migrated).not.toHaveProperty('scene3d')
+  })
+
+  it('preserves and clamps valid schema 9 scene3d camera settings', () => {
+    const migrated = migrateProject({
+      ...validProject('v9-scene-camera'),
+      schemaVersion: 9,
+      finish: 'gloss',
+      studio: undefined,
+      scene3d: {
+        camera: {
+          azimuthRadians: Math.PI * 3,
+          elevationRadians: 2,
+          zoom: 1.5,
+          targetNudge: [0.25, -0.5, 2],
+          fov: 80,
+        },
+      },
+    })
+
+    expect(migrated.scene3d?.camera).toEqual({
+      azimuthRadians: Math.PI,
+      elevationRadians: 1.4,
+      zoom: 1,
+      targetNudge: [0.25, -0.5, 1],
+      fov: 60,
+    })
+  })
+
+  it('drops malformed scene3d data without rejecting the project', () => {
+    const migrated = migrateProject({
+      ...validProject('bad-scene'),
+      schemaVersion: 9,
+      finish: 'gloss',
+      studio: undefined,
+      scene3d: {
+        camera: { azimuthRadians: 'north', elevationRadians: null, zoom: [] },
+        lighting: { preset: 'future' },
+      },
+    })
+
+    expect(migrated).not.toHaveProperty('scene3d')
   })
 
   it('defaults malformed schema 6 params without rejecting the project', () => {
