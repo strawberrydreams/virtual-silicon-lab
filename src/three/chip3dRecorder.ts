@@ -51,10 +51,10 @@ export async function recordTurntableMp4(
   const resolved = resolveScene3D({ extent: model.extent })
   applyResolvedLights(scene, resolved.lights)
 
-  const distance = Math.max(model.extent[0], model.extent[2]) * 0.95
-  const camera = new THREE.PerspectiveCamera(42, width / height, 1, distance * 10)
-  const target = new THREE.Vector3(0, model.extent[1] / 2, 0)
-  const baseOffset = new THREE.Vector3(distance, distance * 0.9, distance)
+  const cam = resolved.camera
+  const camera = new THREE.PerspectiveCamera(cam.fov, width / height, cam.near, cam.far)
+  const target = new THREE.Vector3(cam.target[0], cam.target[1], cam.target[2])
+  const baseOffset = new THREE.Vector3(cam.baseOffset[0], cam.baseOffset[1], cam.baseOffset[2])
   const frameOffset = new THREE.Vector3()
 
   const composer = new EffectComposer(renderer)
