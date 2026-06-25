@@ -4,7 +4,11 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js'
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js'
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js'
-import { resolveScene3D } from '../domain/scene3d/scene3d'
+import {
+  cameraSettingsFromPose,
+  resolveScene3D,
+  type Scene3DCameraSettings,
+} from '../domain/scene3d/scene3d'
 import { glowPulseAt, turntableAzimuthAt } from '../visual/chip3d/chip3dAnimation'
 import type { Chip3DModel } from '../visual/chip3d/chip3dModel'
 import { buildChip3DScene, disposeChip3DScene } from './chip3dScene'
@@ -12,8 +16,17 @@ import { applyResolvedLights, createShowcaseEnvironment } from './chip3dStage'
 
 const UP = new THREE.Vector3(0, 1, 0)
 
-export default function Chip3DViewer({ model }: { model: Chip3DModel }) {
+export default function Chip3DViewer({
+  model,
+  onSaveCamera,
+  onResetCamera,
+}: {
+  model: Chip3DModel
+  onSaveCamera?: (camera: Scene3DCameraSettings) => void
+  onResetCamera?: () => void
+}) {
   const hostRef = useRef<HTMLDivElement>(null)
+  const saveCurrentViewRef = useRef<() => void>(() => undefined)
   const [playing, setPlaying] = useState(false)
 
   useEffect(() => {
@@ -115,6 +128,19 @@ export default function Chip3DViewer({ model }: { model: Chip3DModel }) {
       controls.update()
       render()
     }
+    saveCurrentViewRef.current = () => {
+      pause()
+      onSaveCamera?.(
+        cameraSettingsFromPose(
+          {
+            position: [camera.position.x, camera.position.y, camera.position.z],
+            target: [controls.target.x, controls.target.y, controls.target.z],
+            fov: camera.fov,
+          },
+          { extent: model.extent },
+        ),
+      )
+    }
     const onSetPlay = (event: Event) => {
       if ((event as CustomEvent<boolean>).detail) play()
       else pause()
@@ -155,6 +181,7 @@ export default function Chip3DViewer({ model }: { model: Chip3DModel }) {
       controls.removeEventListener('change', render)
       host.removeEventListener('chip3d:reset-view', resetView)
       host.removeEventListener('chip3d:set-play', onSetPlay)
+      saveCurrentViewRef.current = () => undefined
       controls.dispose()
       disposeChip3DScene(chip)
       environment.dispose()
@@ -163,7 +190,7 @@ export default function Chip3DViewer({ model }: { model: Chip3DModel }) {
       renderer.forceContextLoss()
       renderer.domElement.remove()
     }
-  }, [model])
+  }, [model, onSaveCamera])
 
   const resetView = () => {
     hostRef.current?.dispatchEvent(new Event('chip3d:reset-view'))
@@ -172,6 +199,10 @@ export default function Chip3DViewer({ model }: { model: Chip3DModel }) {
     const next = !playing
     setPlaying(next)
     hostRef.current?.dispatchEvent(new CustomEvent('chip3d:set-play', { detail: next }))
+  }
+  const saveCurrentView = () => {
+    saveCurrentViewRef.current()
+    setPlaying(false)
   }
 
   return (
@@ -183,6 +214,16 @@ export default function Chip3DViewer({ model }: { model: Chip3DModel }) {
       <button className="chip-3d-viewer__reset" type="button" onClick={resetView}>
         Reset view
       </button>
+      {onSaveCamera ? (
+        <button className="chip-3d-viewer__reset" type="button" onClick={saveCurrentView}>
+          Save current view
+        </button>
+      ) : null}
+      {onResetCamera ? (
+        <button className="chip-3d-viewer__reset" type="button" onClick={onResetCamera}>
+          Reset 3D default
+        </button>
+      ) : null}
     </div>
   )
 }

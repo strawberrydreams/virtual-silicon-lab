@@ -7,9 +7,46 @@ import Chip3DPreviewToggle from './Chip3DPreviewToggle'
 const { viewerState } = vi.hoisted(() => ({ viewerState: { throws: false } }))
 
 vi.mock('../../three/Chip3DViewer', () => ({
-  default: ({ model }: { model: { pieces: unknown[] } }) => {
+  default: ({
+    model,
+    onSaveCamera,
+    onResetCamera,
+  }: {
+    model: { pieces: unknown[] }
+    onSaveCamera?: (camera: {
+      azimuthRadians: number
+      elevationRadians: number
+      zoom: number
+      fov: number
+    }) => void
+    onResetCamera?: () => void
+  }) => {
     if (viewerState.throws) throw new Error('viewer failed')
-    return <div data-testid="mock-viewer">pieces:{model.pieces.length}</div>
+    return (
+      <div>
+        <div data-testid="mock-viewer">pieces:{model.pieces.length}</div>
+        {onSaveCamera ? (
+          <button
+            type="button"
+            onClick={() =>
+              onSaveCamera({
+                azimuthRadians: 0.4,
+                elevationRadians: 0.5,
+                zoom: 0.6,
+                fov: 48,
+              })
+            }
+          >
+            Mock save current view
+          </button>
+        ) : null}
+        {onResetCamera ? (
+          <button type="button" onClick={onResetCamera}>
+            Mock reset 3D default
+          </button>
+        ) : null}
+      </div>
+    )
   },
 }))
 
@@ -125,6 +162,30 @@ describe('Chip3DPreviewToggle', () => {
 
     expect(await screen.findByTestId('mock-viewer')).toBeInTheDocument()
     expect(screen.getByTestId('video-export-model')).toHaveTextContent('polygon')
+  })
+
+  it('passes camera save and reset callbacks to the viewer when provided', async () => {
+    const onSetScene3DCamera = vi.fn()
+    const onResetScene3DCamera = vi.fn()
+    render(
+      <Chip3DPreviewToggle
+        project={createProject('T')}
+        onSetScene3DCamera={onSetScene3DCamera}
+        onResetScene3DCamera={onResetScene3DCamera}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open 3D showcase' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Mock save current view' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Mock reset 3D default' }))
+
+    expect(onSetScene3DCamera).toHaveBeenCalledWith({
+      azimuthRadians: 0.4,
+      elevationRadians: 0.5,
+      zoom: 0.6,
+      fov: 48,
+    })
+    expect(onResetScene3DCamera).toHaveBeenCalledTimes(1)
   })
 
   it('keeps the modal recoverable when the viewer fails to load', async () => {

@@ -1,6 +1,7 @@
 import { Component, lazy, Suspense, useEffect, useMemo, useRef } from 'react'
 import type { ErrorInfo, ReactNode } from 'react'
 import type { Project } from '../domain/project'
+import type { Scene3DCameraSettings } from '../domain/scene3d/scene3d'
 import { PosterExportStage } from '../features/export/PosterExportStage'
 import { resolveChip3DRenderMode } from '../visual/chip3d/chip3dBudget'
 import type { Chip3DModel } from '../visual/chip3d/chip3dModel'
@@ -32,10 +33,14 @@ export function Chip3DShowcase({
   project,
   onClose,
   renderExtras,
+  onSaveCamera,
+  onResetCamera,
 }: {
   project: Project
   onClose: () => void
   renderExtras?: (model: Chip3DModel) => ReactNode
+  onSaveCamera?: (camera: Scene3DCameraSettings) => void
+  onResetCamera?: () => void
 }) {
   const closeButtonRef = useRef<HTMLButtonElement>(null)
 
@@ -82,7 +87,11 @@ export function Chip3DShowcase({
       {interactive ? (
         <ShowcaseErrorBoundary>
           <Suspense fallback={<p>Loading 3D showcase…</p>}>
-            <Chip3DViewer model={model} />
+            <Chip3DViewer
+              model={model}
+              onSaveCamera={onSaveCamera}
+              onResetCamera={onResetCamera}
+            />
           </Suspense>
         </ShowcaseErrorBoundary>
       ) : (

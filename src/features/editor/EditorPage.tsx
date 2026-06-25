@@ -132,7 +132,11 @@ export function EditorPage({ project, persist, onSaveVariation }: Props) {
                 </span>
                 Simulate
               </button>
-              <Chip3DPreviewToggle project={state.project} />
+              <Chip3DPreviewToggle
+                project={state.project}
+                onSetScene3DCamera={state.setScene3DCamera}
+                onResetScene3DCamera={state.resetScene3DCamera}
+              />
               <Link className="editor-exit-link" to="/dashboard">
                 Exit Editor
               </Link>
