@@ -56,17 +56,17 @@ export default function Chip3DViewer({ model }: { model: Chip3DModel }) {
     const resolved = resolveScene3D({ extent: model.extent })
     applyResolvedLights(scene, resolved.lights)
 
-    const distance = Math.max(model.extent[0], model.extent[2]) * 0.95
-    const camera = new THREE.PerspectiveCamera(42, 1, 1, distance * 10)
-    const initialPosition = new THREE.Vector3(distance, distance * 0.9, distance)
+    const cam = resolved.camera
+    const camera = new THREE.PerspectiveCamera(cam.fov, 1, cam.near, cam.far)
+    const initialPosition = new THREE.Vector3(cam.baseOffset[0], cam.baseOffset[1], cam.baseOffset[2])
     camera.position.copy(initialPosition)
 
     const controls = new OrbitControls(camera, renderer.domElement)
-    const target = new THREE.Vector3(0, model.extent[1] / 2, 0)
+    const target = new THREE.Vector3(cam.target[0], cam.target[1], cam.target[2])
     controls.target.copy(target)
     controls.enableDamping = false
-    controls.minDistance = distance * 0.45
-    controls.maxDistance = distance * 3
+    controls.minDistance = cam.minDistance
+    controls.maxDistance = cam.maxDistance
     controls.update()
 
     const composer = new EffectComposer(renderer)
@@ -87,10 +87,10 @@ export default function Chip3DViewer({ model }: { model: Chip3DModel }) {
     const frameOffset = new THREE.Vector3()
     const animate = () => {
       const elapsed = (performance.now() - startTime) / 1000
-      frameOffset.copy(baseOffset).applyAxisAngle(UP, turntableAzimuthAt(elapsed))
+      frameOffset.copy(baseOffset).applyAxisAngle(UP, turntableAzimuthAt(elapsed, resolved.animation.turntable))
       camera.position.copy(target).add(frameOffset)
       camera.lookAt(target)
-      const pulse = glowPulseAt(elapsed)
+      const pulse = glowPulseAt(elapsed, resolved.animation.glow)
       for (const pulser of pulsers) {
         pulser.material.emissiveIntensity = pulser.base * pulse
       }
