@@ -53,12 +53,12 @@ export default function Chip3DViewer({ model }: { model: Chip3DModel }) {
       }
     })
 
-    const resolved = resolveScene3D({ extent: model.extent })
+    const resolved = resolveScene3D(model.scene3d, { extent: model.extent })
     applyResolvedLights(scene, resolved.lights)
 
     const cam = resolved.camera
     const camera = new THREE.PerspectiveCamera(cam.fov, 1, cam.near, cam.far)
-    const initialPosition = new THREE.Vector3(cam.baseOffset[0], cam.baseOffset[1], cam.baseOffset[2])
+    const initialPosition = new THREE.Vector3(cam.position[0], cam.position[1], cam.position[2])
     camera.position.copy(initialPosition)
 
     const controls = new OrbitControls(camera, renderer.domElement)

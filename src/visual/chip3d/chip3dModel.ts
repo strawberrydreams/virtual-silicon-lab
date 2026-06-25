@@ -1,5 +1,6 @@
 import type { Die } from '../../domain/project'
 import { outlineToPolygon, resolveDieOutline } from '../../domain/die/dieOutline'
+import type { Scene3DSettings } from '../../domain/scene3d/scene3d'
 import type { Bounds, ChipLayerModel } from '../chipLayers'
 import type { Chip3DEnvironment, Chip3DMaterial, Chip3DStyle } from './chip3dMaterials'
 
@@ -42,10 +43,12 @@ export type Chip3DModel = {
   center: Vec3
   extent: Vec3
   environment: Chip3DEnvironment
+  scene3d?: Scene3DSettings
 }
 
 export type Chip3DModelOptions = {
   blockStylesById?: Record<string, Chip3DStyle>
+  scene3d?: Scene3DSettings
 }
 
 const PACKAGE_DEPTH = 24
@@ -125,5 +128,5 @@ export function buildChip3DModel(
   ]
   const extent: Vec3 = [layers.package.bounds.width, top, layers.package.bounds.height]
 
-  return { pieces, center, extent, environment: style.environment }
+  return { pieces, center, extent, environment: style.environment, scene3d: options.scene3d }
 }

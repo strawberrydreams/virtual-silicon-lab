@@ -65,4 +65,21 @@ describe('buildChip3DShowcaseModel', () => {
 
     expect(block.material).toEqual(resolveChip3DStyle('neon', 'matte').materials.blockReal)
   })
+
+  it('carries persisted scene3d settings into the shared 3D model', () => {
+    const project = createProject('3D Camera', '3d-camera', 100)
+    project.scene3d = {
+      camera: {
+        azimuthRadians: 0.4,
+        elevationRadians: 0.5,
+        zoom: 0.6,
+        targetNudge: [0.1, 0.2, -0.1],
+        fov: 48,
+      },
+    }
+
+    const model = buildChip3DShowcaseModel(project)
+
+    expect(model.scene3d).toEqual(project.scene3d)
+  })
 })

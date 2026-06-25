@@ -48,7 +48,7 @@ export async function recordTurntableMp4(
       pulsers.push({ material: object.material, base: object.material.emissiveIntensity })
     }
   })
-  const resolved = resolveScene3D({ extent: model.extent })
+  const resolved = resolveScene3D(model.scene3d, { extent: model.extent })
   applyResolvedLights(scene, resolved.lights)
 
   const cam = resolved.camera
