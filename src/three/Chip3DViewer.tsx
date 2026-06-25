@@ -4,10 +4,11 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js'
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js'
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js'
+import { resolveScene3D } from '../domain/scene3d/scene3d'
 import { glowPulseAt, turntableAzimuthAt } from '../visual/chip3d/chip3dAnimation'
 import type { Chip3DModel } from '../visual/chip3d/chip3dModel'
 import { buildChip3DScene, disposeChip3DScene } from './chip3dScene'
-import { addShowcaseLights, createShowcaseEnvironment } from './chip3dStage'
+import { applyResolvedLights, createShowcaseEnvironment } from './chip3dStage'
 
 const UP = new THREE.Vector3(0, 1, 0)
 
@@ -52,7 +53,8 @@ export default function Chip3DViewer({ model }: { model: Chip3DModel }) {
       }
     })
 
-    addShowcaseLights(scene)
+    const resolved = resolveScene3D({ extent: model.extent })
+    applyResolvedLights(scene, resolved.lights)
 
     const distance = Math.max(model.extent[0], model.extent[2]) * 0.95
     const camera = new THREE.PerspectiveCamera(42, 1, 1, distance * 10)
