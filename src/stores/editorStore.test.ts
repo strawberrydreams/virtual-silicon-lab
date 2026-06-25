@@ -3,6 +3,7 @@ import { createProject } from '../domain/projectFactory'
 import { buildBlock } from '../domain/blockFactory'
 import type { DieShape, Project } from '../domain/project'
 import type { ChipFinish } from '../domain/material/chipFinish'
+import type { Scene3DCameraSettings } from '../domain/scene3d/scene3d'
 import { outlineToPolygon, resolveDieOutline } from '../domain/die/dieOutline'
 import { pointInPolygon } from '../domain/die/polygonClamp'
 import { createEditorStore } from './editorStore'
@@ -681,6 +682,80 @@ describe('editorStore visual commands', () => {
     expect(store.getState().project.spec.features).not.toBe(spec.features)
     store.getState().undo()
     expect(store.getState().project.spec).toEqual(original)
+  })
+
+  it('sets a scene3d camera as one undoable project command', () => {
+    const store = createEditorStore(createProject('p', 'p1', 0))
+    const targetNudge: [number, number, number] = [0.1, -0.2, 0.3]
+    const camera: Scene3DCameraSettings = {
+      azimuthRadians: 0.5,
+      elevationRadians: 0.6,
+      zoom: 0.4,
+      targetNudge,
+      fov: 46,
+    }
+
+    store.getState().setScene3DCamera(camera)
+    targetNudge[0] = 0.9
+
+    expect(store.getState().project.scene3d?.camera).toEqual({
+      azimuthRadians: 0.5,
+      elevationRadians: 0.6,
+      zoom: 0.4,
+      targetNudge: [0.1, -0.2, 0.3],
+      fov: 46,
+    })
+    expect(store.getState().past).toHaveLength(1)
+
+    store.getState().undo()
+    expect(store.getState().project.scene3d).toBeUndefined()
+
+    store.getState().redo()
+    expect(store.getState().project.scene3d?.camera?.zoom).toBe(0.4)
+  })
+
+  it('resets only the scene3d camera and removes scene3d when empty', () => {
+    const camera: Scene3DCameraSettings = {
+      azimuthRadians: 0.5,
+      elevationRadians: 0.6,
+      zoom: 0.4,
+    }
+    const withOnlyCamera = { ...createProject('p', 'p1', 0), scene3d: { camera } }
+    const onlyCameraStore = createEditorStore(withOnlyCamera)
+
+    onlyCameraStore.getState().resetScene3DCamera()
+
+    expect(onlyCameraStore.getState().project.scene3d).toBeUndefined()
+    expect(onlyCameraStore.getState().past).toHaveLength(1)
+    onlyCameraStore.getState().undo()
+    expect(onlyCameraStore.getState().project.scene3d?.camera).toEqual(camera)
+
+    const withLighting = {
+      ...createProject('p2', 'p2', 0),
+      scene3d: { camera, lighting: { preset: 'studio' } },
+    }
+    const lightingStore = createEditorStore(withLighting)
+
+    lightingStore.getState().resetScene3DCamera()
+
+    expect(lightingStore.getState().project.scene3d).toEqual({ lighting: { preset: 'studio' } })
+  })
+
+  it('does not create history for unchanged scene3d camera commands', () => {
+    const camera: Scene3DCameraSettings = {
+      azimuthRadians: 0.5,
+      elevationRadians: 0.6,
+      zoom: 0.4,
+    }
+    const project = { ...createProject('p', 'p1', 0), scene3d: { camera } }
+    const store = createEditorStore(project)
+
+    store.getState().setScene3DCamera({ ...camera })
+    const blankStore = createEditorStore(createProject('blank', 'blank', 0))
+    blankStore.getState().resetScene3DCamera()
+
+    expect(store.getState().past).toHaveLength(0)
+    expect(blankStore.getState().past).toHaveLength(0)
   })
 })
 

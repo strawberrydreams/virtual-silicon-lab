@@ -16,6 +16,7 @@ import type {
   StudioTileSettings,
   StyleTheme,
 } from '../domain/project'
+import type { Scene3DCameraSettings } from '../domain/scene3d/scene3d'
 import { buildBlock, nextZIndex } from '../domain/blockFactory'
 import { buildDecoration, type DecorationKind } from '../domain/decorationFactory'
 import { isParametricDieShape, resolveDieShapeParams } from '../domain/die/dieShapeParams'
@@ -99,6 +100,8 @@ export type EditorState = {
   setTheme: (theme: StyleTheme) => void
   setFinish: (finish: ChipFinish) => void
   setBlockFinish: (id: string, finish: ChipFinish | undefined) => void
+  setScene3DCamera: (camera: Scene3DCameraSettings) => void
+  resetScene3DCamera: () => void
   setSpec: (spec: FakeSpec) => void
   addDecoration: (kind: DecorationKind) => void
   undo: () => void
@@ -152,6 +155,23 @@ export function createEditorStore(initialProject: Project, options: Options = {}
     function sameDieShapeParams(
       left: DieShapeParams | undefined,
       right: DieShapeParams | undefined,
+    ) {
+      return JSON.stringify(left) === JSON.stringify(right)
+    }
+
+    function cloneScene3DCamera(camera: Scene3DCameraSettings): Scene3DCameraSettings {
+      return {
+        azimuthRadians: camera.azimuthRadians,
+        elevationRadians: camera.elevationRadians,
+        zoom: camera.zoom,
+        ...(camera.targetNudge === undefined ? {} : { targetNudge: [...camera.targetNudge] as const }),
+        ...(camera.fov === undefined ? {} : { fov: camera.fov }),
+      }
+    }
+
+    function sameScene3DCamera(
+      left: Scene3DCameraSettings | undefined,
+      right: Scene3DCameraSettings | undefined,
     ) {
       return JSON.stringify(left) === JSON.stringify(right)
     }
@@ -690,6 +710,29 @@ export function createEditorStore(initialProject: Project, options: Options = {}
           return next
         })
         commit(replaceBlocks(project, blocks))
+      },
+
+      setScene3DCamera(camera) {
+        const { project } = get()
+        const nextCamera = cloneScene3DCamera(camera)
+        if (sameScene3DCamera(project.scene3d?.camera, nextCamera)) return
+        commit({
+          ...project,
+          scene3d: {
+            ...project.scene3d,
+            camera: nextCamera,
+          },
+        })
+      },
+
+      resetScene3DCamera() {
+        const { project } = get()
+        if (project.scene3d?.camera === undefined) return
+        const scene3d = { ...project.scene3d }
+        delete scene3d.camera
+        const next: Project = { ...project, scene3d }
+        if (Object.keys(scene3d).length === 0) delete next.scene3d
+        commit(next)
       },
 
       setSpec(spec) {
