@@ -11,6 +11,7 @@ export type Scene3DCameraSettings = {
 }
 
 export const SCENE_3D_LIGHTING_PRESETS = ['studio', 'neon-noir', 'daylight', 'dramatic'] as const
+export const SCENE_3D_LIGHTING_INTENSITY_RANGE = { min: 0.35, max: 1.8 } as const
 
 export type Scene3DLightingPreset = (typeof SCENE_3D_LIGHTING_PRESETS)[number]
 
@@ -96,8 +97,6 @@ const MIN_ELEVATION = 0.08
 const MAX_ELEVATION = 1.4
 const MIN_FOV = 28
 const MAX_FOV = 60
-const MIN_LIGHTING_INTENSITY = 0.35
-const MAX_LIGHTING_INTENSITY = 1.8
 
 type CameraPose = {
   position: readonly [number, number, number]
@@ -201,7 +200,11 @@ function normalizeLightingSettings(
   if (settings === undefined) return undefined
   return {
     preset: settings.preset,
-    intensity: clamp(finiteOr(settings.intensity, 1), MIN_LIGHTING_INTENSITY, MAX_LIGHTING_INTENSITY),
+    intensity: clamp(
+      finiteOr(settings.intensity, 1),
+      SCENE_3D_LIGHTING_INTENSITY_RANGE.min,
+      SCENE_3D_LIGHTING_INTENSITY_RANGE.max,
+    ),
   }
 }
 

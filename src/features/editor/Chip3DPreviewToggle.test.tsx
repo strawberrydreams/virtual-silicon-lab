@@ -188,6 +188,36 @@ describe('Chip3DPreviewToggle', () => {
     expect(onResetScene3DCamera).toHaveBeenCalledTimes(1)
   })
 
+  it('passes lighting controls through the editor showcase', async () => {
+    const onSetScene3DLighting = vi.fn()
+    const onResetScene3DLighting = vi.fn()
+    const project = createProject('Lit')
+    project.scene3d = { lighting: { preset: 'daylight', intensity: 1.25 } }
+    render(
+      <Chip3DPreviewToggle
+        project={project}
+        onSetScene3DLighting={onSetScene3DLighting}
+        onResetScene3DLighting={onResetScene3DLighting}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open 3D showcase' }))
+    await screen.findByRole('dialog', { name: 'Lit 3D showcase' })
+    fireEvent.click(screen.getByRole('button', { name: 'Neon noir' }))
+    fireEvent.change(screen.getByLabelText('Lighting intensity'), { target: { value: '0.8' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Reset lighting' }))
+
+    expect(onSetScene3DLighting).toHaveBeenNthCalledWith(1, {
+      preset: 'neon-noir',
+      intensity: 1.25,
+    })
+    expect(onSetScene3DLighting).toHaveBeenNthCalledWith(2, {
+      preset: 'daylight',
+      intensity: 0.8,
+    })
+    expect(onResetScene3DLighting).toHaveBeenCalledTimes(1)
+  })
+
   it('keeps the modal recoverable when the viewer fails to load', async () => {
     viewerState.throws = true
     render(<Chip3DPreviewToggle project={createProject('T')} />)

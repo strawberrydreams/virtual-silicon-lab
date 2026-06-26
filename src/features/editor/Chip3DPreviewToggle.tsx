@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { Project } from '../../domain/project'
-import type { Scene3DCameraSettings } from '../../domain/scene3d/scene3d'
+import type { Scene3DCameraSettings, Scene3DLightingSettings } from '../../domain/scene3d/scene3d'
 import { Chip3DShowcase } from '../../three/Chip3DShowcase'
 import { VideoExportPanel } from '../export/VideoExportPanel'
 
@@ -8,10 +8,14 @@ export default function Chip3DPreviewToggle({
   project,
   onSetScene3DCamera,
   onResetScene3DCamera,
+  onSetScene3DLighting,
+  onResetScene3DLighting,
 }: {
   project: Project
   onSetScene3DCamera?: (camera: Scene3DCameraSettings) => void
   onResetScene3DCamera?: () => void
+  onSetScene3DLighting?: (lighting: Scene3DLightingSettings) => void
+  onResetScene3DLighting?: () => void
 }) {
   const [open, setOpen] = useState(false)
 
@@ -27,6 +31,8 @@ export default function Chip3DPreviewToggle({
           renderExtras={(model) => <VideoExportPanel model={model} name={project.name} />}
           onSaveCamera={onSetScene3DCamera}
           onResetCamera={onResetScene3DCamera}
+          onSetLighting={onSetScene3DLighting}
+          onResetLighting={onResetScene3DLighting}
         />
       ) : null}
     </>
