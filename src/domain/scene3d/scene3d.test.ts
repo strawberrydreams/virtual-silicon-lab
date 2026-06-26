@@ -206,6 +206,122 @@ describe('normalizeScene3DSettings lighting', () => {
   })
 })
 
+describe('resolveScene3D environment', () => {
+  const baselineEnvironment = {
+    topColor: '#010203',
+    bottomColor: '#0a0b0c',
+    exposure: 1.12,
+    bloom: { threshold: 0.45, strength: 0.9, radius: 0.55 },
+  } as const
+
+  it('uses the theme-derived environment baseline when no authored environment exists', () => {
+    const { environment } = resolveScene3D({
+      extent: [10, 5, 10],
+      environment: baselineEnvironment,
+    })
+
+    expect(environment).toEqual(baselineEnvironment)
+  })
+
+  it('resolves authored background, exposure, and bloom over the derived baseline', () => {
+    const { environment } = resolveScene3D(
+      {
+        environment: {
+          topColor: '#102030',
+          bottomColor: '#405060',
+          exposure: 1.35,
+          bloom: { threshold: 0.3, strength: 1.4, radius: 0.75 },
+        },
+      },
+      { extent: [10, 5, 10], environment: baselineEnvironment },
+    )
+
+    expect(environment).toEqual({
+      topColor: '#102030',
+      bottomColor: '#405060',
+      exposure: 1.35,
+      bloom: { threshold: 0.3, strength: 1.4, radius: 0.75 },
+    })
+  })
+
+  it('clamps authored exposure and bloom to safe render ranges', () => {
+    const { environment } = resolveScene3D(
+      {
+        environment: {
+          topColor: '#102030',
+          bottomColor: '#405060',
+          exposure: 10,
+          bloom: { threshold: -1, strength: 5, radius: 4 },
+        },
+      },
+      { extent: [10, 5, 10], environment: baselineEnvironment },
+    )
+
+    expect(environment.exposure).toBe(1.65)
+    expect(environment.bloom.threshold).toBe(0.15)
+    expect(environment.bloom.strength).toBe(2.4)
+    expect(environment.bloom.radius).toBe(1)
+  })
+})
+
+describe('normalizeScene3DSettings environment', () => {
+  it('preserves valid environment settings without requiring camera or lighting', () => {
+    expect(
+      normalizeScene3DSettings({
+        environment: {
+          topColor: '#112233',
+          bottomColor: '#445566',
+          exposure: 1.2,
+          bloom: { threshold: 0.4, strength: 1.1, radius: 0.65 },
+        },
+      }),
+    ).toEqual({
+      environment: {
+        topColor: '#112233',
+        bottomColor: '#445566',
+        exposure: 1.2,
+        bloom: { threshold: 0.4, strength: 1.1, radius: 0.65 },
+      },
+    })
+  })
+
+  it('drops malformed environment while preserving valid lighting settings', () => {
+    const normalized = normalizeScene3DSettings({
+      lighting: { preset: 'daylight', intensity: 1.1 },
+      environment: {
+        topColor: 'not-a-color',
+        bottomColor: '#445566',
+        exposure: 1,
+        bloom: { threshold: 0.4, strength: 1.1, radius: 0.65 },
+      },
+    })
+
+    expect(normalized).toEqual({
+      lighting: { preset: 'daylight', intensity: 1.1 },
+    })
+  })
+
+  it('clamps persisted environment exposure and bloom values', () => {
+    expect(
+      normalizeScene3DSettings({
+        environment: {
+          topColor: '#112233',
+          bottomColor: '#445566',
+          exposure: -2,
+          bloom: { threshold: 2, strength: -1, radius: 8 },
+        },
+      }),
+    ).toEqual({
+      environment: {
+        topColor: '#112233',
+        bottomColor: '#445566',
+        exposure: 0.55,
+        bloom: { threshold: 0.95, strength: 0, radius: 1 },
+      },
+    })
+  })
+})
+
 describe('resolveScene3D animation', () => {
   it('returns the baseline turntable + glow defaults', () => {
     const { animation } = resolveScene3D({ extent: [10, 5, 10] })

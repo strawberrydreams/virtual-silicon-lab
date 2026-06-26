@@ -1,5 +1,15 @@
+export type Scene3DBloomSettings = { threshold: number; strength: number; radius: number }
+
+export type Scene3DEnvironmentSettings = {
+  topColor: string
+  bottomColor: string
+  exposure: number
+  bloom: Scene3DBloomSettings
+}
+
 export type SceneDerivedInputs = {
   extent: readonly [number, number, number]
+  environment?: Scene3DEnvironmentSettings
 }
 
 export type Scene3DCameraSettings = {
@@ -12,6 +22,12 @@ export type Scene3DCameraSettings = {
 
 export const SCENE_3D_LIGHTING_PRESETS = ['studio', 'neon-noir', 'daylight', 'dramatic'] as const
 export const SCENE_3D_LIGHTING_INTENSITY_RANGE = { min: 0.35, max: 1.8 } as const
+export const SCENE_3D_ENVIRONMENT_RANGES = {
+  exposure: { min: 0.55, max: 1.65 },
+  bloomThreshold: { min: 0.15, max: 0.95 },
+  bloomStrength: { min: 0, max: 2.4 },
+  bloomRadius: { min: 0.1, max: 1 },
+} as const
 
 export type Scene3DLightingPreset = (typeof SCENE_3D_LIGHTING_PRESETS)[number]
 
@@ -23,7 +39,7 @@ export type Scene3DLightingSettings = {
 export type Scene3DSettings = {
   camera?: Scene3DCameraSettings
   lighting?: Scene3DLightingSettings
-  environment?: unknown
+  environment?: Scene3DEnvironmentSettings
   animation?: unknown
 }
 
@@ -56,6 +72,7 @@ export type ResolvedAnimation = {
 export type ResolvedScene3D = {
   camera: ResolvedCamera
   lights: readonly ResolvedLight[]
+  environment: Scene3DEnvironmentSettings
   animation: ResolvedAnimation
 }
 
@@ -91,6 +108,13 @@ const LIGHTING_RIGS: Record<Scene3DLightingPreset, readonly ResolvedLight[]> = {
 const BASELINE_ANIMATION: ResolvedAnimation = {
   turntable: { periodSeconds: 14 },
   glow: { periodSeconds: 3, min: 0.8, max: 1.2 },
+}
+
+const BASELINE_ENVIRONMENT: Scene3DEnvironmentSettings = {
+  topColor: '#03070b',
+  bottomColor: '#0c1320',
+  exposure: 1,
+  bloom: { threshold: 0.5, strength: 0.9, radius: 0.55 },
 }
 
 const MIN_ELEVATION = 0.08
@@ -161,6 +185,14 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
 }
 
+function isHexColor(value: unknown): value is string {
+  return typeof value === 'string' && /^#[0-9a-fA-F]{6}$/.test(value)
+}
+
+function normalizeHexColor(value: string): string {
+  return value.toLowerCase()
+}
+
 function normalizePersistedCameraSettings(value: unknown): Scene3DCameraSettings | undefined {
   if (!isRecord(value)) return undefined
   if (
@@ -215,14 +247,75 @@ function normalizePersistedLightingSettings(value: unknown): Scene3DLightingSett
   return normalizeLightingSettings({ preset: value.preset, intensity: value.intensity })
 }
 
+function normalizeEnvironmentSettings(
+  settings: Scene3DEnvironmentSettings | undefined,
+): Scene3DEnvironmentSettings | undefined {
+  if (settings === undefined) return undefined
+  return {
+    topColor: normalizeHexColor(settings.topColor),
+    bottomColor: normalizeHexColor(settings.bottomColor),
+    exposure: clamp(
+      finiteOr(settings.exposure, 1),
+      SCENE_3D_ENVIRONMENT_RANGES.exposure.min,
+      SCENE_3D_ENVIRONMENT_RANGES.exposure.max,
+    ),
+    bloom: {
+      threshold: clamp(
+        finiteOr(settings.bloom.threshold, 0.5),
+        SCENE_3D_ENVIRONMENT_RANGES.bloomThreshold.min,
+        SCENE_3D_ENVIRONMENT_RANGES.bloomThreshold.max,
+      ),
+      strength: clamp(
+        finiteOr(settings.bloom.strength, 0.9),
+        SCENE_3D_ENVIRONMENT_RANGES.bloomStrength.min,
+        SCENE_3D_ENVIRONMENT_RANGES.bloomStrength.max,
+      ),
+      radius: clamp(
+        finiteOr(settings.bloom.radius, 0.55),
+        SCENE_3D_ENVIRONMENT_RANGES.bloomRadius.min,
+        SCENE_3D_ENVIRONMENT_RANGES.bloomRadius.max,
+      ),
+    },
+  }
+}
+
+function normalizePersistedEnvironmentSettings(value: unknown): Scene3DEnvironmentSettings | undefined {
+  if (!isRecord(value)) return undefined
+  if (!isHexColor(value.topColor) || !isHexColor(value.bottomColor)) return undefined
+  if (typeof value.exposure !== 'number' || !Number.isFinite(value.exposure)) return undefined
+  if (!isRecord(value.bloom)) return undefined
+  if (
+    typeof value.bloom.threshold !== 'number' ||
+    !Number.isFinite(value.bloom.threshold) ||
+    typeof value.bloom.strength !== 'number' ||
+    !Number.isFinite(value.bloom.strength) ||
+    typeof value.bloom.radius !== 'number' ||
+    !Number.isFinite(value.bloom.radius)
+  ) {
+    return undefined
+  }
+  return normalizeEnvironmentSettings({
+    topColor: value.topColor,
+    bottomColor: value.bottomColor,
+    exposure: value.exposure,
+    bloom: {
+      threshold: value.bloom.threshold,
+      strength: value.bloom.strength,
+      radius: value.bloom.radius,
+    },
+  })
+}
+
 export function normalizeScene3DSettings(value: unknown): Scene3DSettings | undefined {
   if (!isRecord(value)) return undefined
   const camera = normalizePersistedCameraSettings(value.camera)
   const lighting = normalizePersistedLightingSettings(value.lighting)
-  if (camera === undefined && lighting === undefined) return undefined
+  const environment = normalizePersistedEnvironmentSettings(value.environment)
+  if (camera === undefined && lighting === undefined && environment === undefined) return undefined
   return {
     ...(camera === undefined ? {} : { camera }),
     ...(lighting === undefined ? {} : { lighting }),
+    ...(environment === undefined ? {} : { environment }),
   }
 }
 
@@ -281,6 +374,13 @@ function resolveLights(settings: Scene3DLightingSettings | undefined): readonly 
   })
 }
 
+function resolveEnvironment(
+  settings: Scene3DEnvironmentSettings | undefined,
+  derived: SceneDerivedInputs,
+): Scene3DEnvironmentSettings {
+  return normalizeEnvironmentSettings(settings ?? derived.environment ?? BASELINE_ENVIRONMENT)!
+}
+
 export function cameraSettingsFromPose(
   pose: CameraPose,
   derived: SceneDerivedInputs,
@@ -323,6 +423,7 @@ export function resolveScene3D(
   return {
     camera: resolveCamera(settings?.camera, derived),
     lights: resolveLights(settings?.lighting),
+    environment: resolveEnvironment(settings?.environment, derived),
     animation: BASELINE_ANIMATION,
   }
 }
