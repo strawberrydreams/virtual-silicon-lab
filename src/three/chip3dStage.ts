@@ -1,6 +1,5 @@
 import * as THREE from 'three'
-import type { ResolvedLight } from '../domain/scene3d/scene3d'
-import type { Chip3DModel } from '../visual/chip3d/chip3dModel'
+import type { ResolvedLight, Scene3DEnvironmentSettings } from '../domain/scene3d/scene3d'
 
 export function applyResolvedLights(scene: THREE.Scene, lights: readonly ResolvedLight[]): void {
   for (const light of lights) {
@@ -18,15 +17,15 @@ export function applyResolvedLights(scene: THREE.Scene, lights: readonly Resolve
 
 export function createShowcaseEnvironment(
   renderer: THREE.WebGLRenderer,
-  model: Chip3DModel,
+  environment: Scene3DEnvironmentSettings,
 ): { texture: THREE.Texture; dispose: () => void } {
   const pmrem = new THREE.PMREMGenerator(renderer)
   const envScene = new THREE.Scene()
-  envScene.background = new THREE.Color(model.environment.topColor)
+  envScene.background = new THREE.Color(environment.topColor)
   const ground = new THREE.Mesh(
     new THREE.SphereGeometry(1, 16, 16),
     new THREE.MeshBasicMaterial({
-      color: new THREE.Color(model.environment.bottomColor),
+      color: new THREE.Color(environment.bottomColor),
       side: THREE.BackSide,
     }),
   )

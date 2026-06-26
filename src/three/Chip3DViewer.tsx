@@ -39,17 +39,22 @@ export default function Chip3DViewer({
     const host = hostRef.current
     if (!host) return
 
+    const resolved = resolveScene3D(model.scene3d, {
+      extent: model.extent,
+      environment: model.environment,
+    })
+
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
     renderer.shadowMap.enabled = true
     renderer.shadowMap.type = THREE.PCFShadowMap
     renderer.toneMapping = THREE.ACESFilmicToneMapping
-    renderer.toneMappingExposure = model.environment.exposure
+    renderer.toneMappingExposure = resolved.environment.exposure
     host.append(renderer.domElement)
 
     const scene = new THREE.Scene()
 
-    const environment = createShowcaseEnvironment(renderer, model)
+    const environment = createShowcaseEnvironment(renderer, resolved.environment)
     scene.environment = environment.texture
 
     const chip = buildChip3DScene(model)
@@ -66,7 +71,6 @@ export default function Chip3DViewer({
       }
     })
 
-    const resolved = resolveScene3D(model.scene3d, { extent: model.extent })
     applyResolvedLights(scene, resolved.lights)
 
     const cam = resolved.camera
@@ -86,9 +90,9 @@ export default function Chip3DViewer({
     composer.addPass(new RenderPass(scene, camera))
     const bloom = new UnrealBloomPass(
       new THREE.Vector2(1, 1),
-      model.environment.bloom.strength,
-      model.environment.bloom.radius,
-      model.environment.bloom.threshold,
+      resolved.environment.bloom.strength,
+      resolved.environment.bloom.radius,
+      resolved.environment.bloom.threshold,
     )
     composer.addPass(bloom)
 

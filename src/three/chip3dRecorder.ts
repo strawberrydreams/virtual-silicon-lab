@@ -22,6 +22,10 @@ export async function recordTurntableMp4(
 ): Promise<Blob> {
   const spec = opts.spec ?? CAPTURE
   const { width, height, fps } = spec
+  const resolved = resolveScene3D(model.scene3d, {
+    extent: model.extent,
+    environment: model.environment,
+  })
 
   const renderer = new THREE.WebGLRenderer({ antialias: true })
   renderer.setPixelRatio(1)
@@ -29,11 +33,11 @@ export async function recordTurntableMp4(
   renderer.shadowMap.enabled = true
   renderer.shadowMap.type = THREE.PCFShadowMap
   renderer.toneMapping = THREE.ACESFilmicToneMapping
-  renderer.toneMappingExposure = model.environment.exposure
-  renderer.setClearColor(new THREE.Color(model.environment.bottomColor), 1)
+  renderer.toneMappingExposure = resolved.environment.exposure
+  renderer.setClearColor(new THREE.Color(resolved.environment.bottomColor), 1)
 
   const scene = new THREE.Scene()
-  const environment = createShowcaseEnvironment(renderer, model)
+  const environment = createShowcaseEnvironment(renderer, resolved.environment)
   scene.environment = environment.texture
 
   const chip = buildChip3DScene(model)
@@ -48,7 +52,6 @@ export async function recordTurntableMp4(
       pulsers.push({ material: object.material, base: object.material.emissiveIntensity })
     }
   })
-  const resolved = resolveScene3D(model.scene3d, { extent: model.extent })
   applyResolvedLights(scene, resolved.lights)
 
   const cam = resolved.camera
@@ -63,9 +66,9 @@ export async function recordTurntableMp4(
   composer.addPass(
     new UnrealBloomPass(
       new THREE.Vector2(width, height),
-      model.environment.bloom.strength,
-      model.environment.bloom.radius,
-      model.environment.bloom.threshold,
+      resolved.environment.bloom.strength,
+      resolved.environment.bloom.radius,
+      resolved.environment.bloom.threshold,
     ),
   )
 
