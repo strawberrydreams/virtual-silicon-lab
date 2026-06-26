@@ -3,7 +3,11 @@ import { createProject } from '../domain/projectFactory'
 import { buildBlock } from '../domain/blockFactory'
 import type { DieShape, Project } from '../domain/project'
 import type { ChipFinish } from '../domain/material/chipFinish'
-import type { Scene3DCameraSettings, Scene3DLightingSettings } from '../domain/scene3d/scene3d'
+import type {
+  Scene3DCameraSettings,
+  Scene3DEnvironmentSettings,
+  Scene3DLightingSettings,
+} from '../domain/scene3d/scene3d'
 import { outlineToPolygon, resolveDieOutline } from '../domain/die/dieOutline'
 import { pointInPolygon } from '../domain/die/polygonClamp'
 import { createEditorStore } from './editorStore'
@@ -811,6 +815,74 @@ describe('editorStore visual commands', () => {
     store.getState().setScene3DLighting({ ...lighting })
     const blankStore = createEditorStore(createProject('blank', 'blank', 0))
     blankStore.getState().resetScene3DLighting()
+
+    expect(store.getState().past).toHaveLength(0)
+    expect(blankStore.getState().past).toHaveLength(0)
+  })
+
+  it('sets scene3d environment as one undoable project command', () => {
+    const store = createEditorStore(createProject('p', 'p1', 0))
+    const environment: Scene3DEnvironmentSettings = {
+      topColor: '#112233',
+      bottomColor: '#445566',
+      exposure: 1.25,
+      bloom: { threshold: 0.4, strength: 1.2, radius: 0.65 },
+    }
+
+    store.getState().setScene3DEnvironment(environment)
+
+    expect(store.getState().project.scene3d?.environment).toEqual(environment)
+    expect(store.getState().past).toHaveLength(1)
+
+    store.getState().undo()
+    expect(store.getState().project.scene3d).toBeUndefined()
+
+    store.getState().redo()
+    expect(store.getState().project.scene3d?.environment).toEqual(environment)
+  })
+
+  it('resets only scene3d environment and removes scene3d when empty', () => {
+    const environment: Scene3DEnvironmentSettings = {
+      topColor: '#112233',
+      bottomColor: '#445566',
+      exposure: 1.25,
+      bloom: { threshold: 0.4, strength: 1.2, radius: 0.65 },
+    }
+    const withOnlyEnvironment = { ...createProject('p', 'p1', 0), scene3d: { environment } }
+    const onlyEnvironmentStore = createEditorStore(withOnlyEnvironment)
+
+    onlyEnvironmentStore.getState().resetScene3DEnvironment()
+
+    expect(onlyEnvironmentStore.getState().project.scene3d).toBeUndefined()
+    expect(onlyEnvironmentStore.getState().past).toHaveLength(1)
+    onlyEnvironmentStore.getState().undo()
+    expect(onlyEnvironmentStore.getState().project.scene3d?.environment).toEqual(environment)
+
+    const lighting: Scene3DLightingSettings = { preset: 'studio', intensity: 1 }
+    const withLighting = { ...createProject('p2', 'p2', 0), scene3d: { lighting, environment } }
+    const lightingStore = createEditorStore(withLighting)
+
+    lightingStore.getState().resetScene3DEnvironment()
+
+    expect(lightingStore.getState().project.scene3d).toEqual({ lighting })
+  })
+
+  it('does not create history for unchanged scene3d environment commands', () => {
+    const environment: Scene3DEnvironmentSettings = {
+      topColor: '#112233',
+      bottomColor: '#445566',
+      exposure: 1.25,
+      bloom: { threshold: 0.4, strength: 1.2, radius: 0.65 },
+    }
+    const project = { ...createProject('p', 'p1', 0), scene3d: { environment } }
+    const store = createEditorStore(project)
+
+    store.getState().setScene3DEnvironment({
+      ...environment,
+      bloom: { ...environment.bloom },
+    })
+    const blankStore = createEditorStore(createProject('blank', 'blank', 0))
+    blankStore.getState().resetScene3DEnvironment()
 
     expect(store.getState().past).toHaveLength(0)
     expect(blankStore.getState().past).toHaveLength(0)

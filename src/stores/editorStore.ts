@@ -16,7 +16,11 @@ import type {
   StudioTileSettings,
   StyleTheme,
 } from '../domain/project'
-import type { Scene3DCameraSettings, Scene3DLightingSettings } from '../domain/scene3d/scene3d'
+import type {
+  Scene3DCameraSettings,
+  Scene3DEnvironmentSettings,
+  Scene3DLightingSettings,
+} from '../domain/scene3d/scene3d'
 import { buildBlock, nextZIndex } from '../domain/blockFactory'
 import { buildDecoration, type DecorationKind } from '../domain/decorationFactory'
 import { isParametricDieShape, resolveDieShapeParams } from '../domain/die/dieShapeParams'
@@ -104,6 +108,8 @@ export type EditorState = {
   resetScene3DCamera: () => void
   setScene3DLighting: (lighting: Scene3DLightingSettings) => void
   resetScene3DLighting: () => void
+  setScene3DEnvironment: (environment: Scene3DEnvironmentSettings) => void
+  resetScene3DEnvironment: () => void
   setSpec: (spec: FakeSpec) => void
   addDecoration: (kind: DecorationKind) => void
   undo: () => void
@@ -188,6 +194,26 @@ export function createEditorStore(initialProject: Project, options: Options = {}
     function sameScene3DLighting(
       left: Scene3DLightingSettings | undefined,
       right: Scene3DLightingSettings | undefined,
+    ) {
+      return JSON.stringify(left) === JSON.stringify(right)
+    }
+
+    function cloneScene3DEnvironment(environment: Scene3DEnvironmentSettings): Scene3DEnvironmentSettings {
+      return {
+        topColor: environment.topColor,
+        bottomColor: environment.bottomColor,
+        exposure: environment.exposure,
+        bloom: {
+          threshold: environment.bloom.threshold,
+          strength: environment.bloom.strength,
+          radius: environment.bloom.radius,
+        },
+      }
+    }
+
+    function sameScene3DEnvironment(
+      left: Scene3DEnvironmentSettings | undefined,
+      right: Scene3DEnvironmentSettings | undefined,
     ) {
       return JSON.stringify(left) === JSON.stringify(right)
     }
@@ -769,6 +795,29 @@ export function createEditorStore(initialProject: Project, options: Options = {}
         if (project.scene3d?.lighting === undefined) return
         const scene3d = { ...project.scene3d }
         delete scene3d.lighting
+        const next: Project = { ...project, scene3d }
+        if (Object.keys(scene3d).length === 0) delete next.scene3d
+        commit(next)
+      },
+
+      setScene3DEnvironment(environment) {
+        const { project } = get()
+        const nextEnvironment = cloneScene3DEnvironment(environment)
+        if (sameScene3DEnvironment(project.scene3d?.environment, nextEnvironment)) return
+        commit({
+          ...project,
+          scene3d: {
+            ...project.scene3d,
+            environment: nextEnvironment,
+          },
+        })
+      },
+
+      resetScene3DEnvironment() {
+        const { project } = get()
+        if (project.scene3d?.environment === undefined) return
+        const scene3d = { ...project.scene3d }
+        delete scene3d.environment
         const next: Project = { ...project, scene3d }
         if (Object.keys(scene3d).length === 0) delete next.scene3d
         commit(next)
