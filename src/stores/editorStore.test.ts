@@ -3,7 +3,7 @@ import { createProject } from '../domain/projectFactory'
 import { buildBlock } from '../domain/blockFactory'
 import type { DieShape, Project } from '../domain/project'
 import type { ChipFinish } from '../domain/material/chipFinish'
-import type { Scene3DCameraSettings } from '../domain/scene3d/scene3d'
+import type { Scene3DCameraSettings, Scene3DLightingSettings } from '../domain/scene3d/scene3d'
 import { outlineToPolygon, resolveDieOutline } from '../domain/die/dieOutline'
 import { pointInPolygon } from '../domain/die/polygonClamp'
 import { createEditorStore } from './editorStore'
@@ -732,13 +732,13 @@ describe('editorStore visual commands', () => {
 
     const withLighting = {
       ...createProject('p2', 'p2', 0),
-      scene3d: { camera, lighting: { preset: 'studio' } },
+      scene3d: { camera, lighting: { preset: 'studio', intensity: 1 } },
     }
     const lightingStore = createEditorStore(withLighting)
 
     lightingStore.getState().resetScene3DCamera()
 
-    expect(lightingStore.getState().project.scene3d).toEqual({ lighting: { preset: 'studio' } })
+    expect(lightingStore.getState().project.scene3d).toEqual({ lighting: { preset: 'studio', intensity: 1 } })
   })
 
   it('does not create history for unchanged scene3d camera commands', () => {
@@ -753,6 +753,63 @@ describe('editorStore visual commands', () => {
     store.getState().setScene3DCamera({ ...camera })
     const blankStore = createEditorStore(createProject('blank', 'blank', 0))
     blankStore.getState().resetScene3DCamera()
+
+    expect(store.getState().past).toHaveLength(0)
+    expect(blankStore.getState().past).toHaveLength(0)
+  })
+
+  it('sets scene3d lighting as one undoable project command', () => {
+    const store = createEditorStore(createProject('p', 'p1', 0))
+    const lighting: Scene3DLightingSettings = { preset: 'neon-noir', intensity: 1.25 }
+
+    store.getState().setScene3DLighting(lighting)
+
+    expect(store.getState().project.scene3d?.lighting).toEqual({
+      preset: 'neon-noir',
+      intensity: 1.25,
+    })
+    expect(store.getState().past).toHaveLength(1)
+
+    store.getState().undo()
+    expect(store.getState().project.scene3d).toBeUndefined()
+
+    store.getState().redo()
+    expect(store.getState().project.scene3d?.lighting).toEqual(lighting)
+  })
+
+  it('resets only scene3d lighting and removes scene3d when empty', () => {
+    const lighting: Scene3DLightingSettings = { preset: 'daylight', intensity: 0.85 }
+    const withOnlyLighting = { ...createProject('p', 'p1', 0), scene3d: { lighting } }
+    const onlyLightingStore = createEditorStore(withOnlyLighting)
+
+    onlyLightingStore.getState().resetScene3DLighting()
+
+    expect(onlyLightingStore.getState().project.scene3d).toBeUndefined()
+    expect(onlyLightingStore.getState().past).toHaveLength(1)
+    onlyLightingStore.getState().undo()
+    expect(onlyLightingStore.getState().project.scene3d?.lighting).toEqual(lighting)
+
+    const camera: Scene3DCameraSettings = {
+      azimuthRadians: 0.5,
+      elevationRadians: 0.6,
+      zoom: 0.4,
+    }
+    const withCamera = { ...createProject('p2', 'p2', 0), scene3d: { camera, lighting } }
+    const cameraStore = createEditorStore(withCamera)
+
+    cameraStore.getState().resetScene3DLighting()
+
+    expect(cameraStore.getState().project.scene3d).toEqual({ camera })
+  })
+
+  it('does not create history for unchanged scene3d lighting commands', () => {
+    const lighting: Scene3DLightingSettings = { preset: 'dramatic', intensity: 1.1 }
+    const project = { ...createProject('p', 'p1', 0), scene3d: { lighting } }
+    const store = createEditorStore(project)
+
+    store.getState().setScene3DLighting({ ...lighting })
+    const blankStore = createEditorStore(createProject('blank', 'blank', 0))
+    blankStore.getState().resetScene3DLighting()
 
     expect(store.getState().past).toHaveLength(0)
     expect(blankStore.getState().past).toHaveLength(0)

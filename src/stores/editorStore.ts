@@ -16,7 +16,7 @@ import type {
   StudioTileSettings,
   StyleTheme,
 } from '../domain/project'
-import type { Scene3DCameraSettings } from '../domain/scene3d/scene3d'
+import type { Scene3DCameraSettings, Scene3DLightingSettings } from '../domain/scene3d/scene3d'
 import { buildBlock, nextZIndex } from '../domain/blockFactory'
 import { buildDecoration, type DecorationKind } from '../domain/decorationFactory'
 import { isParametricDieShape, resolveDieShapeParams } from '../domain/die/dieShapeParams'
@@ -102,6 +102,8 @@ export type EditorState = {
   setBlockFinish: (id: string, finish: ChipFinish | undefined) => void
   setScene3DCamera: (camera: Scene3DCameraSettings) => void
   resetScene3DCamera: () => void
+  setScene3DLighting: (lighting: Scene3DLightingSettings) => void
+  resetScene3DLighting: () => void
   setSpec: (spec: FakeSpec) => void
   addDecoration: (kind: DecorationKind) => void
   undo: () => void
@@ -172,6 +174,20 @@ export function createEditorStore(initialProject: Project, options: Options = {}
     function sameScene3DCamera(
       left: Scene3DCameraSettings | undefined,
       right: Scene3DCameraSettings | undefined,
+    ) {
+      return JSON.stringify(left) === JSON.stringify(right)
+    }
+
+    function cloneScene3DLighting(lighting: Scene3DLightingSettings): Scene3DLightingSettings {
+      return {
+        preset: lighting.preset,
+        intensity: lighting.intensity,
+      }
+    }
+
+    function sameScene3DLighting(
+      left: Scene3DLightingSettings | undefined,
+      right: Scene3DLightingSettings | undefined,
     ) {
       return JSON.stringify(left) === JSON.stringify(right)
     }
@@ -730,6 +746,29 @@ export function createEditorStore(initialProject: Project, options: Options = {}
         if (project.scene3d?.camera === undefined) return
         const scene3d = { ...project.scene3d }
         delete scene3d.camera
+        const next: Project = { ...project, scene3d }
+        if (Object.keys(scene3d).length === 0) delete next.scene3d
+        commit(next)
+      },
+
+      setScene3DLighting(lighting) {
+        const { project } = get()
+        const nextLighting = cloneScene3DLighting(lighting)
+        if (sameScene3DLighting(project.scene3d?.lighting, nextLighting)) return
+        commit({
+          ...project,
+          scene3d: {
+            ...project.scene3d,
+            lighting: nextLighting,
+          },
+        })
+      },
+
+      resetScene3DLighting() {
+        const { project } = get()
+        if (project.scene3d?.lighting === undefined) return
+        const scene3d = { ...project.scene3d }
+        delete scene3d.lighting
         const next: Project = { ...project, scene3d }
         if (Object.keys(scene3d).length === 0) delete next.scene3d
         commit(next)
