@@ -218,6 +218,54 @@ describe('Chip3DPreviewToggle', () => {
     expect(onResetScene3DLighting).toHaveBeenCalledTimes(1)
   })
 
+  it('passes environment controls through the editor showcase', async () => {
+    const onSetScene3DEnvironment = vi.fn()
+    const onResetScene3DEnvironment = vi.fn()
+    const project = createProject('Post')
+    project.scene3d = {
+      environment: {
+        topColor: '#111827',
+        bottomColor: '#030712',
+        exposure: 1.1,
+        bloom: { threshold: 0.45, strength: 0.9, radius: 0.55 },
+      },
+    }
+    render(
+      <Chip3DPreviewToggle
+        project={project}
+        onSetScene3DEnvironment={onSetScene3DEnvironment}
+        onResetScene3DEnvironment={onResetScene3DEnvironment}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open 3D showcase' }))
+    await screen.findByRole('dialog', { name: 'Post 3D showcase' })
+    fireEvent.click(screen.getByRole('button', { name: 'Aurora post' }))
+    fireEvent.change(screen.getByLabelText('Exposure'), { target: { value: '1.4' } })
+    fireEvent.change(screen.getByLabelText('Bloom strength'), { target: { value: '1.6' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Reset environment' }))
+
+    expect(onSetScene3DEnvironment).toHaveBeenNthCalledWith(1, {
+      topColor: '#101a33',
+      bottomColor: '#060816',
+      exposure: 1.1,
+      bloom: { threshold: 0.45, strength: 0.9, radius: 0.55 },
+    })
+    expect(onSetScene3DEnvironment).toHaveBeenNthCalledWith(2, {
+      topColor: '#111827',
+      bottomColor: '#030712',
+      exposure: 1.4,
+      bloom: { threshold: 0.45, strength: 0.9, radius: 0.55 },
+    })
+    expect(onSetScene3DEnvironment).toHaveBeenNthCalledWith(3, {
+      topColor: '#111827',
+      bottomColor: '#030712',
+      exposure: 1.1,
+      bloom: { threshold: 0.45, strength: 1.6, radius: 0.55 },
+    })
+    expect(onResetScene3DEnvironment).toHaveBeenCalledTimes(1)
+  })
+
   it('keeps the modal recoverable when the viewer fails to load', async () => {
     viewerState.throws = true
     render(<Chip3DPreviewToggle project={createProject('T')} />)

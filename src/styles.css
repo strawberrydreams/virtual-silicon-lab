@@ -1217,6 +1217,46 @@ button {
   accent-color: var(--v2-accent-2);
 }
 
+.chip-3d-environment {
+  display: flex;
+  min-width: min(100%, 620px);
+  flex: 1 1 620px;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.55rem;
+}
+
+.chip-3d-environment__presets {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.chip-3d-environment__presets button[aria-pressed='true'] {
+  border-color: var(--v2-accent);
+  background: rgba(185, 132, 255, 0.14);
+  color: var(--v2-text);
+}
+
+.chip-3d-environment__range {
+  display: inline-flex;
+  min-width: 170px;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--v2-muted);
+  font-size: 0.66rem;
+  font-weight: 750;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.chip-3d-environment__range input {
+  width: 112px;
+  accent-color: var(--v2-accent-2);
+}
+
 .chip-3d-showcase__fallback {
   display: grid;
   min-width: 0;

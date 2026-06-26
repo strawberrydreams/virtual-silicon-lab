@@ -2,9 +2,11 @@ import { Component, lazy, Suspense, useEffect, useMemo, useRef } from 'react'
 import type { ErrorInfo, ReactNode } from 'react'
 import type { Project } from '../domain/project'
 import {
+  SCENE_3D_ENVIRONMENT_RANGES,
   SCENE_3D_LIGHTING_INTENSITY_RANGE,
   SCENE_3D_LIGHTING_PRESETS,
   type Scene3DCameraSettings,
+  type Scene3DEnvironmentSettings,
   type Scene3DLightingPreset,
   type Scene3DLightingSettings,
 } from '../domain/scene3d/scene3d'
@@ -25,6 +27,12 @@ const LIGHTING_LABELS: Record<Scene3DLightingPreset, string> = {
   daylight: 'Daylight',
   dramatic: 'Dramatic',
 }
+
+const ENVIRONMENT_PRESETS = [
+  { id: 'midnight', label: 'Midnight post', topColor: '#111827', bottomColor: '#030712' },
+  { id: 'aurora', label: 'Aurora post', topColor: '#101a33', bottomColor: '#060816' },
+  { id: 'clean', label: 'Clean post', topColor: '#e8edf7', bottomColor: '#8994a8' },
+] as const
 
 class ShowcaseErrorBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
   state = { failed: false }
@@ -50,6 +58,8 @@ export function Chip3DShowcase({
   onResetCamera,
   onSetLighting,
   onResetLighting,
+  onSetEnvironment,
+  onResetEnvironment,
 }: {
   project: Project
   onClose: () => void
@@ -58,6 +68,8 @@ export function Chip3DShowcase({
   onResetCamera?: () => void
   onSetLighting?: (lighting: Scene3DLightingSettings) => void
   onResetLighting?: () => void
+  onSetEnvironment?: (environment: Scene3DEnvironmentSettings) => void
+  onResetEnvironment?: () => void
 }) {
   const closeButtonRef = useRef<HTMLButtonElement>(null)
 
@@ -84,7 +96,20 @@ export function Chip3DShowcase({
       webglAvailable: webglAvailable(),
     }) === 'interactive'
   const lighting = project.scene3d?.lighting ?? { preset: 'studio', intensity: 1 }
+  const environment = project.scene3d?.environment ?? model.environment
   const showLightingControls = onSetLighting !== undefined || onResetLighting !== undefined
+  const showEnvironmentControls = onSetEnvironment !== undefined || onResetEnvironment !== undefined
+
+  const setEnvironment = (patch: Partial<Scene3DEnvironmentSettings>) => {
+    onSetEnvironment?.({
+      ...environment,
+      ...patch,
+      bloom: {
+        ...environment.bloom,
+        ...patch.bloom,
+      },
+    })
+  }
 
   return (
     <section
@@ -131,6 +156,57 @@ export function Chip3DShowcase({
             </label>
             <button type="button" onClick={onResetLighting}>
               Reset lighting
+            </button>
+          </div>
+        ) : null}
+        {showEnvironmentControls ? (
+          <div className="chip-3d-environment" aria-label="3D environment controls">
+            <div className="chip-3d-environment__presets">
+              {ENVIRONMENT_PRESETS.map((preset) => (
+                <button
+                  key={preset.id}
+                  type="button"
+                  aria-pressed={
+                    environment.topColor === preset.topColor &&
+                    environment.bottomColor === preset.bottomColor
+                  }
+                  onClick={() =>
+                    setEnvironment({
+                      topColor: preset.topColor,
+                      bottomColor: preset.bottomColor,
+                    })
+                  }
+                >
+                  {preset.label}
+                </button>
+              ))}
+            </div>
+            <label className="chip-3d-environment__range">
+              <span>Exposure</span>
+              <input
+                type="range"
+                min={SCENE_3D_ENVIRONMENT_RANGES.exposure.min}
+                max={SCENE_3D_ENVIRONMENT_RANGES.exposure.max}
+                step="0.05"
+                value={environment.exposure}
+                onChange={(event) => setEnvironment({ exposure: Number(event.currentTarget.value) })}
+              />
+            </label>
+            <label className="chip-3d-environment__range">
+              <span>Bloom strength</span>
+              <input
+                type="range"
+                min={SCENE_3D_ENVIRONMENT_RANGES.bloomStrength.min}
+                max={SCENE_3D_ENVIRONMENT_RANGES.bloomStrength.max}
+                step="0.05"
+                value={environment.bloom.strength}
+                onChange={(event) =>
+                  setEnvironment({ bloom: { ...environment.bloom, strength: Number(event.currentTarget.value) } })
+                }
+              />
+            </label>
+            <button type="button" onClick={onResetEnvironment}>
+              Reset environment
             </button>
           </div>
         ) : null}
