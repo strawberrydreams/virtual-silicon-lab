@@ -1157,7 +1157,7 @@ button {
 
 .chip-3d-showcase__header button,
 .chip-3d-viewer__play,
-.chip-3d-viewer__reset {
+.chip-3d-viewer__action {
   min-height: 40px;
   border: 1px solid var(--v2-border-strong);
   background: rgba(8, 16, 24, 0.88);
@@ -1172,7 +1172,7 @@ button {
 
 .chip-3d-showcase__header button:hover,
 .chip-3d-viewer__play:hover,
-.chip-3d-viewer__reset:hover {
+.chip-3d-viewer__action:hover {
   border-color: var(--v2-accent-2);
   background: rgba(91, 213, 240, 0.08);
 }
@@ -1265,10 +1265,15 @@ button {
   height: 100%;
 }
 
-.chip-3d-viewer__reset {
+.chip-3d-viewer__actions {
   position: absolute;
   right: 1rem;
   bottom: 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  max-width: calc(100% - 13rem);
 }
 
 .chip-3d-viewer__play {

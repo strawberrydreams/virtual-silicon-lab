@@ -211,19 +211,21 @@ export default function Chip3DViewer({
       <button className="chip-3d-viewer__play" type="button" onClick={togglePlay}>
         {playing ? 'Pause' : 'Play turntable'}
       </button>
-      <button className="chip-3d-viewer__reset" type="button" onClick={resetView}>
-        Reset view
-      </button>
-      {onSaveCamera ? (
-        <button className="chip-3d-viewer__reset" type="button" onClick={saveCurrentView}>
-          Save current view
+      <div className="chip-3d-viewer__actions">
+        <button className="chip-3d-viewer__action" type="button" onClick={resetView}>
+          Reset view
         </button>
-      ) : null}
-      {onResetCamera ? (
-        <button className="chip-3d-viewer__reset" type="button" onClick={onResetCamera}>
-          Reset 3D default
-        </button>
-      ) : null}
+        {onSaveCamera ? (
+          <button className="chip-3d-viewer__action" type="button" onClick={saveCurrentView}>
+            Save current view
+          </button>
+        ) : null}
+        {onResetCamera ? (
+          <button className="chip-3d-viewer__action" type="button" onClick={onResetCamera}>
+            Reset 3D default
+          </button>
+        ) : null}
+      </div>
     </div>
   )
 }
