@@ -10,9 +10,18 @@ export type Scene3DCameraSettings = {
   fov?: number
 }
 
+export const SCENE_3D_LIGHTING_PRESETS = ['studio', 'neon-noir', 'daylight', 'dramatic'] as const
+
+export type Scene3DLightingPreset = (typeof SCENE_3D_LIGHTING_PRESETS)[number]
+
+export type Scene3DLightingSettings = {
+  preset: Scene3DLightingPreset
+  intensity: number
+}
+
 export type Scene3DSettings = {
   camera?: Scene3DCameraSettings
-  lighting?: unknown
+  lighting?: Scene3DLightingSettings
   environment?: unknown
   animation?: unknown
 }
@@ -56,6 +65,28 @@ const BASELINE_LIGHTS: readonly ResolvedLight[] = [
   { kind: 'directional', color: 0xffffff, intensity: 1.6, position: [-0.5, 1.2, -2], castShadow: false },
 ]
 
+const LIGHTING_RIGS: Record<Scene3DLightingPreset, readonly ResolvedLight[]> = {
+  studio: BASELINE_LIGHTS,
+  'neon-noir': [
+    { kind: 'hemisphere', skyColor: 0x42f5ff, groundColor: 0x08020f, intensity: 0.85 },
+    { kind: 'directional', color: 0x66fff0, intensity: 2.7, position: [1.1, 1.8, 0.8], castShadow: true },
+    { kind: 'directional', color: 0xff4fd8, intensity: 1.45, position: [-1.6, 0.9, 1.3], castShadow: false },
+    { kind: 'directional', color: 0xf6f8ff, intensity: 2.05, position: [-0.3, 1.25, -2.2], castShadow: false },
+  ],
+  daylight: [
+    { kind: 'hemisphere', skyColor: 0xd9ecff, groundColor: 0x4a4638, intensity: 1.45 },
+    { kind: 'directional', color: 0xfff4d6, intensity: 3.0, position: [0.8, 2.3, 0.6], castShadow: true },
+    { kind: 'directional', color: 0xd7e5ff, intensity: 1.35, position: [-1.8, 1.1, 1.1], castShadow: false },
+    { kind: 'directional', color: 0xffffff, intensity: 1.15, position: [-0.6, 1.4, -1.8], castShadow: false },
+  ],
+  dramatic: [
+    { kind: 'hemisphere', skyColor: 0x5d7197, groundColor: 0x050507, intensity: 0.65 },
+    { kind: 'directional', color: 0xffd2a0, intensity: 4.1, position: [1.4, 2.4, 0.7], castShadow: true },
+    { kind: 'directional', color: 0x526dff, intensity: 0.55, position: [-1.6, 0.8, 1.4], castShadow: false },
+    { kind: 'directional', color: 0xffffff, intensity: 2.7, position: [-0.4, 1.5, -2.4], castShadow: false },
+  ],
+}
+
 const BASELINE_ANIMATION: ResolvedAnimation = {
   turntable: { periodSeconds: 14 },
   glow: { periodSeconds: 3, min: 0.8, max: 1.2 },
@@ -65,6 +96,8 @@ const MIN_ELEVATION = 0.08
 const MAX_ELEVATION = 1.4
 const MIN_FOV = 28
 const MAX_FOV = 60
+const MIN_LIGHTING_INTENSITY = 0.35
+const MAX_LIGHTING_INTENSITY = 1.8
 
 type CameraPose = {
   position: readonly [number, number, number]
@@ -158,11 +191,36 @@ function normalizePersistedCameraSettings(value: unknown): Scene3DCameraSettings
   })
 }
 
+function isScene3DLightingPreset(value: unknown): value is Scene3DLightingPreset {
+  return typeof value === 'string' && SCENE_3D_LIGHTING_PRESETS.includes(value as Scene3DLightingPreset)
+}
+
+function normalizeLightingSettings(
+  settings: Scene3DLightingSettings | undefined,
+): Scene3DLightingSettings | undefined {
+  if (settings === undefined) return undefined
+  return {
+    preset: settings.preset,
+    intensity: clamp(finiteOr(settings.intensity, 1), MIN_LIGHTING_INTENSITY, MAX_LIGHTING_INTENSITY),
+  }
+}
+
+function normalizePersistedLightingSettings(value: unknown): Scene3DLightingSettings | undefined {
+  if (!isRecord(value)) return undefined
+  if (!isScene3DLightingPreset(value.preset)) return undefined
+  if (typeof value.intensity !== 'number' || !Number.isFinite(value.intensity)) return undefined
+  return normalizeLightingSettings({ preset: value.preset, intensity: value.intensity })
+}
+
 export function normalizeScene3DSettings(value: unknown): Scene3DSettings | undefined {
   if (!isRecord(value)) return undefined
   const camera = normalizePersistedCameraSettings(value.camera)
-  if (camera === undefined) return undefined
-  return { camera }
+  const lighting = normalizePersistedLightingSettings(value.lighting)
+  if (camera === undefined && lighting === undefined) return undefined
+  return {
+    ...(camera === undefined ? {} : { camera }),
+    ...(lighting === undefined ? {} : { lighting }),
+  }
 }
 
 function resolveCamera(
@@ -209,6 +267,17 @@ function resolveCamera(
   }
 }
 
+function resolveLights(settings: Scene3DLightingSettings | undefined): readonly ResolvedLight[] {
+  if (settings === undefined) return BASELINE_LIGHTS
+  const lighting = normalizeLightingSettings(settings)!
+  return LIGHTING_RIGS[lighting.preset].map((light) => {
+    if (light.kind === 'hemisphere') {
+      return { ...light, intensity: light.intensity * lighting.intensity }
+    }
+    return { ...light, intensity: light.intensity * lighting.intensity }
+  })
+}
+
 export function cameraSettingsFromPose(
   pose: CameraPose,
   derived: SceneDerivedInputs,
@@ -250,7 +319,7 @@ export function resolveScene3D(
   const derived = maybeDerived ?? (settingsOrDerived as SceneDerivedInputs)
   return {
     camera: resolveCamera(settings?.camera, derived),
-    lights: BASELINE_LIGHTS,
+    lights: resolveLights(settings?.lighting),
     animation: BASELINE_ANIMATION,
   }
 }

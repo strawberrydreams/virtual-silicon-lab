@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { cameraSettingsFromPose, resolveScene3D } from './scene3d'
+import { cameraSettingsFromPose, normalizeScene3DSettings, resolveScene3D } from './scene3d'
 
 function expectVecClose(actual: readonly number[], expected: readonly number[]) {
   expect(actual).toHaveLength(expected.length)
@@ -113,6 +113,96 @@ describe('resolveScene3D lights', () => {
         castShadow: false,
       },
     ])
+  })
+
+  it('scales the studio lighting rig uniformly with authored intensity', () => {
+    const { lights } = resolveScene3D(
+      { lighting: { preset: 'studio', intensity: 0.5 } },
+      { extent: [10, 5, 10] },
+    )
+
+    expect(lights).toEqual([
+      { kind: 'hemisphere', skyColor: 0xc8dcff, groundColor: 0x08080c, intensity: 0.6 },
+      {
+        kind: 'directional',
+        color: 0xfff1e0,
+        intensity: 1.6,
+        position: [1, 2, 1],
+        castShadow: true,
+      },
+      {
+        kind: 'directional',
+        color: 0xbcd0ff,
+        intensity: 0.55,
+        position: [-1.5, 1, 1.2],
+        castShadow: false,
+      },
+      {
+        kind: 'directional',
+        color: 0xffffff,
+        intensity: 0.8,
+        position: [-0.5, 1.2, -2],
+        castShadow: false,
+      },
+    ])
+  })
+
+  it('resolves each named lighting preset into a complete rig', () => {
+    const studio = resolveScene3D({ lighting: { preset: 'studio', intensity: 1 } }, { extent: [10, 5, 10] })
+    const neonNoir = resolveScene3D(
+      { lighting: { preset: 'neon-noir', intensity: 1 } },
+      { extent: [10, 5, 10] },
+    )
+    const daylight = resolveScene3D(
+      { lighting: { preset: 'daylight', intensity: 1 } },
+      { extent: [10, 5, 10] },
+    )
+    const dramatic = resolveScene3D(
+      { lighting: { preset: 'dramatic', intensity: 1 } },
+      { extent: [10, 5, 10] },
+    )
+
+    expect(studio.lights).toHaveLength(4)
+    expect(neonNoir.lights).toHaveLength(4)
+    expect(daylight.lights).toHaveLength(4)
+    expect(dramatic.lights).toHaveLength(4)
+    expect(neonNoir.lights).not.toEqual(studio.lights)
+    expect(daylight.lights).not.toEqual(studio.lights)
+    expect(dramatic.lights).not.toEqual(studio.lights)
+  })
+
+  it('clamps authored lighting intensity to the safe range', () => {
+    const dim = resolveScene3D({ lighting: { preset: 'studio', intensity: -1 } }, { extent: [10, 5, 10] })
+    const bright = resolveScene3D({ lighting: { preset: 'studio', intensity: 5 } }, { extent: [10, 5, 10] })
+
+    expect(dim.lights[0].intensity).toBeCloseTo(1.2 * 0.35)
+    expect(bright.lights[0].intensity).toBeCloseTo(1.2 * 1.8)
+  })
+})
+
+describe('normalizeScene3DSettings lighting', () => {
+  it('preserves valid lighting settings without requiring a camera', () => {
+    expect(normalizeScene3DSettings({ lighting: { preset: 'daylight', intensity: 1.25 } })).toEqual({
+      lighting: { preset: 'daylight', intensity: 1.25 },
+    })
+  })
+
+  it('drops malformed lighting while preserving valid camera settings', () => {
+    const normalized = normalizeScene3DSettings({
+      camera: { azimuthRadians: 0.2, elevationRadians: 0.4, zoom: 0.5 },
+      lighting: { preset: 'bad', intensity: 'bright' },
+    })
+
+    expect(normalized?.lighting).toBeUndefined()
+    expect(normalized?.camera?.azimuthRadians).toBeCloseTo(0.2)
+    expect(normalized?.camera?.elevationRadians).toBe(0.4)
+    expect(normalized?.camera?.zoom).toBe(0.5)
+  })
+
+  it('clamps persisted lighting intensity', () => {
+    expect(normalizeScene3DSettings({ lighting: { preset: 'dramatic', intensity: 10 } })).toEqual({
+      lighting: { preset: 'dramatic', intensity: 1.8 },
+    })
   })
 })
 

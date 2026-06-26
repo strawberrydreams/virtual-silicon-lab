@@ -441,6 +441,40 @@ describe('migrateProject', () => {
     })
   })
 
+  it('preserves and clamps valid schema 9 scene3d lighting settings', () => {
+    const migrated = migrateProject({
+      ...validProject('v9-scene-lighting'),
+      schemaVersion: 9,
+      finish: 'gloss',
+      studio: undefined,
+      scene3d: {
+        lighting: { preset: 'neon-noir', intensity: 8 },
+      },
+    })
+
+    expect(migrated.scene3d).toEqual({
+      lighting: { preset: 'neon-noir', intensity: 1.8 },
+    })
+  })
+
+  it('drops malformed schema 9 scene3d lighting without dropping a valid camera', () => {
+    const migrated = migrateProject({
+      ...validProject('v9-scene-bad-lighting'),
+      schemaVersion: 9,
+      finish: 'gloss',
+      studio: undefined,
+      scene3d: {
+        camera: { azimuthRadians: 0.2, elevationRadians: 0.4, zoom: 0.5 },
+        lighting: { preset: 'future', intensity: 1 },
+      },
+    })
+
+    expect(migrated.scene3d?.lighting).toBeUndefined()
+    expect(migrated.scene3d?.camera?.azimuthRadians).toBeCloseTo(0.2)
+    expect(migrated.scene3d?.camera?.elevationRadians).toBe(0.4)
+    expect(migrated.scene3d?.camera?.zoom).toBe(0.5)
+  })
+
   it('drops malformed scene3d data without rejecting the project', () => {
     const migrated = migrateProject({
       ...validProject('bad-scene'),
