@@ -730,15 +730,16 @@ describe('editorStore visual commands', () => {
     onlyCameraStore.getState().undo()
     expect(onlyCameraStore.getState().project.scene3d?.camera).toEqual(camera)
 
+    const studioLighting: Scene3DLightingSettings = { preset: 'studio', intensity: 1 }
     const withLighting = {
       ...createProject('p2', 'p2', 0),
-      scene3d: { camera, lighting: { preset: 'studio', intensity: 1 } },
+      scene3d: { camera, lighting: studioLighting },
     }
     const lightingStore = createEditorStore(withLighting)
 
     lightingStore.getState().resetScene3DCamera()
 
-    expect(lightingStore.getState().project.scene3d).toEqual({ lighting: { preset: 'studio', intensity: 1 } })
+    expect(lightingStore.getState().project.scene3d).toEqual({ lighting: studioLighting })
   })
 
   it('does not create history for unchanged scene3d camera commands', () => {
