@@ -5,6 +5,7 @@ import type {
   Scene3DCameraSettings,
   Scene3DEnvironmentSettings,
   Scene3DLightingSettings,
+  Scene3DLookSettings,
 } from '../../domain/scene3d/scene3d'
 import { Chip3DShowcase } from '../../three/Chip3DShowcase'
 import { VideoExportPanel } from '../export/VideoExportPanel'
@@ -17,6 +18,7 @@ export default function Chip3DPreviewToggle({
   onResetScene3DLighting,
   onSetScene3DEnvironment,
   onResetScene3DEnvironment,
+  onApplyScene3DLook,
   onSetScene3DAnimation,
   onResetScene3DAnimation,
 }: {
@@ -27,6 +29,7 @@ export default function Chip3DPreviewToggle({
   onResetScene3DLighting?: () => void
   onSetScene3DEnvironment?: (environment: Scene3DEnvironmentSettings) => void
   onResetScene3DEnvironment?: () => void
+  onApplyScene3DLook?: (look: Scene3DLookSettings) => void
   onSetScene3DAnimation?: (animation: Scene3DAnimationSettings) => void
   onResetScene3DAnimation?: () => void
 }) {
@@ -48,6 +51,7 @@ export default function Chip3DPreviewToggle({
           onResetLighting={onResetScene3DLighting}
           onSetEnvironment={onSetScene3DEnvironment}
           onResetEnvironment={onResetScene3DEnvironment}
+          onApplyLook={onApplyScene3DLook}
           onSetAnimation={onSetScene3DAnimation}
           onResetAnimation={onResetScene3DAnimation}
         />

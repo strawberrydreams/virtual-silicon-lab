@@ -21,6 +21,7 @@ import type {
   Scene3DCameraSettings,
   Scene3DEnvironmentSettings,
   Scene3DLightingSettings,
+  Scene3DLookSettings,
 } from '../domain/scene3d/scene3d'
 import { buildBlock, nextZIndex } from '../domain/blockFactory'
 import { buildDecoration, type DecorationKind } from '../domain/decorationFactory'
@@ -111,6 +112,7 @@ export type EditorState = {
   resetScene3DLighting: () => void
   setScene3DEnvironment: (environment: Scene3DEnvironmentSettings) => void
   resetScene3DEnvironment: () => void
+  applyScene3DLook: (look: Scene3DLookSettings) => void
   setScene3DAnimation: (animation: Scene3DAnimationSettings) => void
   resetScene3DAnimation: () => void
   setSpec: (spec: FakeSpec) => void
@@ -219,6 +221,14 @@ export function createEditorStore(initialProject: Project, options: Options = {}
       right: Scene3DEnvironmentSettings | undefined,
     ) {
       return JSON.stringify(left) === JSON.stringify(right)
+    }
+
+    function cloneScene3DLook(look: Scene3DLookSettings): Scene3DLookSettings {
+      return {
+        camera: cloneScene3DCamera(look.camera),
+        lighting: cloneScene3DLighting(look.lighting),
+        environment: cloneScene3DEnvironment(look.environment),
+      }
     }
 
     function cloneScene3DAnimation(animation: Scene3DAnimationSettings): Scene3DAnimationSettings {
@@ -846,6 +856,27 @@ export function createEditorStore(initialProject: Project, options: Options = {}
         const next: Project = { ...project, scene3d }
         if (Object.keys(scene3d).length === 0) delete next.scene3d
         commit(next)
+      },
+
+      applyScene3DLook(look) {
+        const { project } = get()
+        const nextLook = cloneScene3DLook(look)
+        if (
+          sameScene3DCamera(project.scene3d?.camera, nextLook.camera) &&
+          sameScene3DLighting(project.scene3d?.lighting, nextLook.lighting) &&
+          sameScene3DEnvironment(project.scene3d?.environment, nextLook.environment)
+        ) {
+          return
+        }
+        commit({
+          ...project,
+          scene3d: {
+            ...project.scene3d,
+            camera: nextLook.camera,
+            lighting: nextLook.lighting,
+            environment: nextLook.environment,
+          },
+        })
       },
 
       setScene3DAnimation(animation) {

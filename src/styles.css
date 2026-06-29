@@ -1177,6 +1177,24 @@ button {
   background: rgba(91, 213, 240, 0.08);
 }
 
+.chip-3d-look-presets {
+  display: flex;
+  min-width: min(100%, 360px);
+  flex: 0 1 360px;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.4rem;
+}
+
+.chip-3d-look-presets button {
+  border-color: color-mix(in srgb, var(--v2-accent) 55%, var(--v2-border-strong));
+  background:
+    linear-gradient(135deg, rgba(185, 132, 255, 0.14), rgba(91, 213, 240, 0.07)),
+    rgba(8, 16, 24, 0.88);
+  color: var(--v2-text);
+}
+
 .chip-3d-lighting {
   display: flex;
   min-width: min(100%, 520px);

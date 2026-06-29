@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createProject } from '../../domain/projectFactory'
+import { resolveScene3DLookPreset } from '../../domain/scene3d/scene3d'
 import type { Chip3DModel } from '../../visual/chip3d/chip3dModel'
 import Chip3DPreviewToggle from './Chip3DPreviewToggle'
 
@@ -186,6 +187,31 @@ describe('Chip3DPreviewToggle', () => {
       fov: 48,
     })
     expect(onResetScene3DCamera).toHaveBeenCalledTimes(1)
+  })
+
+  it('passes look preset controls through the editor showcase only when provided', async () => {
+    const onApplyScene3DLook = vi.fn()
+    render(
+      <Chip3DPreviewToggle
+        project={createProject('Looks')}
+        onApplyScene3DLook={onApplyScene3DLook}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open 3D showcase' }))
+    await screen.findByRole('dialog', { name: 'Looks 3D showcase' })
+    fireEvent.click(screen.getByRole('button', { name: 'Inspection' }))
+
+    expect(onApplyScene3DLook).toHaveBeenCalledWith(resolveScene3DLookPreset('inspection'))
+  })
+
+  it('hides look preset controls from viewer-only showcases', async () => {
+    render(<Chip3DPreviewToggle project={createProject('Viewer')} />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open 3D showcase' }))
+    await screen.findByRole('dialog', { name: 'Viewer 3D showcase' })
+
+    expect(screen.queryByRole('button', { name: 'Inspection' })).toBeNull()
   })
 
   it('passes lighting controls through the editor showcase', async () => {

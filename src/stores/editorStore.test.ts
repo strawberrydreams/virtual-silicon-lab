@@ -8,6 +8,7 @@ import type {
   Scene3DCameraSettings,
   Scene3DEnvironmentSettings,
   Scene3DLightingSettings,
+  Scene3DLookSettings,
 } from '../domain/scene3d/scene3d'
 import { outlineToPolygon, resolveDieOutline } from '../domain/die/dieOutline'
 import { pointInPolygon } from '../domain/die/polygonClamp'
@@ -958,6 +959,55 @@ describe('editorStore visual commands', () => {
 
     expect(store.getState().past).toHaveLength(0)
     expect(blankStore.getState().past).toHaveLength(0)
+  })
+
+  it('applies a scene3d look as one undoable command while preserving animation', () => {
+    const animation: Scene3DAnimationSettings = {
+      turntable: { enabled: false, periodSeconds: 24 },
+      glow: { enabled: true, periodSeconds: 5, min: 0.7, max: 1.3 },
+    }
+    const look: Scene3DLookSettings = {
+      camera: { azimuthRadians: 0.18, elevationRadians: 0.82, zoom: 0.32, fov: 38 },
+      lighting: { preset: 'daylight', intensity: 1.05 },
+      environment: {
+        topColor: '#e8edf7',
+        bottomColor: '#8994a8',
+        exposure: 1.1,
+        bloom: { threshold: 0.65, strength: 0.35, radius: 0.4 },
+      },
+    }
+    const store = createEditorStore({ ...createProject('p', 'p1', 0), scene3d: { animation } })
+
+    store.getState().applyScene3DLook(look)
+
+    expect(store.getState().project.scene3d).toEqual({ ...look, animation })
+    expect(store.getState().past).toHaveLength(1)
+    store.getState().undo()
+    expect(store.getState().project.scene3d).toEqual({ animation })
+    store.getState().redo()
+    expect(store.getState().project.scene3d).toEqual({ ...look, animation })
+  })
+
+  it('does not create history for unchanged scene3d look commands', () => {
+    const look: Scene3DLookSettings = {
+      camera: { azimuthRadians: -0.68, elevationRadians: 0.42, zoom: 0.18, fov: 50 },
+      lighting: { preset: 'dramatic', intensity: 1.25 },
+      environment: {
+        topColor: '#111827',
+        bottomColor: '#030712',
+        exposure: 1.05,
+        bloom: { threshold: 0.35, strength: 1.35, radius: 0.72 },
+      },
+    }
+    const store = createEditorStore({ ...createProject('p', 'p1', 0), scene3d: { ...look } })
+
+    store.getState().applyScene3DLook({
+      camera: { ...look.camera },
+      lighting: { ...look.lighting },
+      environment: { ...look.environment, bloom: { ...look.environment.bloom } },
+    })
+
+    expect(store.getState().past).toHaveLength(0)
   })
 })
 

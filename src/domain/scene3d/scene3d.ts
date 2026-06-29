@@ -54,6 +54,18 @@ export type Scene3DSettings = {
   animation?: Scene3DAnimationSettings
 }
 
+export type Scene3DLookSettings = Required<
+  Pick<Scene3DSettings, 'camera' | 'lighting' | 'environment'>
+>
+
+export const SCENE_3D_LOOK_PRESET_IDS = ['orbit-hero', 'inspection', 'dramatic-closeup'] as const
+export type Scene3DLookPresetId = (typeof SCENE_3D_LOOK_PRESET_IDS)[number]
+export type Scene3DLookPreset = {
+  id: Scene3DLookPresetId
+  label: string
+  settings: Scene3DLookSettings
+}
+
 export type ResolvedCamera = {
   fov: number
   near: number
@@ -129,6 +141,46 @@ const BASELINE_ENVIRONMENT: Scene3DEnvironmentSettings = {
   exposure: 1,
   bloom: { threshold: 0.5, strength: 0.9, radius: 0.55 },
 }
+
+export const SCENE_3D_LOOK_PRESETS: readonly Scene3DLookPreset[] = [
+  {
+    id: 'orbit-hero',
+    label: 'Orbit hero',
+    settings: {
+      camera: { azimuthRadians: 0.72, elevationRadians: 0.56, zoom: 0.42, fov: 42 },
+      lighting: { preset: 'studio', intensity: 1 },
+      environment: BASELINE_ENVIRONMENT,
+    },
+  },
+  {
+    id: 'inspection',
+    label: 'Inspection',
+    settings: {
+      camera: { azimuthRadians: 0.18, elevationRadians: 0.82, zoom: 0.32, fov: 38 },
+      lighting: { preset: 'daylight', intensity: 1.05 },
+      environment: {
+        topColor: '#e8edf7',
+        bottomColor: '#8994a8',
+        exposure: 1.1,
+        bloom: { threshold: 0.65, strength: 0.35, radius: 0.4 },
+      },
+    },
+  },
+  {
+    id: 'dramatic-closeup',
+    label: 'Dramatic closeup',
+    settings: {
+      camera: { azimuthRadians: -0.68, elevationRadians: 0.42, zoom: 0.18, fov: 50 },
+      lighting: { preset: 'dramatic', intensity: 1.25 },
+      environment: {
+        topColor: '#111827',
+        bottomColor: '#030712',
+        exposure: 1.05,
+        bloom: { threshold: 0.35, strength: 1.35, radius: 0.72 },
+      },
+    },
+  },
+]
 
 const MIN_ELEVATION = 0.08
 const MAX_ELEVATION = 1.4
@@ -353,6 +405,34 @@ function normalizeAnimationSettings(
   }
 }
 
+function cloneLookSettings(settings: Scene3DLookSettings): Scene3DLookSettings {
+  return {
+    camera: {
+      azimuthRadians: settings.camera.azimuthRadians,
+      elevationRadians: settings.camera.elevationRadians,
+      zoom: settings.camera.zoom,
+      ...(settings.camera.targetNudge === undefined
+        ? {}
+        : { targetNudge: [...settings.camera.targetNudge] as const }),
+      ...(settings.camera.fov === undefined ? {} : { fov: settings.camera.fov }),
+    },
+    lighting: {
+      preset: settings.lighting.preset,
+      intensity: settings.lighting.intensity,
+    },
+    environment: {
+      topColor: settings.environment.topColor,
+      bottomColor: settings.environment.bottomColor,
+      exposure: settings.environment.exposure,
+      bloom: {
+        threshold: settings.environment.bloom.threshold,
+        strength: settings.environment.bloom.strength,
+        radius: settings.environment.bloom.radius,
+      },
+    },
+  }
+}
+
 function normalizePersistedAnimationSettings(value: unknown): Scene3DAnimationSettings | undefined {
   if (!isRecord(value)) return undefined
   if (!isRecord(value.turntable) || !isRecord(value.glow)) return undefined
@@ -493,6 +573,18 @@ export function cameraSettingsFromPose(
     ],
     fov: pose.fov,
   })!
+}
+
+export function isScene3DLookPresetId(value: unknown): value is Scene3DLookPresetId {
+  return typeof value === 'string' && SCENE_3D_LOOK_PRESET_IDS.includes(value as Scene3DLookPresetId)
+}
+
+export function resolveScene3DLookPreset(id: Scene3DLookPresetId): Scene3DLookSettings {
+  const preset = SCENE_3D_LOOK_PRESETS.find((candidate) => candidate.id === id)
+  if (preset === undefined) {
+    throw new Error(`Unknown scene3d look preset: ${id}`)
+  }
+  return cloneLookSettings(preset.settings)
 }
 
 export function resolveScene3D(derived: SceneDerivedInputs): ResolvedScene3D

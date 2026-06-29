@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { cameraSettingsFromPose, normalizeScene3DSettings, resolveScene3D } from './scene3d'
+import {
+  SCENE_3D_LOOK_PRESET_IDS,
+  resolveScene3DLookPreset,
+  cameraSettingsFromPose,
+  normalizeScene3DSettings,
+  resolveScene3D,
+} from './scene3d'
 
 function expectVecClose(actual: readonly number[], expected: readonly number[]) {
   expect(actual).toHaveLength(expected.length)
@@ -418,5 +424,43 @@ describe('normalizeScene3DSettings animation', () => {
         glow: { enabled: true, periodSeconds: 1, min: 1, max: 1 },
       },
     })
+  })
+})
+
+describe('scene3d look presets', () => {
+  it('exposes the curated v10-M6 look preset ids in display order', () => {
+    expect(SCENE_3D_LOOK_PRESET_IDS).toEqual(['orbit-hero', 'inspection', 'dramatic-closeup'])
+  })
+
+  it('resolves look presets as cloned camera, lighting, and environment settings', () => {
+    const look = resolveScene3DLookPreset('inspection')
+    look.environment.bloom.strength = 2
+
+    expect(resolveScene3DLookPreset('inspection')).toEqual({
+      camera: {
+        azimuthRadians: 0.18,
+        elevationRadians: 0.82,
+        zoom: 0.32,
+        fov: 38,
+      },
+      lighting: { preset: 'daylight', intensity: 1.05 },
+      environment: {
+        topColor: '#e8edf7',
+        bottomColor: '#8994a8',
+        exposure: 1.1,
+        bloom: { threshold: 0.65, strength: 0.35, radius: 0.4 },
+      },
+    })
+  })
+
+  it('produces resolver-safe full-scene settings for every look preset', () => {
+    for (const id of SCENE_3D_LOOK_PRESET_IDS) {
+      const look = resolveScene3DLookPreset(id)
+      const resolved = resolveScene3D(look, { extent: [100, 40, 60] })
+
+      expect(resolved.camera.fov).toBe(look.camera.fov)
+      expect(resolved.lights).toHaveLength(4)
+      expect(resolved.environment).toEqual(look.environment)
+    }
   })
 })

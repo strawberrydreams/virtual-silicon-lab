@@ -7,11 +7,14 @@ import {
   SCENE_3D_ENVIRONMENT_RANGES,
   SCENE_3D_LIGHTING_INTENSITY_RANGE,
   SCENE_3D_LIGHTING_PRESETS,
+  SCENE_3D_LOOK_PRESETS,
+  resolveScene3DLookPreset,
   type Scene3DAnimationSettings,
   type Scene3DCameraSettings,
   type Scene3DEnvironmentSettings,
   type Scene3DLightingPreset,
   type Scene3DLightingSettings,
+  type Scene3DLookSettings,
 } from '../domain/scene3d/scene3d'
 import { PosterExportStage } from '../features/export/PosterExportStage'
 import { resolveChip3DRenderMode } from '../visual/chip3d/chip3dBudget'
@@ -63,6 +66,7 @@ export function Chip3DShowcase({
   onResetLighting,
   onSetEnvironment,
   onResetEnvironment,
+  onApplyLook,
   onSetAnimation,
   onResetAnimation,
 }: {
@@ -75,6 +79,7 @@ export function Chip3DShowcase({
   onResetLighting?: () => void
   onSetEnvironment?: (environment: Scene3DEnvironmentSettings) => void
   onResetEnvironment?: () => void
+  onApplyLook?: (look: Scene3DLookSettings) => void
   onSetAnimation?: (animation: Scene3DAnimationSettings) => void
   onResetAnimation?: () => void
 }) {
@@ -107,6 +112,7 @@ export function Chip3DShowcase({
   const animation = project.scene3d?.animation ?? SCENE_3D_DEFAULT_ANIMATION
   const showLightingControls = onSetLighting !== undefined || onResetLighting !== undefined
   const showEnvironmentControls = onSetEnvironment !== undefined || onResetEnvironment !== undefined
+  const showLookControls = onApplyLook !== undefined
   const showAnimationControls = onSetAnimation !== undefined || onResetAnimation !== undefined
 
   const setEnvironment = (patch: Partial<Scene3DEnvironmentSettings>) => {
@@ -148,6 +154,19 @@ export function Chip3DShowcase({
           <h2>{project.name}</h2>
         </div>
         {interactive && renderExtras ? renderExtras(model) : null}
+        {showLookControls ? (
+          <div className="chip-3d-look-presets" aria-label="3D look presets">
+            {SCENE_3D_LOOK_PRESETS.map((preset) => (
+              <button
+                key={preset.id}
+                type="button"
+                onClick={() => onApplyLook?.(resolveScene3DLookPreset(preset.id))}
+              >
+                {preset.label}
+              </button>
+            ))}
+          </div>
+        ) : null}
         {showLightingControls ? (
           <div className="chip-3d-lighting" aria-label="3D lighting controls">
             <div className="chip-3d-lighting__presets">
