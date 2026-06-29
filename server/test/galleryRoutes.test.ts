@@ -5,6 +5,20 @@ import { setFeatured, upsertPublishedChip } from '../src/publish/service'
 
 const pngA = 'data:image/png;base64,AAAA'
 const pngB = 'data:image/png;base64,BBBB'
+const authoredScene3D = {
+  camera: { azimuthRadians: 0.4, elevationRadians: 0.5, zoom: 0.6, fov: 48 },
+  lighting: { preset: 'dramatic' as const, intensity: 1.35 },
+  environment: {
+    topColor: '#101a33',
+    bottomColor: '#060816',
+    exposure: 1.25,
+    bloom: { threshold: 0.4, strength: 1.4, radius: 0.7 },
+  },
+  animation: {
+    turntable: { enabled: false, periodSeconds: 24 },
+    glow: { enabled: true, periodSeconds: 5, min: 0.7, max: 1.35 },
+  },
+}
 
 function insertUser(
   db: ReturnType<typeof createTestApp>['db'],
@@ -51,6 +65,7 @@ function publishFixture() {
     {
       project: {
         ...createProject('Grace Public', 'project-public-new', 1_000),
+        scene3d: authoredScene3D,
         spec: {
           brand: 'GRACE',
           series: 'PUBLIC',
@@ -113,7 +128,7 @@ describe('public gallery routes', () => {
       chip: {
         slug: string
         ownerDisplayName: string
-        project: { spec: { brand: string; features: string[] } }
+        project: { scene3d?: unknown; spec: { brand: string; features: string[] } }
         posterImageUrl: string
       }
     }
@@ -122,6 +137,7 @@ describe('public gallery routes', () => {
     expect(body.chip.posterImageUrl).toBe(pngA)
     expect(body.chip.project.spec.brand).toBe('GRACE')
     expect(body.chip.project.spec.features).toContain('Gallery visible')
+    expect(body.chip.project.scene3d).toEqual(authoredScene3D)
   })
 
   it('does not expose private or missing slugs', async () => {

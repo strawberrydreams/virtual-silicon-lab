@@ -16,6 +16,20 @@ import type { PublishedImageStore } from '../src/images/fileImageStore'
 
 const pngA = 'data:image/png;base64,AAAA'
 const pngB = 'data:image/png;base64,BBBB'
+const authoredScene3D = {
+  camera: { azimuthRadians: 0.4, elevationRadians: 0.5, zoom: 0.6, fov: 48 },
+  lighting: { preset: 'dramatic' as const, intensity: 1.35 },
+  environment: {
+    topColor: '#101a33',
+    bottomColor: '#060816',
+    exposure: 1.25,
+    bloom: { threshold: 0.4, strength: 1.4, radius: 0.7 },
+  },
+  animation: {
+    turntable: { enabled: false, periodSeconds: 24 },
+    glow: { enabled: true, periodSeconds: 5, min: 0.7, max: 1.35 },
+  },
+}
 
 function dbWithUsers() {
   const db = openDatabase(':memory:')
@@ -70,6 +84,26 @@ describe('publish service', () => {
     })
     expect(published.slug).toMatch(/^ada-chip-[a-f0-9]{8}$/)
     expect(JSON.parse(published.projectJson)).toMatchObject({ id: 'project-1', name: 'Ada Chip' })
+  })
+
+  it('stores authored scene3d settings in the opaque project snapshot', () => {
+    const db = dbWithUsers()
+    const project = { ...createProject('Ada Chip', 'project-1', 1_000), scene3d: authoredScene3D }
+
+    const published = upsertPublishedChip(
+      db,
+      'u1',
+      {
+        project,
+        title: 'Ada Chip',
+        dieImageDataUrl: pngA,
+        posterImageDataUrl: pngB,
+        isPublic: true,
+      },
+      () => 2_000,
+    )
+
+    expect(JSON.parse(published.projectJson)).toMatchObject({ scene3d: authoredScene3D })
   })
 
   it('republishes by updating the existing record and incrementing the version', () => {

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useParams, useSearchParams } from 'react-router-dom'
 import type { Project } from '../../domain/project'
 import { isChip3DShowcaseAvailable } from '../../three/chip3dAvailability'
 import { Chip3DShowcase } from '../../three/Chip3DShowcase'
@@ -27,6 +27,7 @@ export function GalleryDetailPage({
   onRemix,
 }: Props) {
   const { slug = '' } = useParams()
+  const [searchParams] = useSearchParams()
   const [chip, setChip] = useState<GalleryChipDetail | 'loading' | 'missing' | 'offline' | 'error'>(
     'loading',
   )
@@ -124,6 +125,10 @@ export function GalleryDetailPage({
     () => (typeof chip === 'object' ? isChip3DShowcaseAvailable(chip.project) : false),
     [chip],
   )
+  const view3DRequested = searchParams.get('view') === '3d'
+  useEffect(() => {
+    if (view3DRequested && showcaseAvailable) setShow3D(true)
+  }, [showcaseAvailable, view3DRequested])
 
   if (chip === 'loading') {
     return (
