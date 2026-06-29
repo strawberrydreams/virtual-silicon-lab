@@ -4,6 +4,7 @@ import { buildBlock } from '../domain/blockFactory'
 import type { DieShape, Project } from '../domain/project'
 import type { ChipFinish } from '../domain/material/chipFinish'
 import type {
+  Scene3DAnimationSettings,
   Scene3DCameraSettings,
   Scene3DEnvironmentSettings,
   Scene3DLightingSettings,
@@ -883,6 +884,77 @@ describe('editorStore visual commands', () => {
     })
     const blankStore = createEditorStore(createProject('blank', 'blank', 0))
     blankStore.getState().resetScene3DEnvironment()
+
+    expect(store.getState().past).toHaveLength(0)
+    expect(blankStore.getState().past).toHaveLength(0)
+  })
+
+  it('sets scene3d animation as one undoable project command', () => {
+    const store = createEditorStore(createProject('p', 'p1', 0))
+    const animation: Scene3DAnimationSettings = {
+      turntable: { enabled: false, periodSeconds: 24 },
+      glow: { enabled: true, periodSeconds: 5, min: 0.7, max: 1.35 },
+    }
+
+    store.getState().setScene3DAnimation(animation)
+    animation.glow.min = 0.2
+
+    expect(store.getState().project.scene3d?.animation).toEqual({
+      turntable: { enabled: false, periodSeconds: 24 },
+      glow: { enabled: true, periodSeconds: 5, min: 0.7, max: 1.35 },
+    })
+    expect(store.getState().past).toHaveLength(1)
+
+    store.getState().undo()
+    expect(store.getState().project.scene3d).toBeUndefined()
+
+    store.getState().redo()
+    expect(store.getState().project.scene3d?.animation?.turntable.periodSeconds).toBe(24)
+  })
+
+  it('resets only scene3d animation and removes scene3d when empty', () => {
+    const animation: Scene3DAnimationSettings = {
+      turntable: { enabled: true, periodSeconds: 18 },
+      glow: { enabled: false, periodSeconds: 4, min: 0.75, max: 1.2 },
+    }
+    const withOnlyAnimation = { ...createProject('p', 'p1', 0), scene3d: { animation } }
+    const onlyAnimationStore = createEditorStore(withOnlyAnimation)
+
+    onlyAnimationStore.getState().resetScene3DAnimation()
+
+    expect(onlyAnimationStore.getState().project.scene3d).toBeUndefined()
+    expect(onlyAnimationStore.getState().past).toHaveLength(1)
+    onlyAnimationStore.getState().undo()
+    expect(onlyAnimationStore.getState().project.scene3d?.animation).toEqual(animation)
+
+    const environment: Scene3DEnvironmentSettings = {
+      topColor: '#112233',
+      bottomColor: '#445566',
+      exposure: 1.25,
+      bloom: { threshold: 0.4, strength: 1.2, radius: 0.65 },
+    }
+    const withEnvironment = { ...createProject('p2', 'p2', 0), scene3d: { environment, animation } }
+    const environmentStore = createEditorStore(withEnvironment)
+
+    environmentStore.getState().resetScene3DAnimation()
+
+    expect(environmentStore.getState().project.scene3d).toEqual({ environment })
+  })
+
+  it('does not create history for unchanged scene3d animation commands', () => {
+    const animation: Scene3DAnimationSettings = {
+      turntable: { enabled: true, periodSeconds: 18 },
+      glow: { enabled: false, periodSeconds: 4, min: 0.75, max: 1.2 },
+    }
+    const project = { ...createProject('p', 'p1', 0), scene3d: { animation } }
+    const store = createEditorStore(project)
+
+    store.getState().setScene3DAnimation({
+      turntable: { ...animation.turntable },
+      glow: { ...animation.glow },
+    })
+    const blankStore = createEditorStore(createProject('blank', 'blank', 0))
+    blankStore.getState().resetScene3DAnimation()
 
     expect(store.getState().past).toHaveLength(0)
     expect(blankStore.getState().past).toHaveLength(0)

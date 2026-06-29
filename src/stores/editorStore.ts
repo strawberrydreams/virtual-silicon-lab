@@ -17,6 +17,7 @@ import type {
   StyleTheme,
 } from '../domain/project'
 import type {
+  Scene3DAnimationSettings,
   Scene3DCameraSettings,
   Scene3DEnvironmentSettings,
   Scene3DLightingSettings,
@@ -110,6 +111,8 @@ export type EditorState = {
   resetScene3DLighting: () => void
   setScene3DEnvironment: (environment: Scene3DEnvironmentSettings) => void
   resetScene3DEnvironment: () => void
+  setScene3DAnimation: (animation: Scene3DAnimationSettings) => void
+  resetScene3DAnimation: () => void
   setSpec: (spec: FakeSpec) => void
   addDecoration: (kind: DecorationKind) => void
   undo: () => void
@@ -214,6 +217,28 @@ export function createEditorStore(initialProject: Project, options: Options = {}
     function sameScene3DEnvironment(
       left: Scene3DEnvironmentSettings | undefined,
       right: Scene3DEnvironmentSettings | undefined,
+    ) {
+      return JSON.stringify(left) === JSON.stringify(right)
+    }
+
+    function cloneScene3DAnimation(animation: Scene3DAnimationSettings): Scene3DAnimationSettings {
+      return {
+        turntable: {
+          enabled: animation.turntable.enabled,
+          periodSeconds: animation.turntable.periodSeconds,
+        },
+        glow: {
+          enabled: animation.glow.enabled,
+          periodSeconds: animation.glow.periodSeconds,
+          min: animation.glow.min,
+          max: animation.glow.max,
+        },
+      }
+    }
+
+    function sameScene3DAnimation(
+      left: Scene3DAnimationSettings | undefined,
+      right: Scene3DAnimationSettings | undefined,
     ) {
       return JSON.stringify(left) === JSON.stringify(right)
     }
@@ -818,6 +843,29 @@ export function createEditorStore(initialProject: Project, options: Options = {}
         if (project.scene3d?.environment === undefined) return
         const scene3d = { ...project.scene3d }
         delete scene3d.environment
+        const next: Project = { ...project, scene3d }
+        if (Object.keys(scene3d).length === 0) delete next.scene3d
+        commit(next)
+      },
+
+      setScene3DAnimation(animation) {
+        const { project } = get()
+        const nextAnimation = cloneScene3DAnimation(animation)
+        if (sameScene3DAnimation(project.scene3d?.animation, nextAnimation)) return
+        commit({
+          ...project,
+          scene3d: {
+            ...project.scene3d,
+            animation: nextAnimation,
+          },
+        })
+      },
+
+      resetScene3DAnimation() {
+        const { project } = get()
+        if (project.scene3d?.animation === undefined) return
+        const scene3d = { ...project.scene3d }
+        delete scene3d.animation
         const next: Project = { ...project, scene3d }
         if (Object.keys(scene3d).length === 0) delete next.scene3d
         commit(next)
