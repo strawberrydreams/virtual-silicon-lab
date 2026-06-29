@@ -1,3 +1,4 @@
+import type { ResolvedAnimation } from '../../domain/scene3d/scene3d'
 import {
   GLOW_PULSE,
   glowPulseAt,
@@ -31,14 +32,20 @@ export function captureFrameCount(spec: CaptureSpec = CAPTURE): number {
   return Math.round(spec.durationSeconds * spec.fps)
 }
 
-export function captureFrameAt(index: number, spec: CaptureSpec = CAPTURE): CaptureFrame {
+export function captureFrameAt(
+  index: number,
+  spec: CaptureSpec = CAPTURE,
+  animation?: ResolvedAnimation,
+): CaptureFrame {
   const tSeconds = index / spec.fps
-  const azimuth = turntableAzimuthAt(tSeconds, { periodSeconds: spec.durationSeconds })
-  const glowOptions: GlowPulseOptions = {
+  const turntable = animation?.turntable ?? { enabled: true, periodSeconds: spec.durationSeconds }
+  const azimuth = turntable.enabled ? turntableAzimuthAt(tSeconds, turntable) : 0
+  const glowOptions: GlowPulseOptions & { enabled: boolean } = animation?.glow ?? {
+    enabled: true,
     periodSeconds: spec.durationSeconds / spec.glowCycles,
     min: GLOW_PULSE.min,
     max: GLOW_PULSE.max,
   }
-  const glow = glowPulseAt(tSeconds, glowOptions)
+  const glow = glowOptions.enabled ? glowPulseAt(tSeconds, glowOptions) : 1
   return { tSeconds, azimuth, glow }
 }

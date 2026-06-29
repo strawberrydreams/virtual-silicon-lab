@@ -76,7 +76,7 @@ export async function recordTurntableMp4(
     const encoder = await createMp4Encoder({ width, height, fps })
     const count = captureFrameCount(spec)
     for (let index = 0; index < count; index += 1) {
-      const frame = captureFrameAt(index, spec)
+      const frame = captureFrameAt(index, spec, resolved.animation)
       frameOffset.copy(baseOffset).applyAxisAngle(UP, frame.azimuth)
       camera.position.copy(target).add(frameOffset)
       camera.lookAt(target)

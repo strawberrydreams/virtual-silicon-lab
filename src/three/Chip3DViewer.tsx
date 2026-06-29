@@ -104,10 +104,13 @@ export default function Chip3DViewer({
     const frameOffset = new THREE.Vector3()
     const animate = () => {
       const elapsed = (performance.now() - startTime) / 1000
-      frameOffset.copy(baseOffset).applyAxisAngle(UP, turntableAzimuthAt(elapsed, resolved.animation.turntable))
+      frameOffset.copy(baseOffset)
+      if (resolved.animation.turntable.enabled) {
+        frameOffset.applyAxisAngle(UP, turntableAzimuthAt(elapsed, resolved.animation.turntable))
+      }
       camera.position.copy(target).add(frameOffset)
       camera.lookAt(target)
-      const pulse = glowPulseAt(elapsed, resolved.animation.glow)
+      const pulse = resolved.animation.glow.enabled ? glowPulseAt(elapsed, resolved.animation.glow) : 1
       for (const pulser of pulsers) {
         pulser.material.emissiveIntensity = pulser.base * pulse
       }
