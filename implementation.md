@@ -128,3 +128,19 @@
   - `npm run build`: passed; only the known >500 kB chunk warning appeared.
   - `npm run typecheck:server`: passed.
   - `rg "three" dist/assets/index-*.js`: no output, so Three remains outside the core index bundle.
+
+## V10-M7 Final QA & Release
+
+- Started V10-M7 as a release/QA milestone, not a new feature milestone. The spec requires full regression, browser QA across 3D authoring dimensions and round-trip surfaces, version line bump to `0.8 v10`, and release pack/docs.
+- Planned M7 in `docs/superpowers/plans/2026-06-29-v10-m7-final-qa-release.md`.
+- Added a release documentation contract test first and confirmed RED: `npm run test:client -- src/releaseDocs.test.ts` failed because README files still said `0.7 v9` and `docs/ops/v10-3d-authoring-qa.md` did not exist. After a build check showed `src/` tests are included in the client TypeScript project without Node built-in types, moved this docs-only test to `tests/releaseDocs.test.ts` so Vitest still runs it while `tsc -b` keeps the existing browser-only client type boundary.
+- Updated README and README.kr to the `0.8 v10` line and added `docs/ops/v10-3d-authoring-qa.md` as the release pack for camera, lighting, environment, animation, look presets, round-trip, and MP4 export parity.
+- Added `tests/viteDevProxy.test.ts` after browser QA found a real local-dev round-trip bug: share pages generated with the API origin linked `View in 3D` to `127.0.0.1:8787/gallery/...`, which returns 404 in the split Vite/API dev setup. The fix keeps dev/preview public share surfaces reachable from the frontend origin by proxying `/s/` and `/uploads` to the API server and running local QA with `VSL_PUBLIC_BASE_URL=http://127.0.0.1:5173`.
+- Important proxy trade-off: the first attempted proxy key was `/s`, but Vite treats proxy keys as prefixes and it captured `/src/main.tsx`, blanking the app. The final key is `/s/` specifically so share pages work without intercepting Vite source modules.
+- Browser authoring QA on `AURORA M5`: exercised camera save/reset, lighting presets/intensity/reset, environment presets/exposure/bloom/reset, animation toggles/timing/reset/play, look presets, undo enablement, and confirmed the editor 3D showcase canvas rendered. MP4 was verified through the existing recorder/panel/export contract plus the browser-visible `Export turntable MP4` control path; no browser download assertion was added because download/WebCodecs behavior is environment-dependent.
+- Browser round-trip QA published `m7-3d-round-trip-qa-1782715787775-ffc21765` with authored `scene3d`; server gallery JSON retained camera, lighting, environment, and animation; `/s/:slug` rendered poster and `View in 3D`; `/gallery/:slug?view=3d` opened the viewer-only 3D modal with no authoring controls and a `2462x1212` backing canvas.
+- Final verification:
+  - `npm test`: client 119 files / 769 tests passed; server 70 files / 298 tests passed.
+  - `npm run build`: passed; only the known >500 kB chunk warning appeared.
+  - `npm run typecheck:server`: passed.
+  - `rg "three" dist/assets/index-*.js`: no output, so Three remains outside the core index bundle.

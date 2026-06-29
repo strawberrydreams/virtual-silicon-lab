@@ -1,4 +1,4 @@
-# Virtual Silicon Lab 0.7 v9
+# Virtual Silicon Lab 0.8 v10
 
 [![한국어](https://img.shields.io/badge/README-한국어-0A66C2?style=for-the-badge)](README.kr.md)
 
@@ -10,16 +10,18 @@ account security, safety/moderation, onboarding, discovery, and ops hardening in
 real public launch; v6 made the public read surfaces, account/dashboard, and a read-only editor
 preview responsive (mobile); v7 added a **Visual Depth** layer that shows finished chips as a derived
 3D showcase (turntable orbit + in-browser MP4 export); **v8 added server-only AI-Assisted Creation**
-(prompt → chip, naming/spec copy, layout suggestions, variations); and **v9 "Deep Canvas" pushes the
-2D authoring surface past rectangles with parametric die shapes, shared 2D/3D material finishes, and
-subtle in-editor ambient motion.**
+(prompt → chip, naming/spec copy, layout suggestions, variations); **v9 "Deep Canvas" pushed the 2D
+authoring surface past rectangles with parametric die shapes, shared 2D/3D material finishes, and
+subtle in-editor ambient motion**; and **v10 3D Authoring** turns the derived 3D showcase into a
+persisted presentation surface with camera, lighting, environment, animation, and full-scene look
+presets.
 
-> Version line: the `0.7` line of this repo corresponds to v9 (Deep Canvas); `0.6` was v8
-> (AI-Assisted Creation), `0.5` was v7 (Visual Depth), `0.4` was v6 (mobile/responsive), and `0.3`
-> was v5 (public-launch prep). The 2D Konva authoring + PNG export contract is unchanged across all of
-> them; v9's new die shapes, material finishes, and per-block overrides are additive, client-side
-> `Project` schema bumps (6/7/8) with forward migration. The public-launch gate is still **not**
-> live — flipping it to production is a separate ops decision (see "Launch Status").
+> Version line: the `0.8` line of this repo corresponds to v10 (3D Authoring); `0.7` was v9
+> (Deep Canvas), `0.6` was v8 (AI-Assisted Creation), `0.5` was v7 (Visual Depth), `0.4` was v6
+> (mobile/responsive), and `0.3` was v5 (public-launch prep). The 2D Konva authoring + PNG export
+> contract is unchanged across all of them; v10's `scene3d` authoring data is additive client-side
+> project JSON that rides along in publish snapshots. The public-launch gate is still **not** live —
+> flipping it to production is a separate ops decision (see "Launch Status").
 
 ## Release Overview
 
@@ -58,6 +60,11 @@ subtle in-editor ambient motion.**
   single pure die-outline derivation feeds clamp, 2D render, 3D extrusion, and export, so all ten
   shapes stay consistent and the PNG raster contract is unchanged. No server route or SQLite
   migration.
+- **v10 3D Authoring** — the view-only 3D showcase is now an editor authoring surface. Authors can
+  persist a normalized hero camera, lighting preset + intensity, environment/post overrides,
+  deterministic turntable/glow animation settings, and one-click full-scene look presets. The same
+  pure `resolveScene3D` descriptor feeds editor, gallery, share deep links, and MP4 capture, while the
+  2D die/poster PNG contracts remain unchanged. Final QA: `docs/ops/v10-3d-authoring-qa.md`.
 
 ## Key Features
 
@@ -96,6 +103,21 @@ subtle in-editor ambient motion.**
   respects `prefers-reduced-motion` (default off under reduced motion), and degrades by density to
   protect ~60fps. **Export is always static:** the export stages render the canonical neutral frame,
   so no animated transient ever reaches a PNG.
+
+### 3D Authoring (v10)
+
+- The v10 authoring surface covers camera, lighting, environment, animation, and full-scene look presets.
+- **Persisted 3D presentation** — each project can carry optional `scene3d` settings for camera,
+  lighting, environment, and animation. The resolver is pure domain code, so the same authored scene
+  works in the editor, gallery, share target, and MP4 export without server routes or SQLite changes.
+- **Camera / lighting / environment / animation controls** — the editor showcase can save/reset the
+  current camera, choose safe lighting moods plus intensity, apply curated background/exposure/bloom
+  settings, and tune deterministic turntable/glow motion. Gallery and share views remain viewer-only.
+- **Look presets** — `Orbit hero`, `Inspection`, and `Dramatic closeup` apply camera, lighting,
+  environment, animation, and full-scene look presets through undoable editor commands while preserving
+  authored animation when appropriate.
+- **Export parity** — MP4 uses the same resolved scene descriptor as the live showcase; 2D exports stay
+  fixed at die-only `pixelRatio: 4` and poster `3200x1800`.
 
 ### AI-Assisted Creation (v8 server)
 
@@ -171,11 +193,12 @@ is intentional for now and is a candidate for later code-splitting.
 
 v5 is **launch-ready, not live**. The automated gates (`npm test`, `npm run build`, server typecheck,
 lint) are all green, and the admin ops UI plus the invite → verify → publish → moderate → ban →
-profile/SEO → reset flow are covered by unit/integration tests and browser QA. v8 (AI) and v9 (Deep
-Canvas) do not change the launch gate: AI is server-only behind an explicit provider/key, and v9 is
-client-side authoring with no server route or SQLite migration. Flipping the real production switch
-(`VSL_ACCESS_MODE=invite`) is left as an ops action after the deploy environment is set up and the
-owner signs off. Ops docs live under `docs/ops/` (runbook, backup/restore, QA checklist).
+profile/SEO → reset flow are covered by unit/integration tests and browser QA. v8 (AI), v9 (Deep
+Canvas), and v10 (3D Authoring) do not change the launch gate: AI is server-only behind an explicit
+provider/key, while v9/v10 are client-side authoring with no new server route or SQLite migration.
+Flipping the real production switch (`VSL_ACCESS_MODE=invite`) is left as an ops action after the
+deploy environment is set up and the owner signs off. Ops docs live under `docs/ops/` (runbook,
+backup/restore, QA checklist, and v10 3D authoring release QA).
 
 > Email caveat: the server currently uses only a console-output `ConsoleEmailProvider`. Email
 > verification and password-reset links are **printed to the server log only** and are not actually

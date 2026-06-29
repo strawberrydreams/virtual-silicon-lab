@@ -2,16 +2,21 @@ import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { configDefaults, defineConfig } from 'vitest/config'
 
+const serverProxy = {
+  '/api': 'http://127.0.0.1:8787',
+  '/s/': 'http://127.0.0.1:8787',
+  '/uploads': 'http://127.0.0.1:8787',
+}
+
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
-    // Same-origin /api in dev so session cookies need no CORS handling.
-    proxy: { '/api': 'http://127.0.0.1:8787' },
+    // Keep local API, share pages, and published images on the frontend origin during dev QA.
+    proxy: serverProxy,
   },
   preview: {
-    // Mirror the dev proxy so a production bundle (`vite preview`) can reach the API
-    // during prod-build QA (e.g. verifying StrictMode-only artifacts are gone).
-    proxy: { '/api': 'http://127.0.0.1:8787' },
+    // Mirror the dev proxy so production-bundle QA exercises the same public surface.
+    proxy: serverProxy,
   },
   test: {
     environment: 'jsdom',
