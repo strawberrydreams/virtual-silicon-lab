@@ -140,6 +140,8 @@ export function EditorPage({ project, persist, onSaveVariation }: Props) {
                 onResetScene3DLighting={state.resetScene3DLighting}
                 onSetScene3DEnvironment={state.setScene3DEnvironment}
                 onResetScene3DEnvironment={state.resetScene3DEnvironment}
+                onSetScene3DAnimation={state.setScene3DAnimation}
+                onResetScene3DAnimation={state.resetScene3DAnimation}
               />
               <Link className="editor-exit-link" to="/dashboard">
                 Exit Editor

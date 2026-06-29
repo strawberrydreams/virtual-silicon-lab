@@ -2,9 +2,12 @@ import { Component, lazy, Suspense, useEffect, useMemo, useRef } from 'react'
 import type { ErrorInfo, ReactNode } from 'react'
 import type { Project } from '../domain/project'
 import {
+  SCENE_3D_ANIMATION_RANGES,
+  SCENE_3D_DEFAULT_ANIMATION,
   SCENE_3D_ENVIRONMENT_RANGES,
   SCENE_3D_LIGHTING_INTENSITY_RANGE,
   SCENE_3D_LIGHTING_PRESETS,
+  type Scene3DAnimationSettings,
   type Scene3DCameraSettings,
   type Scene3DEnvironmentSettings,
   type Scene3DLightingPreset,
@@ -60,6 +63,8 @@ export function Chip3DShowcase({
   onResetLighting,
   onSetEnvironment,
   onResetEnvironment,
+  onSetAnimation,
+  onResetAnimation,
 }: {
   project: Project
   onClose: () => void
@@ -70,6 +75,8 @@ export function Chip3DShowcase({
   onResetLighting?: () => void
   onSetEnvironment?: (environment: Scene3DEnvironmentSettings) => void
   onResetEnvironment?: () => void
+  onSetAnimation?: (animation: Scene3DAnimationSettings) => void
+  onResetAnimation?: () => void
 }) {
   const closeButtonRef = useRef<HTMLButtonElement>(null)
 
@@ -97,8 +104,10 @@ export function Chip3DShowcase({
     }) === 'interactive'
   const lighting = project.scene3d?.lighting ?? { preset: 'studio', intensity: 1 }
   const environment = project.scene3d?.environment ?? model.environment
+  const animation = project.scene3d?.animation ?? SCENE_3D_DEFAULT_ANIMATION
   const showLightingControls = onSetLighting !== undefined || onResetLighting !== undefined
   const showEnvironmentControls = onSetEnvironment !== undefined || onResetEnvironment !== undefined
+  const showAnimationControls = onSetAnimation !== undefined || onResetAnimation !== undefined
 
   const setEnvironment = (patch: Partial<Scene3DEnvironmentSettings>) => {
     onSetEnvironment?.({
@@ -107,6 +116,21 @@ export function Chip3DShowcase({
       bloom: {
         ...environment.bloom,
         ...patch.bloom,
+      },
+    })
+  }
+  const setAnimation = (patch: {
+    turntable?: Partial<Scene3DAnimationSettings['turntable']>
+    glow?: Partial<Scene3DAnimationSettings['glow']>
+  }) => {
+    onSetAnimation?.({
+      turntable: {
+        ...animation.turntable,
+        ...patch.turntable,
+      },
+      glow: {
+        ...animation.glow,
+        ...patch.glow,
       },
     })
   }
@@ -207,6 +231,75 @@ export function Chip3DShowcase({
             </label>
             <button type="button" onClick={onResetEnvironment}>
               Reset environment
+            </button>
+          </div>
+        ) : null}
+        {showAnimationControls ? (
+          <div className="chip-3d-animation" aria-label="3D animation controls">
+            <label className="chip-3d-animation__toggle">
+              <input
+                type="checkbox"
+                checked={animation.turntable.enabled}
+                onChange={(event) => setAnimation({ turntable: { enabled: event.currentTarget.checked } })}
+              />
+              <span>Turntable</span>
+            </label>
+            <label className="chip-3d-animation__range">
+              <span>Turntable period</span>
+              <input
+                type="range"
+                min={SCENE_3D_ANIMATION_RANGES.turntablePeriodSeconds.min}
+                max={SCENE_3D_ANIMATION_RANGES.turntablePeriodSeconds.max}
+                step="1"
+                value={animation.turntable.periodSeconds}
+                onChange={(event) =>
+                  setAnimation({ turntable: { periodSeconds: Number(event.currentTarget.value) } })
+                }
+              />
+            </label>
+            <label className="chip-3d-animation__toggle">
+              <input
+                type="checkbox"
+                checked={animation.glow.enabled}
+                onChange={(event) => setAnimation({ glow: { enabled: event.currentTarget.checked } })}
+              />
+              <span>Glow</span>
+            </label>
+            <label className="chip-3d-animation__range">
+              <span>Glow period</span>
+              <input
+                type="range"
+                min={SCENE_3D_ANIMATION_RANGES.glowPeriodSeconds.min}
+                max={SCENE_3D_ANIMATION_RANGES.glowPeriodSeconds.max}
+                step="0.5"
+                value={animation.glow.periodSeconds}
+                onChange={(event) => setAnimation({ glow: { periodSeconds: Number(event.currentTarget.value) } })}
+              />
+            </label>
+            <label className="chip-3d-animation__range">
+              <span>Glow min</span>
+              <input
+                type="range"
+                min={SCENE_3D_ANIMATION_RANGES.glowMin.min}
+                max={SCENE_3D_ANIMATION_RANGES.glowMin.max}
+                step="0.05"
+                value={animation.glow.min}
+                onChange={(event) => setAnimation({ glow: { min: Number(event.currentTarget.value) } })}
+              />
+            </label>
+            <label className="chip-3d-animation__range">
+              <span>Glow max</span>
+              <input
+                type="range"
+                min={SCENE_3D_ANIMATION_RANGES.glowMax.min}
+                max={SCENE_3D_ANIMATION_RANGES.glowMax.max}
+                step="0.05"
+                value={animation.glow.max}
+                onChange={(event) => setAnimation({ glow: { max: Number(event.currentTarget.value) } })}
+              />
+            </label>
+            <button type="button" onClick={onResetAnimation}>
+              Reset animation
             </button>
           </div>
         ) : null}

@@ -116,10 +116,12 @@ const LIGHTING_RIGS: Record<Scene3DLightingPreset, readonly ResolvedLight[]> = {
   ],
 }
 
-const BASELINE_ANIMATION: ResolvedAnimation = {
+export const SCENE_3D_DEFAULT_ANIMATION: Scene3DAnimationSettings = {
   turntable: { enabled: true, periodSeconds: 14 },
   glow: { enabled: true, periodSeconds: 3, min: 0.8, max: 1.2 },
 }
+
+const BASELINE_ANIMATION: ResolvedAnimation = SCENE_3D_DEFAULT_ANIMATION
 
 const BASELINE_ENVIRONMENT: Scene3DEnvironmentSettings = {
   topColor: '#03070b',

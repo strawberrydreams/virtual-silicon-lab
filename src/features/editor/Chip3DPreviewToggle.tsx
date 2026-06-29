@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { Project } from '../../domain/project'
 import type {
+  Scene3DAnimationSettings,
   Scene3DCameraSettings,
   Scene3DEnvironmentSettings,
   Scene3DLightingSettings,
@@ -16,6 +17,8 @@ export default function Chip3DPreviewToggle({
   onResetScene3DLighting,
   onSetScene3DEnvironment,
   onResetScene3DEnvironment,
+  onSetScene3DAnimation,
+  onResetScene3DAnimation,
 }: {
   project: Project
   onSetScene3DCamera?: (camera: Scene3DCameraSettings) => void
@@ -24,6 +27,8 @@ export default function Chip3DPreviewToggle({
   onResetScene3DLighting?: () => void
   onSetScene3DEnvironment?: (environment: Scene3DEnvironmentSettings) => void
   onResetScene3DEnvironment?: () => void
+  onSetScene3DAnimation?: (animation: Scene3DAnimationSettings) => void
+  onResetScene3DAnimation?: () => void
 }) {
   const [open, setOpen] = useState(false)
 
@@ -43,6 +48,8 @@ export default function Chip3DPreviewToggle({
           onResetLighting={onResetScene3DLighting}
           onSetEnvironment={onSetScene3DEnvironment}
           onResetEnvironment={onResetScene3DEnvironment}
+          onSetAnimation={onSetScene3DAnimation}
+          onResetAnimation={onResetScene3DAnimation}
         />
       ) : null}
     </>

@@ -266,6 +266,61 @@ describe('Chip3DPreviewToggle', () => {
     expect(onResetScene3DEnvironment).toHaveBeenCalledTimes(1)
   })
 
+  it('passes animation controls through the editor showcase', async () => {
+    const onSetScene3DAnimation = vi.fn()
+    const onResetScene3DAnimation = vi.fn()
+    const project = createProject('Motion')
+    project.scene3d = {
+      animation: {
+        turntable: { enabled: true, periodSeconds: 18 },
+        glow: { enabled: true, periodSeconds: 4, min: 0.75, max: 1.25 },
+      },
+    }
+    render(
+      <Chip3DPreviewToggle
+        project={project}
+        onSetScene3DAnimation={onSetScene3DAnimation}
+        onResetScene3DAnimation={onResetScene3DAnimation}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open 3D showcase' }))
+    await screen.findByRole('dialog', { name: 'Motion 3D showcase' })
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Turntable' }))
+    fireEvent.change(screen.getByLabelText('Turntable period'), { target: { value: '24' } })
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Glow' }))
+    fireEvent.change(screen.getByLabelText('Glow period'), { target: { value: '6' } })
+    fireEvent.change(screen.getByLabelText('Glow min'), { target: { value: '0.6' } })
+    fireEvent.change(screen.getByLabelText('Glow max'), { target: { value: '1.4' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Reset animation' }))
+
+    expect(onSetScene3DAnimation).toHaveBeenNthCalledWith(1, {
+      turntable: { enabled: false, periodSeconds: 18 },
+      glow: { enabled: true, periodSeconds: 4, min: 0.75, max: 1.25 },
+    })
+    expect(onSetScene3DAnimation).toHaveBeenNthCalledWith(2, {
+      turntable: { enabled: true, periodSeconds: 24 },
+      glow: { enabled: true, periodSeconds: 4, min: 0.75, max: 1.25 },
+    })
+    expect(onSetScene3DAnimation).toHaveBeenNthCalledWith(3, {
+      turntable: { enabled: true, periodSeconds: 18 },
+      glow: { enabled: false, periodSeconds: 4, min: 0.75, max: 1.25 },
+    })
+    expect(onSetScene3DAnimation).toHaveBeenNthCalledWith(4, {
+      turntable: { enabled: true, periodSeconds: 18 },
+      glow: { enabled: true, periodSeconds: 6, min: 0.75, max: 1.25 },
+    })
+    expect(onSetScene3DAnimation).toHaveBeenNthCalledWith(5, {
+      turntable: { enabled: true, periodSeconds: 18 },
+      glow: { enabled: true, periodSeconds: 4, min: 0.6, max: 1.25 },
+    })
+    expect(onSetScene3DAnimation).toHaveBeenNthCalledWith(6, {
+      turntable: { enabled: true, periodSeconds: 18 },
+      glow: { enabled: true, periodSeconds: 4, min: 0.75, max: 1.4 },
+    })
+    expect(onResetScene3DAnimation).toHaveBeenCalledTimes(1)
+  })
+
   it('keeps the modal recoverable when the viewer fails to load', async () => {
     viewerState.throws = true
     render(<Chip3DPreviewToggle project={createProject('T')} />)

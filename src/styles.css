@@ -1257,6 +1257,42 @@ button {
   accent-color: var(--v2-accent-2);
 }
 
+.chip-3d-animation {
+  display: flex;
+  min-width: min(100%, 760px);
+  flex: 1 1 760px;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.55rem;
+}
+
+.chip-3d-animation__toggle,
+.chip-3d-animation__range {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--v2-muted);
+  font-size: 0.66rem;
+  font-weight: 750;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.chip-3d-animation__toggle input,
+.chip-3d-animation__range input {
+  accent-color: var(--v2-accent-2);
+}
+
+.chip-3d-animation__range {
+  min-width: 150px;
+}
+
+.chip-3d-animation__range input {
+  width: 96px;
+}
+
 .chip-3d-showcase__fallback {
   display: grid;
   min-width: 0;
