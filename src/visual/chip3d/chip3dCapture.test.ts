@@ -4,6 +4,16 @@ import { GLOW_PULSE } from './chip3dAnimation'
 import { CAPTURE, captureFrameAt, captureFrameCount } from './chip3dCapture'
 
 describe('captureFrameCount', () => {
+  it('documents the MP4 raster and timing contract', () => {
+    expect(CAPTURE).toEqual({
+      width: 1280,
+      height: 720,
+      fps: 30,
+      durationSeconds: 8,
+      glowCycles: 3,
+    })
+  })
+
   it('is round(duration * fps)', () => {
     expect(captureFrameCount()).toBe(240)
     expect(captureFrameCount({ ...CAPTURE, durationSeconds: 4, fps: 60 })).toBe(240)
