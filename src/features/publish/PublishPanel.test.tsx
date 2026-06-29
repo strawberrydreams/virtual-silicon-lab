@@ -18,6 +18,20 @@ const user: AuthUser = {
   handle: null,
 }
 const project = createProject('Ada Chip', 'project-1', 1_000)
+const authoredScene3D = {
+  camera: { azimuthRadians: 0.4, elevationRadians: 0.5, zoom: 0.6, fov: 48 },
+  lighting: { preset: 'dramatic' as const, intensity: 1.35 },
+  environment: {
+    topColor: '#101a33',
+    bottomColor: '#060816',
+    exposure: 1.25,
+    bloom: { threshold: 0.4, strength: 1.4, radius: 0.7 },
+  },
+  animation: {
+    turntable: { enabled: false, periodSeconds: 24 },
+    glow: { enabled: true, periodSeconds: 5, min: 0.7, max: 1.35 },
+  },
+}
 const images = {
   dieImageDataUrl: 'data:image/png;base64,AAAA',
   posterImageDataUrl: 'data:image/png;base64,BBBB',
@@ -109,6 +123,28 @@ describe('PublishPanel', () => {
       isPublic: false,
     })
     expect(await screen.findByRole('button', { name: 'Republish Snapshot' })).toBeInTheDocument()
+  })
+
+  it('publishes authored scene3d settings as part of the project snapshot', async () => {
+    const api = fakePublishApi()
+    const projectWithScene = { ...project, scene3d: authoredScene3D }
+    render(
+      <AuthStoreProvider api={fakeAuthApi()}>
+        <PublishPanel
+          project={projectWithScene}
+          api={api}
+          captureImages={vi.fn().mockReturnValue(images)}
+        />
+      </AuthStoreProvider>,
+    )
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Publish Snapshot' }))
+
+    expect(api.publish).toHaveBeenCalledWith(
+      expect.objectContaining({
+        project: expect.objectContaining({ scene3d: authoredScene3D }),
+      }),
+    )
   })
 
   it('loads an existing publish and republishes it', async () => {

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { isMp4ExportSupported } from '../../three/chip3dEncoder'
+import { CAPTURE } from '../../visual/chip3d/chip3dCapture'
 import type { Chip3DModel } from '../../visual/chip3d/chip3dModel'
 import { downloadFile } from './exportStage'
 
@@ -18,7 +19,7 @@ export function VideoExportPanel({ model, name }: { model: Chip3DModel; name: st
     setProgress(0)
     try {
       const { recordTurntableMp4 } = await import('../../three/chip3dRecorder')
-      const blob = await recordTurntableMp4(model, { onProgress: setProgress })
+      const blob = await recordTurntableMp4(model, { spec: CAPTURE, onProgress: setProgress })
       const baseName = name || 'chip'
       downloadFile(new File([blob], `${baseName}-turntable.mp4`, { type: 'video/mp4' }))
     } catch {

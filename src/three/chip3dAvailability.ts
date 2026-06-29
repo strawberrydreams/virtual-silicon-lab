@@ -29,7 +29,7 @@ export function buildChip3DShowcaseModel(project: Project): Chip3DModel {
     buildChipLayers(project),
     project.die,
     resolveChip3DStyle(project.theme, project.finish),
-    { blockStylesById },
+    { blockStylesById, scene3d: project.scene3d },
   )
 }
 

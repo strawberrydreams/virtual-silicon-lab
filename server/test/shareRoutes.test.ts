@@ -58,6 +58,7 @@ describe('share viewer routes', () => {
     expect(html).toContain('property="og:image"')
     expect(html).toContain(`/s/${publicChip.slug}/poster.png`)
     expect(html).toContain('Ada &lt;Public&gt;')
+    expect(html).toContain(`/gallery/${publicChip.slug}?view=3d`)
   })
 
   it('returns 404 HTML for private or missing slugs', async () => {

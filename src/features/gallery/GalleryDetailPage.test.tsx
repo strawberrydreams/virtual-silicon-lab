@@ -11,8 +11,11 @@ import type { GalleryComment, ReactionsApi } from './reactionsApi'
 import { GalleryDetailPage } from './GalleryDetailPage'
 
 vi.mock('../../three/Chip3DViewer', () => ({
-  default: ({ model }: { model: { pieces: unknown[] } }) => (
-    <div data-testid="mock-viewer">pieces:{model.pieces.length}</div>
+  default: ({ model }: { model: { pieces: unknown[]; scene3d?: unknown } }) => (
+    <div>
+      <div data-testid="mock-viewer">pieces:{model.pieces.length}</div>
+      <div data-testid="mock-viewer-scene3d">{JSON.stringify(model.scene3d ?? null)}</div>
+    </div>
   ),
 }))
 
@@ -142,6 +145,45 @@ describe('GalleryDetailPage', () => {
 
     expect(await screen.findByRole('dialog', { name: 'Ada Chip 3D showcase' })).toBeInTheDocument()
     expect(await screen.findByTestId('mock-viewer')).toBeInTheDocument()
+  })
+
+  it('auto-opens the 3D showcase from a share view target query', async () => {
+    vi.stubGlobal('WebGLRenderingContext', class WebGLRenderingContext {})
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({} as never)
+
+    renderDetail(fakeApi(), 'ada-chip-deadbeef?view=3d')
+
+    expect(await screen.findByRole('dialog', { name: 'Ada Chip 3D showcase' })).toBeInTheDocument()
+    expect(await screen.findByTestId('mock-viewer')).toBeInTheDocument()
+  })
+
+  it('passes the published scene3d snapshot into gallery 3D view', async () => {
+    vi.stubGlobal('WebGLRenderingContext', class WebGLRenderingContext {})
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({} as never)
+    const authoredProject = {
+      ...project,
+      scene3d: {
+        camera: { azimuthRadians: 0.4, elevationRadians: 0.5, zoom: 0.6, fov: 48 },
+        lighting: { preset: 'dramatic' as const, intensity: 1.35 },
+        environment: {
+          topColor: '#101a33',
+          bottomColor: '#060816',
+          exposure: 1.25,
+          bloom: { threshold: 0.4, strength: 1.4, radius: 0.7 },
+        },
+        animation: {
+          turntable: { enabled: false, periodSeconds: 24 },
+          glow: { enabled: true, periodSeconds: 5, min: 0.7, max: 1.35 },
+        },
+      },
+    }
+    renderDetail(fakeApi({ get: vi.fn().mockResolvedValue({ ...detail, project: authoredProject }) }))
+
+    await userEvent.click(await screen.findByRole('button', { name: 'View in 3D' }))
+
+    expect(await screen.findByTestId('mock-viewer-scene3d')).toHaveTextContent(
+      JSON.stringify(authoredProject.scene3d),
+    )
   })
 
   it('keeps the static poster and hides 3D when the snapshot exceeds the piece budget', async () => {

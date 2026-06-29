@@ -132,7 +132,18 @@ export function EditorPage({ project, persist, onSaveVariation }: Props) {
                 </span>
                 Simulate
               </button>
-              <Chip3DPreviewToggle project={state.project} />
+              <Chip3DPreviewToggle
+                project={state.project}
+                onSetScene3DCamera={state.setScene3DCamera}
+                onResetScene3DCamera={state.resetScene3DCamera}
+                onSetScene3DLighting={state.setScene3DLighting}
+                onResetScene3DLighting={state.resetScene3DLighting}
+                onSetScene3DEnvironment={state.setScene3DEnvironment}
+                onResetScene3DEnvironment={state.resetScene3DEnvironment}
+                onApplyScene3DLook={state.applyScene3DLook}
+                onSetScene3DAnimation={state.setScene3DAnimation}
+                onResetScene3DAnimation={state.resetScene3DAnimation}
+              />
               <Link className="editor-exit-link" to="/dashboard">
                 Exit Editor
               </Link>

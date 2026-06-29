@@ -1,15 +1,53 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createProject } from '../../domain/projectFactory'
+import { resolveScene3DLookPreset } from '../../domain/scene3d/scene3d'
 import type { Chip3DModel } from '../../visual/chip3d/chip3dModel'
 import Chip3DPreviewToggle from './Chip3DPreviewToggle'
 
 const { viewerState } = vi.hoisted(() => ({ viewerState: { throws: false } }))
 
 vi.mock('../../three/Chip3DViewer', () => ({
-  default: ({ model }: { model: { pieces: unknown[] } }) => {
+  default: ({
+    model,
+    onSaveCamera,
+    onResetCamera,
+  }: {
+    model: { pieces: unknown[] }
+    onSaveCamera?: (camera: {
+      azimuthRadians: number
+      elevationRadians: number
+      zoom: number
+      fov: number
+    }) => void
+    onResetCamera?: () => void
+  }) => {
     if (viewerState.throws) throw new Error('viewer failed')
-    return <div data-testid="mock-viewer">pieces:{model.pieces.length}</div>
+    return (
+      <div>
+        <div data-testid="mock-viewer">pieces:{model.pieces.length}</div>
+        {onSaveCamera ? (
+          <button
+            type="button"
+            onClick={() =>
+              onSaveCamera({
+                azimuthRadians: 0.4,
+                elevationRadians: 0.5,
+                zoom: 0.6,
+                fov: 48,
+              })
+            }
+          >
+            Mock save current view
+          </button>
+        ) : null}
+        {onResetCamera ? (
+          <button type="button" onClick={onResetCamera}>
+            Mock reset 3D default
+          </button>
+        ) : null}
+      </div>
+    )
   },
 }))
 
@@ -125,6 +163,188 @@ describe('Chip3DPreviewToggle', () => {
 
     expect(await screen.findByTestId('mock-viewer')).toBeInTheDocument()
     expect(screen.getByTestId('video-export-model')).toHaveTextContent('polygon')
+  })
+
+  it('passes camera save and reset callbacks to the viewer when provided', async () => {
+    const onSetScene3DCamera = vi.fn()
+    const onResetScene3DCamera = vi.fn()
+    render(
+      <Chip3DPreviewToggle
+        project={createProject('T')}
+        onSetScene3DCamera={onSetScene3DCamera}
+        onResetScene3DCamera={onResetScene3DCamera}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open 3D showcase' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Mock save current view' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Mock reset 3D default' }))
+
+    expect(onSetScene3DCamera).toHaveBeenCalledWith({
+      azimuthRadians: 0.4,
+      elevationRadians: 0.5,
+      zoom: 0.6,
+      fov: 48,
+    })
+    expect(onResetScene3DCamera).toHaveBeenCalledTimes(1)
+  })
+
+  it('passes look preset controls through the editor showcase only when provided', async () => {
+    const onApplyScene3DLook = vi.fn()
+    render(
+      <Chip3DPreviewToggle
+        project={createProject('Looks')}
+        onApplyScene3DLook={onApplyScene3DLook}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open 3D showcase' }))
+    await screen.findByRole('dialog', { name: 'Looks 3D showcase' })
+    fireEvent.click(screen.getByRole('button', { name: 'Inspection' }))
+
+    expect(onApplyScene3DLook).toHaveBeenCalledWith(resolveScene3DLookPreset('inspection'))
+  })
+
+  it('hides look preset controls from viewer-only showcases', async () => {
+    render(<Chip3DPreviewToggle project={createProject('Viewer')} />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open 3D showcase' }))
+    await screen.findByRole('dialog', { name: 'Viewer 3D showcase' })
+
+    expect(screen.queryByRole('button', { name: 'Inspection' })).toBeNull()
+  })
+
+  it('passes lighting controls through the editor showcase', async () => {
+    const onSetScene3DLighting = vi.fn()
+    const onResetScene3DLighting = vi.fn()
+    const project = createProject('Lit')
+    project.scene3d = { lighting: { preset: 'daylight', intensity: 1.25 } }
+    render(
+      <Chip3DPreviewToggle
+        project={project}
+        onSetScene3DLighting={onSetScene3DLighting}
+        onResetScene3DLighting={onResetScene3DLighting}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open 3D showcase' }))
+    await screen.findByRole('dialog', { name: 'Lit 3D showcase' })
+    fireEvent.click(screen.getByRole('button', { name: 'Neon noir' }))
+    fireEvent.change(screen.getByLabelText('Lighting intensity'), { target: { value: '0.8' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Reset lighting' }))
+
+    expect(onSetScene3DLighting).toHaveBeenNthCalledWith(1, {
+      preset: 'neon-noir',
+      intensity: 1.25,
+    })
+    expect(onSetScene3DLighting).toHaveBeenNthCalledWith(2, {
+      preset: 'daylight',
+      intensity: 0.8,
+    })
+    expect(onResetScene3DLighting).toHaveBeenCalledTimes(1)
+  })
+
+  it('passes environment controls through the editor showcase', async () => {
+    const onSetScene3DEnvironment = vi.fn()
+    const onResetScene3DEnvironment = vi.fn()
+    const project = createProject('Post')
+    project.scene3d = {
+      environment: {
+        topColor: '#111827',
+        bottomColor: '#030712',
+        exposure: 1.1,
+        bloom: { threshold: 0.45, strength: 0.9, radius: 0.55 },
+      },
+    }
+    render(
+      <Chip3DPreviewToggle
+        project={project}
+        onSetScene3DEnvironment={onSetScene3DEnvironment}
+        onResetScene3DEnvironment={onResetScene3DEnvironment}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open 3D showcase' }))
+    await screen.findByRole('dialog', { name: 'Post 3D showcase' })
+    fireEvent.click(screen.getByRole('button', { name: 'Aurora post' }))
+    fireEvent.change(screen.getByLabelText('Exposure'), { target: { value: '1.4' } })
+    fireEvent.change(screen.getByLabelText('Bloom strength'), { target: { value: '1.6' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Reset environment' }))
+
+    expect(onSetScene3DEnvironment).toHaveBeenNthCalledWith(1, {
+      topColor: '#101a33',
+      bottomColor: '#060816',
+      exposure: 1.1,
+      bloom: { threshold: 0.45, strength: 0.9, radius: 0.55 },
+    })
+    expect(onSetScene3DEnvironment).toHaveBeenNthCalledWith(2, {
+      topColor: '#111827',
+      bottomColor: '#030712',
+      exposure: 1.4,
+      bloom: { threshold: 0.45, strength: 0.9, radius: 0.55 },
+    })
+    expect(onSetScene3DEnvironment).toHaveBeenNthCalledWith(3, {
+      topColor: '#111827',
+      bottomColor: '#030712',
+      exposure: 1.1,
+      bloom: { threshold: 0.45, strength: 1.6, radius: 0.55 },
+    })
+    expect(onResetScene3DEnvironment).toHaveBeenCalledTimes(1)
+  })
+
+  it('passes animation controls through the editor showcase', async () => {
+    const onSetScene3DAnimation = vi.fn()
+    const onResetScene3DAnimation = vi.fn()
+    const project = createProject('Motion')
+    project.scene3d = {
+      animation: {
+        turntable: { enabled: true, periodSeconds: 18 },
+        glow: { enabled: true, periodSeconds: 4, min: 0.75, max: 1.25 },
+      },
+    }
+    render(
+      <Chip3DPreviewToggle
+        project={project}
+        onSetScene3DAnimation={onSetScene3DAnimation}
+        onResetScene3DAnimation={onResetScene3DAnimation}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open 3D showcase' }))
+    await screen.findByRole('dialog', { name: 'Motion 3D showcase' })
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Turntable' }))
+    fireEvent.change(screen.getByLabelText('Turntable period'), { target: { value: '24' } })
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Glow' }))
+    fireEvent.change(screen.getByLabelText('Glow period'), { target: { value: '6' } })
+    fireEvent.change(screen.getByLabelText('Glow min'), { target: { value: '0.6' } })
+    fireEvent.change(screen.getByLabelText('Glow max'), { target: { value: '1.4' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Reset animation' }))
+
+    expect(onSetScene3DAnimation).toHaveBeenNthCalledWith(1, {
+      turntable: { enabled: false, periodSeconds: 18 },
+      glow: { enabled: true, periodSeconds: 4, min: 0.75, max: 1.25 },
+    })
+    expect(onSetScene3DAnimation).toHaveBeenNthCalledWith(2, {
+      turntable: { enabled: true, periodSeconds: 24 },
+      glow: { enabled: true, periodSeconds: 4, min: 0.75, max: 1.25 },
+    })
+    expect(onSetScene3DAnimation).toHaveBeenNthCalledWith(3, {
+      turntable: { enabled: true, periodSeconds: 18 },
+      glow: { enabled: false, periodSeconds: 4, min: 0.75, max: 1.25 },
+    })
+    expect(onSetScene3DAnimation).toHaveBeenNthCalledWith(4, {
+      turntable: { enabled: true, periodSeconds: 18 },
+      glow: { enabled: true, periodSeconds: 6, min: 0.75, max: 1.25 },
+    })
+    expect(onSetScene3DAnimation).toHaveBeenNthCalledWith(5, {
+      turntable: { enabled: true, periodSeconds: 18 },
+      glow: { enabled: true, periodSeconds: 4, min: 0.6, max: 1.25 },
+    })
+    expect(onSetScene3DAnimation).toHaveBeenNthCalledWith(6, {
+      turntable: { enabled: true, periodSeconds: 18 },
+      glow: { enabled: true, periodSeconds: 4, min: 0.75, max: 1.4 },
+    })
+    expect(onResetScene3DAnimation).toHaveBeenCalledTimes(1)
   })
 
   it('keeps the modal recoverable when the viewer fails to load', async () => {

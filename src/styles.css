@@ -1137,6 +1137,7 @@ button {
 .chip-3d-showcase__header {
   display: flex;
   min-width: 0;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
@@ -1156,7 +1157,7 @@ button {
 
 .chip-3d-showcase__header button,
 .chip-3d-viewer__play,
-.chip-3d-viewer__reset {
+.chip-3d-viewer__action {
   min-height: 40px;
   border: 1px solid var(--v2-border-strong);
   background: rgba(8, 16, 24, 0.88);
@@ -1171,9 +1172,143 @@ button {
 
 .chip-3d-showcase__header button:hover,
 .chip-3d-viewer__play:hover,
-.chip-3d-viewer__reset:hover {
+.chip-3d-viewer__action:hover {
   border-color: var(--v2-accent-2);
   background: rgba(91, 213, 240, 0.08);
+}
+
+.chip-3d-look-presets {
+  display: flex;
+  min-width: min(100%, 360px);
+  flex: 0 1 360px;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.4rem;
+}
+
+.chip-3d-look-presets button {
+  border-color: color-mix(in srgb, var(--v2-accent) 55%, var(--v2-border-strong));
+  background:
+    linear-gradient(135deg, rgba(185, 132, 255, 0.14), rgba(91, 213, 240, 0.07)),
+    rgba(8, 16, 24, 0.88);
+  color: var(--v2-text);
+}
+
+.chip-3d-lighting {
+  display: flex;
+  min-width: min(100%, 520px);
+  flex: 1 1 520px;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.55rem;
+}
+
+.chip-3d-lighting__presets {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.chip-3d-lighting__presets button[aria-pressed='true'] {
+  border-color: var(--v2-accent);
+  background: rgba(185, 132, 255, 0.14);
+  color: var(--v2-text);
+}
+
+.chip-3d-lighting__intensity {
+  display: inline-flex;
+  min-width: 180px;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--v2-muted);
+  font-size: 0.66rem;
+  font-weight: 750;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.chip-3d-lighting__intensity input {
+  width: 118px;
+  accent-color: var(--v2-accent-2);
+}
+
+.chip-3d-environment {
+  display: flex;
+  min-width: min(100%, 620px);
+  flex: 1 1 620px;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.55rem;
+}
+
+.chip-3d-environment__presets {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.chip-3d-environment__presets button[aria-pressed='true'] {
+  border-color: var(--v2-accent);
+  background: rgba(185, 132, 255, 0.14);
+  color: var(--v2-text);
+}
+
+.chip-3d-environment__range {
+  display: inline-flex;
+  min-width: 170px;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--v2-muted);
+  font-size: 0.66rem;
+  font-weight: 750;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.chip-3d-environment__range input {
+  width: 112px;
+  accent-color: var(--v2-accent-2);
+}
+
+.chip-3d-animation {
+  display: flex;
+  min-width: min(100%, 760px);
+  flex: 1 1 760px;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.55rem;
+}
+
+.chip-3d-animation__toggle,
+.chip-3d-animation__range {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--v2-muted);
+  font-size: 0.66rem;
+  font-weight: 750;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.chip-3d-animation__toggle input,
+.chip-3d-animation__range input {
+  accent-color: var(--v2-accent-2);
+}
+
+.chip-3d-animation__range {
+  min-width: 150px;
+}
+
+.chip-3d-animation__range input {
+  width: 96px;
 }
 
 .chip-3d-showcase__fallback {
@@ -1224,10 +1359,15 @@ button {
   height: 100%;
 }
 
-.chip-3d-viewer__reset {
+.chip-3d-viewer__actions {
   position: absolute;
   right: 1rem;
   bottom: 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  max-width: calc(100% - 13rem);
 }
 
 .chip-3d-viewer__play {

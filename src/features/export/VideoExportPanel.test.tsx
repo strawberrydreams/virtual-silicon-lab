@@ -6,6 +6,7 @@ vi.mock('../../three/chip3dRecorder', () => ({ recordTurntableMp4: vi.fn() }))
 
 import { isMp4ExportSupported } from '../../three/chip3dEncoder'
 import { recordTurntableMp4 } from '../../three/chip3dRecorder'
+import { CAPTURE } from '../../visual/chip3d/chip3dCapture'
 import { VideoExportPanel } from './VideoExportPanel'
 
 const model = { pieces: [], center: [0, 0, 0], extent: [1, 1, 1], environment: {} } as never
@@ -37,7 +38,15 @@ describe('VideoExportPanel', () => {
     render(<VideoExportPanel model={model} name="N1 GREEN HORIZON" />)
     fireEvent.click(screen.getByRole('button', { name: /export turntable mp4/i }))
 
-    await waitFor(() => expect(recordTurntableMp4).toHaveBeenCalledWith(model, expect.any(Object)))
+    await waitFor(() =>
+      expect(recordTurntableMp4).toHaveBeenCalledWith(
+        model,
+        expect.objectContaining({
+          spec: CAPTURE,
+          onProgress: expect.any(Function),
+        }),
+      ),
+    )
     await waitFor(() => expect(click).toHaveBeenCalled())
     expect(createUrl).toHaveBeenCalled()
     expect(revokeUrl).toHaveBeenCalled()

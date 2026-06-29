@@ -3,6 +3,13 @@ import { createProject } from '../domain/projectFactory'
 import { buildBlock } from '../domain/blockFactory'
 import type { DieShape, Project } from '../domain/project'
 import type { ChipFinish } from '../domain/material/chipFinish'
+import type {
+  Scene3DAnimationSettings,
+  Scene3DCameraSettings,
+  Scene3DEnvironmentSettings,
+  Scene3DLightingSettings,
+  Scene3DLookSettings,
+} from '../domain/scene3d/scene3d'
 import { outlineToPolygon, resolveDieOutline } from '../domain/die/dieOutline'
 import { pointInPolygon } from '../domain/die/polygonClamp'
 import { createEditorStore } from './editorStore'
@@ -681,6 +688,326 @@ describe('editorStore visual commands', () => {
     expect(store.getState().project.spec.features).not.toBe(spec.features)
     store.getState().undo()
     expect(store.getState().project.spec).toEqual(original)
+  })
+
+  it('sets a scene3d camera as one undoable project command', () => {
+    const store = createEditorStore(createProject('p', 'p1', 0))
+    const targetNudge: [number, number, number] = [0.1, -0.2, 0.3]
+    const camera: Scene3DCameraSettings = {
+      azimuthRadians: 0.5,
+      elevationRadians: 0.6,
+      zoom: 0.4,
+      targetNudge,
+      fov: 46,
+    }
+
+    store.getState().setScene3DCamera(camera)
+    targetNudge[0] = 0.9
+
+    expect(store.getState().project.scene3d?.camera).toEqual({
+      azimuthRadians: 0.5,
+      elevationRadians: 0.6,
+      zoom: 0.4,
+      targetNudge: [0.1, -0.2, 0.3],
+      fov: 46,
+    })
+    expect(store.getState().past).toHaveLength(1)
+
+    store.getState().undo()
+    expect(store.getState().project.scene3d).toBeUndefined()
+
+    store.getState().redo()
+    expect(store.getState().project.scene3d?.camera?.zoom).toBe(0.4)
+  })
+
+  it('resets only the scene3d camera and removes scene3d when empty', () => {
+    const camera: Scene3DCameraSettings = {
+      azimuthRadians: 0.5,
+      elevationRadians: 0.6,
+      zoom: 0.4,
+    }
+    const withOnlyCamera = { ...createProject('p', 'p1', 0), scene3d: { camera } }
+    const onlyCameraStore = createEditorStore(withOnlyCamera)
+
+    onlyCameraStore.getState().resetScene3DCamera()
+
+    expect(onlyCameraStore.getState().project.scene3d).toBeUndefined()
+    expect(onlyCameraStore.getState().past).toHaveLength(1)
+    onlyCameraStore.getState().undo()
+    expect(onlyCameraStore.getState().project.scene3d?.camera).toEqual(camera)
+
+    const studioLighting: Scene3DLightingSettings = { preset: 'studio', intensity: 1 }
+    const withLighting = {
+      ...createProject('p2', 'p2', 0),
+      scene3d: { camera, lighting: studioLighting },
+    }
+    const lightingStore = createEditorStore(withLighting)
+
+    lightingStore.getState().resetScene3DCamera()
+
+    expect(lightingStore.getState().project.scene3d).toEqual({ lighting: studioLighting })
+  })
+
+  it('does not create history for unchanged scene3d camera commands', () => {
+    const camera: Scene3DCameraSettings = {
+      azimuthRadians: 0.5,
+      elevationRadians: 0.6,
+      zoom: 0.4,
+    }
+    const project = { ...createProject('p', 'p1', 0), scene3d: { camera } }
+    const store = createEditorStore(project)
+
+    store.getState().setScene3DCamera({ ...camera })
+    const blankStore = createEditorStore(createProject('blank', 'blank', 0))
+    blankStore.getState().resetScene3DCamera()
+
+    expect(store.getState().past).toHaveLength(0)
+    expect(blankStore.getState().past).toHaveLength(0)
+  })
+
+  it('sets scene3d lighting as one undoable project command', () => {
+    const store = createEditorStore(createProject('p', 'p1', 0))
+    const lighting: Scene3DLightingSettings = { preset: 'neon-noir', intensity: 1.25 }
+
+    store.getState().setScene3DLighting(lighting)
+
+    expect(store.getState().project.scene3d?.lighting).toEqual({
+      preset: 'neon-noir',
+      intensity: 1.25,
+    })
+    expect(store.getState().past).toHaveLength(1)
+
+    store.getState().undo()
+    expect(store.getState().project.scene3d).toBeUndefined()
+
+    store.getState().redo()
+    expect(store.getState().project.scene3d?.lighting).toEqual(lighting)
+  })
+
+  it('resets only scene3d lighting and removes scene3d when empty', () => {
+    const lighting: Scene3DLightingSettings = { preset: 'daylight', intensity: 0.85 }
+    const withOnlyLighting = { ...createProject('p', 'p1', 0), scene3d: { lighting } }
+    const onlyLightingStore = createEditorStore(withOnlyLighting)
+
+    onlyLightingStore.getState().resetScene3DLighting()
+
+    expect(onlyLightingStore.getState().project.scene3d).toBeUndefined()
+    expect(onlyLightingStore.getState().past).toHaveLength(1)
+    onlyLightingStore.getState().undo()
+    expect(onlyLightingStore.getState().project.scene3d?.lighting).toEqual(lighting)
+
+    const camera: Scene3DCameraSettings = {
+      azimuthRadians: 0.5,
+      elevationRadians: 0.6,
+      zoom: 0.4,
+    }
+    const withCamera = { ...createProject('p2', 'p2', 0), scene3d: { camera, lighting } }
+    const cameraStore = createEditorStore(withCamera)
+
+    cameraStore.getState().resetScene3DLighting()
+
+    expect(cameraStore.getState().project.scene3d).toEqual({ camera })
+  })
+
+  it('does not create history for unchanged scene3d lighting commands', () => {
+    const lighting: Scene3DLightingSettings = { preset: 'dramatic', intensity: 1.1 }
+    const project = { ...createProject('p', 'p1', 0), scene3d: { lighting } }
+    const store = createEditorStore(project)
+
+    store.getState().setScene3DLighting({ ...lighting })
+    const blankStore = createEditorStore(createProject('blank', 'blank', 0))
+    blankStore.getState().resetScene3DLighting()
+
+    expect(store.getState().past).toHaveLength(0)
+    expect(blankStore.getState().past).toHaveLength(0)
+  })
+
+  it('sets scene3d environment as one undoable project command', () => {
+    const store = createEditorStore(createProject('p', 'p1', 0))
+    const environment: Scene3DEnvironmentSettings = {
+      topColor: '#112233',
+      bottomColor: '#445566',
+      exposure: 1.25,
+      bloom: { threshold: 0.4, strength: 1.2, radius: 0.65 },
+    }
+
+    store.getState().setScene3DEnvironment(environment)
+
+    expect(store.getState().project.scene3d?.environment).toEqual(environment)
+    expect(store.getState().past).toHaveLength(1)
+
+    store.getState().undo()
+    expect(store.getState().project.scene3d).toBeUndefined()
+
+    store.getState().redo()
+    expect(store.getState().project.scene3d?.environment).toEqual(environment)
+  })
+
+  it('resets only scene3d environment and removes scene3d when empty', () => {
+    const environment: Scene3DEnvironmentSettings = {
+      topColor: '#112233',
+      bottomColor: '#445566',
+      exposure: 1.25,
+      bloom: { threshold: 0.4, strength: 1.2, radius: 0.65 },
+    }
+    const withOnlyEnvironment = { ...createProject('p', 'p1', 0), scene3d: { environment } }
+    const onlyEnvironmentStore = createEditorStore(withOnlyEnvironment)
+
+    onlyEnvironmentStore.getState().resetScene3DEnvironment()
+
+    expect(onlyEnvironmentStore.getState().project.scene3d).toBeUndefined()
+    expect(onlyEnvironmentStore.getState().past).toHaveLength(1)
+    onlyEnvironmentStore.getState().undo()
+    expect(onlyEnvironmentStore.getState().project.scene3d?.environment).toEqual(environment)
+
+    const lighting: Scene3DLightingSettings = { preset: 'studio', intensity: 1 }
+    const withLighting = { ...createProject('p2', 'p2', 0), scene3d: { lighting, environment } }
+    const lightingStore = createEditorStore(withLighting)
+
+    lightingStore.getState().resetScene3DEnvironment()
+
+    expect(lightingStore.getState().project.scene3d).toEqual({ lighting })
+  })
+
+  it('does not create history for unchanged scene3d environment commands', () => {
+    const environment: Scene3DEnvironmentSettings = {
+      topColor: '#112233',
+      bottomColor: '#445566',
+      exposure: 1.25,
+      bloom: { threshold: 0.4, strength: 1.2, radius: 0.65 },
+    }
+    const project = { ...createProject('p', 'p1', 0), scene3d: { environment } }
+    const store = createEditorStore(project)
+
+    store.getState().setScene3DEnvironment({
+      ...environment,
+      bloom: { ...environment.bloom },
+    })
+    const blankStore = createEditorStore(createProject('blank', 'blank', 0))
+    blankStore.getState().resetScene3DEnvironment()
+
+    expect(store.getState().past).toHaveLength(0)
+    expect(blankStore.getState().past).toHaveLength(0)
+  })
+
+  it('sets scene3d animation as one undoable project command', () => {
+    const store = createEditorStore(createProject('p', 'p1', 0))
+    const animation: Scene3DAnimationSettings = {
+      turntable: { enabled: false, periodSeconds: 24 },
+      glow: { enabled: true, periodSeconds: 5, min: 0.7, max: 1.35 },
+    }
+
+    store.getState().setScene3DAnimation(animation)
+    animation.glow.min = 0.2
+
+    expect(store.getState().project.scene3d?.animation).toEqual({
+      turntable: { enabled: false, periodSeconds: 24 },
+      glow: { enabled: true, periodSeconds: 5, min: 0.7, max: 1.35 },
+    })
+    expect(store.getState().past).toHaveLength(1)
+
+    store.getState().undo()
+    expect(store.getState().project.scene3d).toBeUndefined()
+
+    store.getState().redo()
+    expect(store.getState().project.scene3d?.animation?.turntable.periodSeconds).toBe(24)
+  })
+
+  it('resets only scene3d animation and removes scene3d when empty', () => {
+    const animation: Scene3DAnimationSettings = {
+      turntable: { enabled: true, periodSeconds: 18 },
+      glow: { enabled: false, periodSeconds: 4, min: 0.75, max: 1.2 },
+    }
+    const withOnlyAnimation = { ...createProject('p', 'p1', 0), scene3d: { animation } }
+    const onlyAnimationStore = createEditorStore(withOnlyAnimation)
+
+    onlyAnimationStore.getState().resetScene3DAnimation()
+
+    expect(onlyAnimationStore.getState().project.scene3d).toBeUndefined()
+    expect(onlyAnimationStore.getState().past).toHaveLength(1)
+    onlyAnimationStore.getState().undo()
+    expect(onlyAnimationStore.getState().project.scene3d?.animation).toEqual(animation)
+
+    const environment: Scene3DEnvironmentSettings = {
+      topColor: '#112233',
+      bottomColor: '#445566',
+      exposure: 1.25,
+      bloom: { threshold: 0.4, strength: 1.2, radius: 0.65 },
+    }
+    const withEnvironment = { ...createProject('p2', 'p2', 0), scene3d: { environment, animation } }
+    const environmentStore = createEditorStore(withEnvironment)
+
+    environmentStore.getState().resetScene3DAnimation()
+
+    expect(environmentStore.getState().project.scene3d).toEqual({ environment })
+  })
+
+  it('does not create history for unchanged scene3d animation commands', () => {
+    const animation: Scene3DAnimationSettings = {
+      turntable: { enabled: true, periodSeconds: 18 },
+      glow: { enabled: false, periodSeconds: 4, min: 0.75, max: 1.2 },
+    }
+    const project = { ...createProject('p', 'p1', 0), scene3d: { animation } }
+    const store = createEditorStore(project)
+
+    store.getState().setScene3DAnimation({
+      turntable: { ...animation.turntable },
+      glow: { ...animation.glow },
+    })
+    const blankStore = createEditorStore(createProject('blank', 'blank', 0))
+    blankStore.getState().resetScene3DAnimation()
+
+    expect(store.getState().past).toHaveLength(0)
+    expect(blankStore.getState().past).toHaveLength(0)
+  })
+
+  it('applies a scene3d look as one undoable command while preserving animation', () => {
+    const animation: Scene3DAnimationSettings = {
+      turntable: { enabled: false, periodSeconds: 24 },
+      glow: { enabled: true, periodSeconds: 5, min: 0.7, max: 1.3 },
+    }
+    const look: Scene3DLookSettings = {
+      camera: { azimuthRadians: 0.18, elevationRadians: 0.82, zoom: 0.32, fov: 38 },
+      lighting: { preset: 'daylight', intensity: 1.05 },
+      environment: {
+        topColor: '#e8edf7',
+        bottomColor: '#8994a8',
+        exposure: 1.1,
+        bloom: { threshold: 0.65, strength: 0.35, radius: 0.4 },
+      },
+    }
+    const store = createEditorStore({ ...createProject('p', 'p1', 0), scene3d: { animation } })
+
+    store.getState().applyScene3DLook(look)
+
+    expect(store.getState().project.scene3d).toEqual({ ...look, animation })
+    expect(store.getState().past).toHaveLength(1)
+    store.getState().undo()
+    expect(store.getState().project.scene3d).toEqual({ animation })
+    store.getState().redo()
+    expect(store.getState().project.scene3d).toEqual({ ...look, animation })
+  })
+
+  it('does not create history for unchanged scene3d look commands', () => {
+    const look: Scene3DLookSettings = {
+      camera: { azimuthRadians: -0.68, elevationRadians: 0.42, zoom: 0.18, fov: 50 },
+      lighting: { preset: 'dramatic', intensity: 1.25 },
+      environment: {
+        topColor: '#111827',
+        bottomColor: '#030712',
+        exposure: 1.05,
+        bloom: { threshold: 0.35, strength: 1.35, radius: 0.72 },
+      },
+    }
+    const store = createEditorStore({ ...createProject('p', 'p1', 0), scene3d: { ...look } })
+
+    store.getState().applyScene3DLook({
+      camera: { ...look.camera },
+      lighting: { ...look.lighting },
+      environment: { ...look.environment, bloom: { ...look.environment.bloom } },
+    })
+
+    expect(store.getState().past).toHaveLength(0)
   })
 })
 

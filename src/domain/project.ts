@@ -1,6 +1,7 @@
 import type { ChipFinish } from './material/chipFinish'
+import type { Scene3DSettings } from './scene3d/scene3d'
 
-export const CURRENT_SCHEMA_VERSION = 8 as const
+export const CURRENT_SCHEMA_VERSION = 9 as const
 
 export type DieShape =
   | 'rect'
@@ -163,5 +164,6 @@ export type Project = {
   finish: ChipFinish
   spec: FakeSpec
   studio: StudioState
+  scene3d?: Scene3DSettings
   remixedFrom?: RemixOrigin
 }

@@ -16,6 +16,13 @@ import type {
   StudioTileSettings,
   StyleTheme,
 } from '../domain/project'
+import type {
+  Scene3DAnimationSettings,
+  Scene3DCameraSettings,
+  Scene3DEnvironmentSettings,
+  Scene3DLightingSettings,
+  Scene3DLookSettings,
+} from '../domain/scene3d/scene3d'
 import { buildBlock, nextZIndex } from '../domain/blockFactory'
 import { buildDecoration, type DecorationKind } from '../domain/decorationFactory'
 import { isParametricDieShape, resolveDieShapeParams } from '../domain/die/dieShapeParams'
@@ -99,6 +106,15 @@ export type EditorState = {
   setTheme: (theme: StyleTheme) => void
   setFinish: (finish: ChipFinish) => void
   setBlockFinish: (id: string, finish: ChipFinish | undefined) => void
+  setScene3DCamera: (camera: Scene3DCameraSettings) => void
+  resetScene3DCamera: () => void
+  setScene3DLighting: (lighting: Scene3DLightingSettings) => void
+  resetScene3DLighting: () => void
+  setScene3DEnvironment: (environment: Scene3DEnvironmentSettings) => void
+  resetScene3DEnvironment: () => void
+  applyScene3DLook: (look: Scene3DLookSettings) => void
+  setScene3DAnimation: (animation: Scene3DAnimationSettings) => void
+  resetScene3DAnimation: () => void
   setSpec: (spec: FakeSpec) => void
   addDecoration: (kind: DecorationKind) => void
   undo: () => void
@@ -152,6 +168,87 @@ export function createEditorStore(initialProject: Project, options: Options = {}
     function sameDieShapeParams(
       left: DieShapeParams | undefined,
       right: DieShapeParams | undefined,
+    ) {
+      return JSON.stringify(left) === JSON.stringify(right)
+    }
+
+    function cloneScene3DCamera(camera: Scene3DCameraSettings): Scene3DCameraSettings {
+      return {
+        azimuthRadians: camera.azimuthRadians,
+        elevationRadians: camera.elevationRadians,
+        zoom: camera.zoom,
+        ...(camera.targetNudge === undefined ? {} : { targetNudge: [...camera.targetNudge] as const }),
+        ...(camera.fov === undefined ? {} : { fov: camera.fov }),
+      }
+    }
+
+    function sameScene3DCamera(
+      left: Scene3DCameraSettings | undefined,
+      right: Scene3DCameraSettings | undefined,
+    ) {
+      return JSON.stringify(left) === JSON.stringify(right)
+    }
+
+    function cloneScene3DLighting(lighting: Scene3DLightingSettings): Scene3DLightingSettings {
+      return {
+        preset: lighting.preset,
+        intensity: lighting.intensity,
+      }
+    }
+
+    function sameScene3DLighting(
+      left: Scene3DLightingSettings | undefined,
+      right: Scene3DLightingSettings | undefined,
+    ) {
+      return JSON.stringify(left) === JSON.stringify(right)
+    }
+
+    function cloneScene3DEnvironment(environment: Scene3DEnvironmentSettings): Scene3DEnvironmentSettings {
+      return {
+        topColor: environment.topColor,
+        bottomColor: environment.bottomColor,
+        exposure: environment.exposure,
+        bloom: {
+          threshold: environment.bloom.threshold,
+          strength: environment.bloom.strength,
+          radius: environment.bloom.radius,
+        },
+      }
+    }
+
+    function sameScene3DEnvironment(
+      left: Scene3DEnvironmentSettings | undefined,
+      right: Scene3DEnvironmentSettings | undefined,
+    ) {
+      return JSON.stringify(left) === JSON.stringify(right)
+    }
+
+    function cloneScene3DLook(look: Scene3DLookSettings): Scene3DLookSettings {
+      return {
+        camera: cloneScene3DCamera(look.camera),
+        lighting: cloneScene3DLighting(look.lighting),
+        environment: cloneScene3DEnvironment(look.environment),
+      }
+    }
+
+    function cloneScene3DAnimation(animation: Scene3DAnimationSettings): Scene3DAnimationSettings {
+      return {
+        turntable: {
+          enabled: animation.turntable.enabled,
+          periodSeconds: animation.turntable.periodSeconds,
+        },
+        glow: {
+          enabled: animation.glow.enabled,
+          periodSeconds: animation.glow.periodSeconds,
+          min: animation.glow.min,
+          max: animation.glow.max,
+        },
+      }
+    }
+
+    function sameScene3DAnimation(
+      left: Scene3DAnimationSettings | undefined,
+      right: Scene3DAnimationSettings | undefined,
     ) {
       return JSON.stringify(left) === JSON.stringify(right)
     }
@@ -690,6 +787,119 @@ export function createEditorStore(initialProject: Project, options: Options = {}
           return next
         })
         commit(replaceBlocks(project, blocks))
+      },
+
+      setScene3DCamera(camera) {
+        const { project } = get()
+        const nextCamera = cloneScene3DCamera(camera)
+        if (sameScene3DCamera(project.scene3d?.camera, nextCamera)) return
+        commit({
+          ...project,
+          scene3d: {
+            ...project.scene3d,
+            camera: nextCamera,
+          },
+        })
+      },
+
+      resetScene3DCamera() {
+        const { project } = get()
+        if (project.scene3d?.camera === undefined) return
+        const scene3d = { ...project.scene3d }
+        delete scene3d.camera
+        const next: Project = { ...project, scene3d }
+        if (Object.keys(scene3d).length === 0) delete next.scene3d
+        commit(next)
+      },
+
+      setScene3DLighting(lighting) {
+        const { project } = get()
+        const nextLighting = cloneScene3DLighting(lighting)
+        if (sameScene3DLighting(project.scene3d?.lighting, nextLighting)) return
+        commit({
+          ...project,
+          scene3d: {
+            ...project.scene3d,
+            lighting: nextLighting,
+          },
+        })
+      },
+
+      resetScene3DLighting() {
+        const { project } = get()
+        if (project.scene3d?.lighting === undefined) return
+        const scene3d = { ...project.scene3d }
+        delete scene3d.lighting
+        const next: Project = { ...project, scene3d }
+        if (Object.keys(scene3d).length === 0) delete next.scene3d
+        commit(next)
+      },
+
+      setScene3DEnvironment(environment) {
+        const { project } = get()
+        const nextEnvironment = cloneScene3DEnvironment(environment)
+        if (sameScene3DEnvironment(project.scene3d?.environment, nextEnvironment)) return
+        commit({
+          ...project,
+          scene3d: {
+            ...project.scene3d,
+            environment: nextEnvironment,
+          },
+        })
+      },
+
+      resetScene3DEnvironment() {
+        const { project } = get()
+        if (project.scene3d?.environment === undefined) return
+        const scene3d = { ...project.scene3d }
+        delete scene3d.environment
+        const next: Project = { ...project, scene3d }
+        if (Object.keys(scene3d).length === 0) delete next.scene3d
+        commit(next)
+      },
+
+      applyScene3DLook(look) {
+        const { project } = get()
+        const nextLook = cloneScene3DLook(look)
+        if (
+          sameScene3DCamera(project.scene3d?.camera, nextLook.camera) &&
+          sameScene3DLighting(project.scene3d?.lighting, nextLook.lighting) &&
+          sameScene3DEnvironment(project.scene3d?.environment, nextLook.environment)
+        ) {
+          return
+        }
+        commit({
+          ...project,
+          scene3d: {
+            ...project.scene3d,
+            camera: nextLook.camera,
+            lighting: nextLook.lighting,
+            environment: nextLook.environment,
+          },
+        })
+      },
+
+      setScene3DAnimation(animation) {
+        const { project } = get()
+        const nextAnimation = cloneScene3DAnimation(animation)
+        if (sameScene3DAnimation(project.scene3d?.animation, nextAnimation)) return
+        commit({
+          ...project,
+          scene3d: {
+            ...project.scene3d,
+            animation: nextAnimation,
+          },
+        })
+      },
+
+      resetScene3DAnimation() {
+        const { project } = get()
+        if (project.scene3d?.animation === undefined) return
+        const scene3d = { ...project.scene3d }
+        delete scene3d.animation
+        const next: Project = { ...project, scene3d }
+        if (Object.keys(scene3d).length === 0) delete next.scene3d
+        commit(next)
       },
 
       setSpec(spec) {
