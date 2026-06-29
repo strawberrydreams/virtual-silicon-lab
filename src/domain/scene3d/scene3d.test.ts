@@ -326,7 +326,97 @@ describe('resolveScene3D animation', () => {
   it('returns the baseline turntable + glow defaults', () => {
     const { animation } = resolveScene3D({ extent: [10, 5, 10] })
 
-    expect(animation.turntable).toEqual({ periodSeconds: 14 })
-    expect(animation.glow).toEqual({ periodSeconds: 3, min: 0.8, max: 1.2 })
+    expect(animation.turntable).toEqual({ enabled: true, periodSeconds: 14 })
+    expect(animation.glow).toEqual({ enabled: true, periodSeconds: 3, min: 0.8, max: 1.2 })
+  })
+
+  it('resolves authored turntable and glow animation settings', () => {
+    const { animation } = resolveScene3D(
+      {
+        animation: {
+          turntable: { enabled: false, periodSeconds: 24 },
+          glow: { enabled: true, periodSeconds: 5, min: 0.65, max: 1.45 },
+        },
+      },
+      { extent: [10, 5, 10] },
+    )
+
+    expect(animation.turntable).toEqual({ enabled: false, periodSeconds: 24 })
+    expect(animation.glow).toEqual({ enabled: true, periodSeconds: 5, min: 0.65, max: 1.45 })
+  })
+
+  it('clamps authored animation settings to safe deterministic ranges', () => {
+    const { animation } = resolveScene3D(
+      {
+        animation: {
+          turntable: { enabled: true, periodSeconds: 0 },
+          glow: { enabled: true, periodSeconds: 99, min: -1, max: 9 },
+        },
+      },
+      { extent: [10, 5, 10] },
+    )
+
+    expect(animation.turntable.periodSeconds).toBe(4)
+    expect(animation.glow.periodSeconds).toBe(12)
+    expect(animation.glow.min).toBe(0.2)
+    expect(animation.glow.max).toBe(2)
+  })
+})
+
+describe('normalizeScene3DSettings animation', () => {
+  it('preserves valid animation settings without requiring other scene3d groups', () => {
+    expect(
+      normalizeScene3DSettings({
+        animation: {
+          turntable: { enabled: false, periodSeconds: 18 },
+          glow: { enabled: false, periodSeconds: 4, min: 0.7, max: 1.35 },
+        },
+      }),
+    ).toEqual({
+      animation: {
+        turntable: { enabled: false, periodSeconds: 18 },
+        glow: { enabled: false, periodSeconds: 4, min: 0.7, max: 1.35 },
+      },
+    })
+  })
+
+  it('drops malformed animation while preserving valid environment settings', () => {
+    const normalized = normalizeScene3DSettings({
+      environment: {
+        topColor: '#112233',
+        bottomColor: '#445566',
+        exposure: 1.2,
+        bloom: { threshold: 0.4, strength: 1.1, radius: 0.65 },
+      },
+      animation: {
+        turntable: { enabled: 'yes', periodSeconds: 18 },
+        glow: { enabled: false, periodSeconds: 4, min: 0.7, max: 1.35 },
+      },
+    })
+
+    expect(normalized).toEqual({
+      environment: {
+        topColor: '#112233',
+        bottomColor: '#445566',
+        exposure: 1.2,
+        bloom: { threshold: 0.4, strength: 1.1, radius: 0.65 },
+      },
+    })
+  })
+
+  it('clamps persisted animation values', () => {
+    expect(
+      normalizeScene3DSettings({
+        animation: {
+          turntable: { enabled: true, periodSeconds: 100 },
+          glow: { enabled: true, periodSeconds: -1, min: 5, max: -2 },
+        },
+      }),
+    ).toEqual({
+      animation: {
+        turntable: { enabled: true, periodSeconds: 60 },
+        glow: { enabled: true, periodSeconds: 1, min: 1, max: 1 },
+      },
+    })
   })
 })

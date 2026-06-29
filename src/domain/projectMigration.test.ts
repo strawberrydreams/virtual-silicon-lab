@@ -523,6 +523,58 @@ describe('migrateProject', () => {
     })
   })
 
+  it('preserves and clamps valid schema 9 scene3d animation settings', () => {
+    const migrated = migrateProject({
+      ...validProject('v9-scene-animation'),
+      schemaVersion: 9,
+      finish: 'gloss',
+      studio: undefined,
+      scene3d: {
+        animation: {
+          turntable: { enabled: false, periodSeconds: 120 },
+          glow: { enabled: true, periodSeconds: 0, min: -1, max: 5 },
+        },
+      },
+    })
+
+    expect(migrated.scene3d).toEqual({
+      animation: {
+        turntable: { enabled: false, periodSeconds: 60 },
+        glow: { enabled: true, periodSeconds: 1, min: 0.2, max: 2 },
+      },
+    })
+  })
+
+  it('drops malformed schema 9 scene3d animation without dropping valid environment', () => {
+    const migrated = migrateProject({
+      ...validProject('v9-scene-bad-animation'),
+      schemaVersion: 9,
+      finish: 'gloss',
+      studio: undefined,
+      scene3d: {
+        environment: {
+          topColor: '#112233',
+          bottomColor: '#445566',
+          exposure: 1.1,
+          bloom: { threshold: 0.4, strength: 1, radius: 0.6 },
+        },
+        animation: {
+          turntable: { enabled: true, periodSeconds: 'slow' },
+          glow: { enabled: true, periodSeconds: 3, min: 0.8, max: 1.2 },
+        },
+      },
+    })
+
+    expect(migrated.scene3d).toEqual({
+      environment: {
+        topColor: '#112233',
+        bottomColor: '#445566',
+        exposure: 1.1,
+        bloom: { threshold: 0.4, strength: 1, radius: 0.6 },
+      },
+    })
+  })
+
   it('drops malformed scene3d data without rejecting the project', () => {
     const migrated = migrateProject({
       ...validProject('bad-scene'),

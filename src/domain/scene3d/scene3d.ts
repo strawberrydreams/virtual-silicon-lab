@@ -28,6 +28,12 @@ export const SCENE_3D_ENVIRONMENT_RANGES = {
   bloomStrength: { min: 0, max: 2.4 },
   bloomRadius: { min: 0.1, max: 1 },
 } as const
+export const SCENE_3D_ANIMATION_RANGES = {
+  turntablePeriodSeconds: { min: 4, max: 60 },
+  glowPeriodSeconds: { min: 1, max: 12 },
+  glowMin: { min: 0.2, max: 1 },
+  glowMax: { min: 1, max: 2 },
+} as const
 
 export type Scene3DLightingPreset = (typeof SCENE_3D_LIGHTING_PRESETS)[number]
 
@@ -36,11 +42,16 @@ export type Scene3DLightingSettings = {
   intensity: number
 }
 
+export type Scene3DAnimationSettings = {
+  turntable: { enabled: boolean; periodSeconds: number }
+  glow: { enabled: boolean; periodSeconds: number; min: number; max: number }
+}
+
 export type Scene3DSettings = {
   camera?: Scene3DCameraSettings
   lighting?: Scene3DLightingSettings
   environment?: Scene3DEnvironmentSettings
-  animation?: unknown
+  animation?: Scene3DAnimationSettings
 }
 
 export type ResolvedCamera = {
@@ -65,8 +76,8 @@ export type ResolvedLight =
     }
 
 export type ResolvedAnimation = {
-  turntable: { periodSeconds: number }
-  glow: { periodSeconds: number; min: number; max: number }
+  turntable: { enabled: boolean; periodSeconds: number }
+  glow: { enabled: boolean; periodSeconds: number; min: number; max: number }
 }
 
 export type ResolvedScene3D = {
@@ -106,8 +117,8 @@ const LIGHTING_RIGS: Record<Scene3DLightingPreset, readonly ResolvedLight[]> = {
 }
 
 const BASELINE_ANIMATION: ResolvedAnimation = {
-  turntable: { periodSeconds: 14 },
-  glow: { periodSeconds: 3, min: 0.8, max: 1.2 },
+  turntable: { enabled: true, periodSeconds: 14 },
+  glow: { enabled: true, periodSeconds: 3, min: 0.8, max: 1.2 },
 }
 
 const BASELINE_ENVIRONMENT: Scene3DEnvironmentSettings = {
@@ -306,16 +317,85 @@ function normalizePersistedEnvironmentSettings(value: unknown): Scene3DEnvironme
   })
 }
 
+function normalizeAnimationSettings(
+  settings: Scene3DAnimationSettings | undefined,
+): Scene3DAnimationSettings | undefined {
+  if (settings === undefined) return undefined
+  return {
+    turntable: {
+      enabled: settings.turntable.enabled,
+      periodSeconds: clamp(
+        finiteOr(settings.turntable.periodSeconds, BASELINE_ANIMATION.turntable.periodSeconds),
+        SCENE_3D_ANIMATION_RANGES.turntablePeriodSeconds.min,
+        SCENE_3D_ANIMATION_RANGES.turntablePeriodSeconds.max,
+      ),
+    },
+    glow: {
+      enabled: settings.glow.enabled,
+      periodSeconds: clamp(
+        finiteOr(settings.glow.periodSeconds, BASELINE_ANIMATION.glow.periodSeconds),
+        SCENE_3D_ANIMATION_RANGES.glowPeriodSeconds.min,
+        SCENE_3D_ANIMATION_RANGES.glowPeriodSeconds.max,
+      ),
+      min: clamp(
+        finiteOr(settings.glow.min, BASELINE_ANIMATION.glow.min),
+        SCENE_3D_ANIMATION_RANGES.glowMin.min,
+        SCENE_3D_ANIMATION_RANGES.glowMin.max,
+      ),
+      max: clamp(
+        finiteOr(settings.glow.max, BASELINE_ANIMATION.glow.max),
+        SCENE_3D_ANIMATION_RANGES.glowMax.min,
+        SCENE_3D_ANIMATION_RANGES.glowMax.max,
+      ),
+    },
+  }
+}
+
+function normalizePersistedAnimationSettings(value: unknown): Scene3DAnimationSettings | undefined {
+  if (!isRecord(value)) return undefined
+  if (!isRecord(value.turntable) || !isRecord(value.glow)) return undefined
+  if (
+    typeof value.turntable.enabled !== 'boolean' ||
+    typeof value.turntable.periodSeconds !== 'number' ||
+    !Number.isFinite(value.turntable.periodSeconds) ||
+    typeof value.glow.enabled !== 'boolean' ||
+    typeof value.glow.periodSeconds !== 'number' ||
+    !Number.isFinite(value.glow.periodSeconds) ||
+    typeof value.glow.min !== 'number' ||
+    !Number.isFinite(value.glow.min) ||
+    typeof value.glow.max !== 'number' ||
+    !Number.isFinite(value.glow.max)
+  ) {
+    return undefined
+  }
+  return normalizeAnimationSettings({
+    turntable: {
+      enabled: value.turntable.enabled,
+      periodSeconds: value.turntable.periodSeconds,
+    },
+    glow: {
+      enabled: value.glow.enabled,
+      periodSeconds: value.glow.periodSeconds,
+      min: value.glow.min,
+      max: value.glow.max,
+    },
+  })
+}
+
 export function normalizeScene3DSettings(value: unknown): Scene3DSettings | undefined {
   if (!isRecord(value)) return undefined
   const camera = normalizePersistedCameraSettings(value.camera)
   const lighting = normalizePersistedLightingSettings(value.lighting)
   const environment = normalizePersistedEnvironmentSettings(value.environment)
-  if (camera === undefined && lighting === undefined && environment === undefined) return undefined
+  const animation = normalizePersistedAnimationSettings(value.animation)
+  if (camera === undefined && lighting === undefined && environment === undefined && animation === undefined) {
+    return undefined
+  }
   return {
     ...(camera === undefined ? {} : { camera }),
     ...(lighting === undefined ? {} : { lighting }),
     ...(environment === undefined ? {} : { environment }),
+    ...(animation === undefined ? {} : { animation }),
   }
 }
 
@@ -381,6 +461,10 @@ function resolveEnvironment(
   return normalizeEnvironmentSettings(settings ?? derived.environment ?? BASELINE_ENVIRONMENT)!
 }
 
+function resolveAnimation(settings: Scene3DAnimationSettings | undefined): ResolvedAnimation {
+  return normalizeAnimationSettings(settings ?? BASELINE_ANIMATION)!
+}
+
 export function cameraSettingsFromPose(
   pose: CameraPose,
   derived: SceneDerivedInputs,
@@ -424,6 +508,6 @@ export function resolveScene3D(
     camera: resolveCamera(settings?.camera, derived),
     lights: resolveLights(settings?.lighting),
     environment: resolveEnvironment(settings?.environment, derived),
-    animation: BASELINE_ANIMATION,
+    animation: resolveAnimation(settings?.animation),
   }
 }
