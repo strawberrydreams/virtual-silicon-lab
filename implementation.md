@@ -191,3 +191,22 @@
   - `npm run build`: passed; only the known >500 kB chunk warning appeared.
   - `npm run typecheck:server`: passed.
   - `rg "three" dist/assets/index-*.js`: no output, so Three remains outside the core index bundle.
+
+## V11-M2 Camera Touch Authoring
+
+- Added mobile camera authoring by allowing `authoringMode="mobile-presets"` to pass camera callbacks through to `Chip3DViewer`. This keeps the mobile mode's look + lighting preset subset from M1, but now also exposes the existing viewer-level `Save current view` and `Reset 3D default` actions when callbacks are supplied.
+- Wired `MobileEditor` to pass `state.setScene3DCamera` and `state.resetScene3DCamera` into the mobile 3D toggle. These reuse the same schema 9 `scene3d.camera` payload and autosave path as desktop camera authoring.
+- Kept desktop-only controls hidden on mobile: lighting intensity, lighting reset, environment controls, animation controls, and raw sliders remain absent. `Reset view` remains a viewer-only transient camera reset; `Reset 3D default` removes persisted camera settings.
+- Added `touch-action: none` to `.chip-3d-viewer` and its canvas so touch orbit gestures are handled by the WebGL viewer instead of triggering page scroll/pinch handling on the page.
+- Added `tests/mobile3dCss.test.ts` as a small CSS contract test because the touch behavior is otherwise browser-only and easy to regress during layout cleanup.
+- Targeted TDD verification:
+  - RED: `npm run test:client -- src/features/editor/Chip3DPreviewToggle.test.tsx src/features/editor/MobileEditor.test.tsx tests/mobile3dCss.test.ts` failed because mobile mode blocked mocked camera save/reset buttons, MobileEditor did not pass camera callbacks, and the viewer CSS lacked `touch-action: none`.
+  - GREEN: the same command passed with 3 files / 22 tests after wiring camera callbacks and the CSS guard.
+- Browser smoke on `http://127.0.0.1:5173/` at `390x844`: remixed `AURORA M5`, opened the mobile 3D showcase, confirmed `Save current view` and `Reset 3D default` now render alongside look/lighting presets, confirmed zero range inputs and no desktop-only slider text, and confirmed computed `touch-action` is `none` on both `.chip-3d-viewer` and the WebGL canvas.
+- Browser camera smoke: dragged the canvas, clicked `Save current view`, closed and reloaded the editor route, reopened the showcase, and clicked `Reset 3D default`. The modal stayed live with a rendered canvas throughout and browser console warn/error logs were empty.
+- QA note: local Vite server logs still show expected `/api/me` and `/api/health` proxy `ECONNREFUSED` entries when the API server is not running; no browser console warnings/errors were produced during the M2 interactions.
+- Final verification:
+  - `npm test`: client 121 files / 778 tests passed; server 70 files / 298 tests passed.
+  - `npm run build`: passed; only the known >500 kB chunk warning appeared.
+  - `npm run typecheck:server`: passed.
+  - `rg "three" dist/assets/index-*.js`: no output, so Three remains outside the core index bundle.

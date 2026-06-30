@@ -121,7 +121,7 @@ export function Chip3DShowcase({
   const showLookControls = onApplyLook !== undefined
   const showAnimationControls =
     authoringMode === 'desktop' && (onSetAnimation !== undefined || onResetAnimation !== undefined)
-  const showCameraControls = authoringMode === 'desktop'
+  const showCameraControls = authoringMode === 'desktop' || authoringMode === 'mobile-presets'
 
   const setEnvironment = (patch: Partial<Scene3DEnvironmentSettings>) => {
     onSetEnvironment?.({

@@ -275,6 +275,32 @@ describe('Chip3DPreviewToggle', () => {
     expect(screen.queryByRole('button', { name: 'Mock save current view' })).toBeNull()
   })
 
+  it('passes camera save and reset through the mobile preset authoring mode when provided', async () => {
+    const onSetScene3DCamera = vi.fn()
+    const onResetScene3DCamera = vi.fn()
+    render(
+      <Chip3DPreviewToggle
+        project={createProject('Pocket Camera')}
+        authoringMode="mobile-presets"
+        onSetScene3DCamera={onSetScene3DCamera}
+        onResetScene3DCamera={onResetScene3DCamera}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open 3D showcase' }))
+    await screen.findByRole('dialog', { name: 'Pocket Camera 3D showcase' })
+    fireEvent.click(screen.getByRole('button', { name: 'Mock save current view' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Mock reset 3D default' }))
+
+    expect(onSetScene3DCamera).toHaveBeenCalledWith({
+      azimuthRadians: 0.4,
+      elevationRadians: 0.5,
+      zoom: 0.6,
+      fov: 48,
+    })
+    expect(onResetScene3DCamera).toHaveBeenCalledTimes(1)
+  })
+
   it('passes environment controls through the editor showcase', async () => {
     const onSetScene3DEnvironment = vi.fn()
     const onResetScene3DEnvironment = vi.fn()

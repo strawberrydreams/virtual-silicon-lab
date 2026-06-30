@@ -26,6 +26,8 @@ vi.mock('./Chip3DPreviewToggle', () => ({
     authoringMode,
     onApplyScene3DLook,
     onSetScene3DLighting,
+    onSetScene3DCamera,
+    onResetScene3DCamera,
   }: {
     authoringMode?: string
     onApplyScene3DLook?: (look: {
@@ -39,6 +41,13 @@ vi.mock('./Chip3DPreviewToggle', () => ({
       }
     }) => void
     onSetScene3DLighting?: (lighting: { preset: 'neon-noir'; intensity: number }) => void
+    onSetScene3DCamera?: (camera: {
+      azimuthRadians: number
+      elevationRadians: number
+      zoom: number
+      fov: number
+    }) => void
+    onResetScene3DCamera?: () => void
   }) => (
     <div>
       <button type="button">Open 3D showcase</button>
@@ -65,6 +74,22 @@ vi.mock('./Chip3DPreviewToggle', () => ({
         onClick={() => onSetScene3DLighting?.({ preset: 'neon-noir', intensity: 1.1 })}
       >
         Mock set mobile lighting
+      </button>
+      <button
+        type="button"
+        onClick={() =>
+          onSetScene3DCamera?.({
+            azimuthRadians: 0.35,
+            elevationRadians: 0.45,
+            zoom: 0.55,
+            fov: 44,
+          })
+        }
+      >
+        Mock save mobile camera
+      </button>
+      <button type="button" onClick={onResetScene3DCamera}>
+        Mock reset mobile camera
       </button>
     </div>
   ),
@@ -130,6 +155,39 @@ describe('MobileEditor', () => {
           lighting: { preset: 'neon-noir', intensity: 1.1 },
           environment: expect.objectContaining({ exposure: 1.15 }),
         }),
+      }),
+    )
+  })
+
+  it('dispatches mobile camera save and reset commands through the editor store', () => {
+    vi.useFakeTimers()
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({} as never)
+    const persist = vi.fn()
+
+    render(<MobileEditor project={createProject('Pocket Chip')} persist={persist} />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Mock save mobile camera' }))
+    act(() => vi.advanceTimersByTime(600))
+
+    expect(persist).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        scene3d: expect.objectContaining({
+          camera: {
+            azimuthRadians: 0.35,
+            elevationRadians: 0.45,
+            zoom: 0.55,
+            fov: 44,
+          },
+        }),
+      }),
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Mock reset mobile camera' }))
+    act(() => vi.advanceTimersByTime(600))
+
+    expect(persist).toHaveBeenLastCalledWith(
+      expect.not.objectContaining({
+        scene3d: expect.anything(),
       }),
     )
   })

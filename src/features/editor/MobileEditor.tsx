@@ -30,6 +30,8 @@ export function MobileEditor({
           <Chip3DPreviewToggle
             project={state.project}
             authoringMode="mobile-presets"
+            onSetScene3DCamera={state.setScene3DCamera}
+            onResetScene3DCamera={state.resetScene3DCamera}
             onApplyScene3DLook={state.applyScene3DLook}
             onSetScene3DLighting={state.setScene3DLighting}
           />
