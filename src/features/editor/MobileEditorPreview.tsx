@@ -25,7 +25,7 @@ export function MobileEditorPreview({
         <MobileChipPreview project={project} />
 
         {chip3dSlot !== undefined && chip3dSlot !== null ? (
-          <section className="mobile-editor-preview__three" aria-label="3D showcase">
+          <section className="mobile-editor-preview__showcase" aria-label="3D showcase">
             {chip3dSlot}
           </section>
         ) : null}
