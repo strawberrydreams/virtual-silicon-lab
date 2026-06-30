@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import type { Project } from '../../domain/project'
 import { ExportPanel } from '../export/ExportPanel'
@@ -7,7 +8,13 @@ import { MobileChipPreview } from './MobileChipPreview'
 // Mobile editor route: the Konva authoring canvas is desktop-only, so on phones we
 // show a read-only preview of the chip plus its fake spec, share/export actions,
 // and a clear path back to desktop. Reads the same project JSON; never mutates it.
-export function MobileEditorPreview({ project }: { project: Project }) {
+export function MobileEditorPreview({
+  project,
+  chip3dSlot,
+}: {
+  project: Project
+  chip3dSlot?: ReactNode
+}) {
   const spec = project.spec
   return (
     <main aria-label="Chip preview" className="v2-page mobile-editor-preview">
@@ -16,6 +23,12 @@ export function MobileEditorPreview({ project }: { project: Project }) {
         <h1 className="mobile-editor-preview__title">{project.name}</h1>
 
         <MobileChipPreview project={project} />
+
+        {chip3dSlot !== undefined && chip3dSlot !== null ? (
+          <section className="mobile-editor-preview__three" aria-label="3D showcase">
+            {chip3dSlot}
+          </section>
+        ) : null}
 
         <section className="mobile-editor-preview__spec" aria-label="Fake spec sheet">
           <h2>
