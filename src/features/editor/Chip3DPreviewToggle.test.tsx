@@ -244,6 +244,37 @@ describe('Chip3DPreviewToggle', () => {
     expect(onResetScene3DLighting).toHaveBeenCalledTimes(1)
   })
 
+  it('shows only look and lighting preset controls in the mobile preset authoring mode', async () => {
+    const onApplyScene3DLook = vi.fn()
+    const onSetScene3DLighting = vi.fn()
+    const project = createProject('Pocket Looks')
+    project.scene3d = { lighting: { preset: 'daylight', intensity: 1.2 } }
+    render(
+      <Chip3DPreviewToggle
+        project={project}
+        authoringMode="mobile-presets"
+        onApplyScene3DLook={onApplyScene3DLook}
+        onSetScene3DLighting={onSetScene3DLighting}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open 3D showcase' }))
+    await screen.findByRole('dialog', { name: 'Pocket Looks 3D showcase' })
+    fireEvent.click(screen.getByRole('button', { name: 'Inspection' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Neon noir' }))
+
+    expect(onApplyScene3DLook).toHaveBeenCalledWith(resolveScene3DLookPreset('inspection'))
+    expect(onSetScene3DLighting).toHaveBeenCalledWith({
+      preset: 'neon-noir',
+      intensity: 1.2,
+    })
+    expect(screen.queryByLabelText('Lighting intensity')).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Reset lighting' })).toBeNull()
+    expect(screen.queryByLabelText('Exposure')).toBeNull()
+    expect(screen.queryByLabelText('Turntable period')).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Mock save current view' })).toBeNull()
+  })
+
   it('passes environment controls through the editor showcase', async () => {
     const onSetScene3DEnvironment = vi.fn()
     const onResetScene3DEnvironment = vi.fn()

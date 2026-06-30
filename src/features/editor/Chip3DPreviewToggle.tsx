@@ -12,6 +12,7 @@ import { VideoExportPanel } from '../export/VideoExportPanel'
 
 export default function Chip3DPreviewToggle({
   project,
+  authoringMode = 'desktop',
   onSetScene3DCamera,
   onResetScene3DCamera,
   onSetScene3DLighting,
@@ -23,6 +24,7 @@ export default function Chip3DPreviewToggle({
   onResetScene3DAnimation,
 }: {
   project: Project
+  authoringMode?: 'desktop' | 'mobile-presets'
   onSetScene3DCamera?: (camera: Scene3DCameraSettings) => void
   onResetScene3DCamera?: () => void
   onSetScene3DLighting?: (lighting: Scene3DLightingSettings) => void
@@ -43,6 +45,7 @@ export default function Chip3DPreviewToggle({
       {open ? (
         <Chip3DShowcase
           project={project}
+          authoringMode={authoringMode}
           onClose={() => setOpen(false)}
           renderExtras={(model) => <VideoExportPanel model={model} name={project.name} />}
           onSaveCamera={onSetScene3DCamera}

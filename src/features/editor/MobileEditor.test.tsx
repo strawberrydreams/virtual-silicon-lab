@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createProject } from '../../domain/projectFactory'
@@ -22,7 +22,52 @@ vi.mock('./MobileEditorPreview', () => ({
 }))
 
 vi.mock('./Chip3DPreviewToggle', () => ({
-  default: () => <button type="button">Open 3D showcase</button>,
+  default: ({
+    authoringMode,
+    onApplyScene3DLook,
+    onSetScene3DLighting,
+  }: {
+    authoringMode?: string
+    onApplyScene3DLook?: (look: {
+      camera: { azimuthRadians: number; elevationRadians: number; zoom: number; fov: number }
+      lighting: { preset: 'dramatic'; intensity: number }
+      environment: {
+        topColor: string
+        bottomColor: string
+        exposure: number
+        bloom: { threshold: number; strength: number; radius: number }
+      }
+    }) => void
+    onSetScene3DLighting?: (lighting: { preset: 'neon-noir'; intensity: number }) => void
+  }) => (
+    <div>
+      <button type="button">Open 3D showcase</button>
+      <span>{authoringMode}</span>
+      <button
+        type="button"
+        onClick={() =>
+          onApplyScene3DLook?.({
+            camera: { azimuthRadians: 0.25, elevationRadians: 0.55, zoom: 0.4, fov: 42 },
+            lighting: { preset: 'dramatic', intensity: 1.1 },
+            environment: {
+              topColor: '#111827',
+              bottomColor: '#030712',
+              exposure: 1.15,
+              bloom: { threshold: 0.4, strength: 0.8, radius: 0.5 },
+            },
+          })
+        }
+      >
+        Mock apply mobile look
+      </button>
+      <button
+        type="button"
+        onClick={() => onSetScene3DLighting?.({ preset: 'neon-noir', intensity: 1.1 })}
+      >
+        Mock set mobile lighting
+      </button>
+    </div>
+  ),
 }))
 
 describe('MobileEditor', () => {
@@ -31,6 +76,7 @@ describe('MobileEditor', () => {
   })
 
   afterEach(() => {
+    vi.useRealTimers()
     vi.unstubAllGlobals()
     vi.restoreAllMocks()
   })
@@ -51,5 +97,40 @@ describe('MobileEditor', () => {
 
     expect(screen.getByRole('main', { name: 'Chip preview' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Open 3D showcase' })).not.toBeInTheDocument()
+  })
+
+  it('dispatches mobile look and lighting preset commands through the editor store', () => {
+    vi.useFakeTimers()
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({} as never)
+    const persist = vi.fn()
+
+    render(<MobileEditor project={createProject('Pocket Chip')} persist={persist} />)
+
+    expect(screen.getByText('mobile-presets')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Mock apply mobile look' }))
+    act(() => vi.advanceTimersByTime(600))
+
+    expect(persist).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        scene3d: expect.objectContaining({
+          camera: expect.objectContaining({ fov: 42 }),
+          lighting: { preset: 'dramatic', intensity: 1.1 },
+          environment: expect.objectContaining({ exposure: 1.15 }),
+        }),
+      }),
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Mock set mobile lighting' }))
+    act(() => vi.advanceTimersByTime(600))
+
+    expect(persist).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        scene3d: expect.objectContaining({
+          lighting: { preset: 'neon-noir', intensity: 1.1 },
+          environment: expect.objectContaining({ exposure: 1.15 }),
+        }),
+      }),
+    )
   })
 })

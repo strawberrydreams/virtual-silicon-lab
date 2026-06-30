@@ -25,7 +25,16 @@ export function MobileEditor({
   return (
     <MobileEditorPreview
       project={state.project}
-      chip3dSlot={canShow3D ? <Chip3DPreviewToggle project={state.project} /> : null}
+      chip3dSlot={
+        canShow3D ? (
+          <Chip3DPreviewToggle
+            project={state.project}
+            authoringMode="mobile-presets"
+            onApplyScene3DLook={state.applyScene3DLook}
+            onSetScene3DLighting={state.setScene3DLighting}
+          />
+        ) : null
+      }
     />
   )
 }

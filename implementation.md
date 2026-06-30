@@ -170,3 +170,24 @@
   - `npm run build`: passed; only the known >500 kB chunk warning appeared.
   - `npm run typecheck:server`: passed.
   - `rg "three" dist/assets/index-*.js`: no output, so Three remains outside the core index bundle.
+
+## V11-M1 Mobile Look + Lighting Preset Chips
+
+- Renamed the branch from `codex/v11-m0` to `v11-mobile-3d-authoring` before starting M1, matching the broader v11 feature name requested by the user.
+- Implemented M1 as an explicit `authoringMode` on `Chip3DPreviewToggle` / `Chip3DShowcase`: default `desktop` preserves the existing full desktop controls, while `mobile-presets` exposes only look presets and lighting preset buttons.
+- `mobile-presets` intentionally hides desktop-only controls even if their callbacks exist: lighting intensity slider, reset lighting, environment presets/sliders, animation controls, and camera save/reset-default do not render. `Reset view`, play/pause, MP4 export, and close remain viewer controls.
+- Wired `MobileEditor` to pass `authoringMode="mobile-presets"`, `state.applyScene3DLook`, and `state.setScene3DLighting` into the mobile 3D toggle. These reuse the existing editor store commands and autosave path; no schema, backend, route, SQLite, or publish snapshot change was needed.
+- Lighting preset taps preserve the current lighting intensity, matching desktop preset behavior. This lets mobile change the preset without exposing the precision intensity slider that the v11 spec keeps desktop-only.
+- Targeted TDD verification:
+  - RED: `npm run test:client -- src/features/editor/Chip3DPreviewToggle.test.tsx` failed because `authoringMode="mobile-presets"` still rendered the `Lighting intensity` range.
+  - GREEN: `npm run test:client -- src/features/editor/Chip3DPreviewToggle.test.tsx` passed with 16 tests after adding the preset-only mode.
+  - RED: `npm run test:client -- src/features/editor/MobileEditor.test.tsx` failed because `MobileEditor` did not pass `mobile-presets` mode or preset callbacks into the toggle.
+  - GREEN: `npm run test:client -- src/features/editor/MobileEditor.test.tsx` passed with 3 tests after wiring the store commands.
+- Browser smoke on `http://127.0.0.1:5173/` at `390x844`: remixed `AURORA M5`, opened the mobile 3D showcase, and confirmed the modal showed `Orbit hero`, `Inspection`, `Dramatic closeup`, `Studio`, `Neon noir`, `Daylight`, and `Dramatic`, with zero range inputs and no desktop-only text for lighting intensity, exposure, bloom, turntable timing, save current view, or reset 3D default.
+- Browser persistence smoke: tapped `Inspection`, then `Neon noir`; `Neon noir` became the pressed lighting preset while the WebGL canvas remained present. After closing the modal, reloading the editor route, and reopening the showcase, `Neon noir` was still pressed, confirming the mobile preset change traveled through autosave. Browser console warn/error logs were empty.
+- QA note: local Vite server logs still show expected `/api/me` and `/api/health` proxy `ECONNREFUSED` entries when the API server is not running; no browser console warnings/errors were produced during the M1 interactions.
+- Final verification:
+  - `npm test`: client 120 files / 775 tests passed; server 70 files / 298 tests passed.
+  - `npm run build`: passed; only the known >500 kB chunk warning appeared.
+  - `npm run typecheck:server`: passed.
+  - `rg "three" dist/assets/index-*.js`: no output, so Three remains outside the core index bundle.
