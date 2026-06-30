@@ -275,6 +275,33 @@ describe('Chip3DPreviewToggle', () => {
     expect(screen.queryByRole('button', { name: 'Mock save current view' })).toBeNull()
   })
 
+  it('marks mobile preset showcases for the compact mobile control rail without changing desktop mode', async () => {
+    const onApplyScene3DLook = vi.fn()
+    const { unmount } = render(
+      <Chip3DPreviewToggle
+        project={createProject('Pocket Rail')}
+        authoringMode="mobile-presets"
+        onApplyScene3DLook={onApplyScene3DLook}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open 3D showcase' }))
+    const mobileDialog = await screen.findByRole('dialog', { name: 'Pocket Rail 3D showcase' })
+    expect(mobileDialog).toHaveClass('chip-3d-showcase--mobile-presets')
+    expect(screen.getByRole('group', { name: 'Mobile 3D look presets' })).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Close 3D showcase' }))
+    unmount()
+    render(
+      <Chip3DPreviewToggle project={createProject('Desktop Rail')} onApplyScene3DLook={vi.fn()} />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open 3D showcase' }))
+    const desktopDialog = await screen.findByRole('dialog', { name: 'Desktop Rail 3D showcase' })
+    expect(desktopDialog).not.toHaveClass('chip-3d-showcase--mobile-presets')
+    expect(screen.getByRole('group', { name: '3D look presets' })).toBeInTheDocument()
+  })
+
   it('passes camera save and reset through the mobile preset authoring mode when provided', async () => {
     const onSetScene3DCamera = vi.fn()
     const onResetScene3DCamera = vi.fn()

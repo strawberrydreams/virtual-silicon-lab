@@ -210,3 +210,21 @@
   - `npm run build`: passed; only the known >500 kB chunk warning appeared.
   - `npm run typecheck:server`: passed.
   - `rg "three" dist/assets/index-*.js`: no output, so Three remains outside the core index bundle.
+
+## V11-M3 Responsive Control Layout & A11y
+
+- Implemented M3 as a mobile-only layout polish on the existing `authoringMode="mobile-presets"` showcase rather than introducing a separate mobile control component. `Chip3DShowcase` now adds `chip-3d-showcase--mobile-presets` only for the mobile authoring mode, so the desktop control rail keeps the original `chip-3d-showcase` class and desktop look preset label.
+- Added explicit ARIA groups for look, lighting, and environment controls. Mobile mode labels the exposed preset rails as `Mobile 3D look presets` and `Mobile 3D lighting presets`; desktop keeps `3D look presets`, `3D lighting controls`, and `3D environment controls`.
+- Added a `max-width: 767px` CSS contract for mobile preset showcases: the modal header becomes a compact horizontal chip rail with `overflow-x: auto`, preset groups stay `nowrap`, and all header/viewer action buttons get at least `44px` width and height.
+- Viewer actions now expand across the bottom of the mobile modal under the mobile class only. This keeps `Save current view` and `Reset 3D default` reachable without reintroducing desktop sliders or changing the desktop rail.
+- Trade-off: the compact rail intentionally scrolls horizontally instead of wrapping into multiple rows. This preserves vertical space for the WebGL viewer on phone screens, at the cost of requiring horizontal swipe for the full preset set.
+- Targeted TDD verification:
+  - RED: `npm run test:client -- src/features/editor/Chip3DPreviewToggle.test.tsx tests/mobile3dCss.test.ts` failed because the mobile showcase lacked the mobile layout class and CSS breakpoint rules.
+  - GREEN: the same command passed with 2 files / 20 tests after adding the mobile class, ARIA groups, and compact rail CSS.
+- Browser QA on `http://127.0.0.1:5173/` at `390x844`: remixed `AURORA M5`, opened the mobile 3D showcase, and confirmed `chip-3d-showcase--mobile-presets`, header `overflow-x: auto`, look/lighting preset `flex-wrap: nowrap`, minimum action size `44x44`, mobile ARIA group labels, visible `Save current view` and `Reset 3D default`, zero range inputs, and no browser console warnings/errors.
+- QA note: local Vite server logs still show expected `/api/me` and `/api/health` proxy `ECONNREFUSED` entries when the API server is not running; no browser console warnings/errors were produced during the M3 interactions.
+- Final verification:
+  - `npm test`: client 121 files / 780 tests passed; server 70 files / 298 tests passed.
+  - `npm run build`: passed; only the known >500 kB chunk warning appeared.
+  - `npm run typecheck:server`: passed.
+  - `rg "three" dist/assets/index-*.js`: no output, so Three remains outside the core index bundle.

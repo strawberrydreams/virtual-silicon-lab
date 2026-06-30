@@ -122,6 +122,10 @@ export function Chip3DShowcase({
   const showAnimationControls =
     authoringMode === 'desktop' && (onSetAnimation !== undefined || onResetAnimation !== undefined)
   const showCameraControls = authoringMode === 'desktop' || authoringMode === 'mobile-presets'
+  const showcaseClassName =
+    authoringMode === 'mobile-presets'
+      ? 'chip-3d-showcase chip-3d-showcase--mobile-presets'
+      : 'chip-3d-showcase'
 
   const setEnvironment = (patch: Partial<Scene3DEnvironmentSettings>) => {
     onSetEnvironment?.({
@@ -153,7 +157,7 @@ export function Chip3DShowcase({
     <section
       aria-label={`${project.name} 3D showcase`}
       aria-modal="true"
-      className="chip-3d-showcase"
+      className={showcaseClassName}
       role="dialog"
     >
       <header className="chip-3d-showcase__header">
@@ -163,7 +167,13 @@ export function Chip3DShowcase({
         </div>
         {interactive && renderExtras ? renderExtras(model) : null}
         {showLookControls ? (
-          <div className="chip-3d-look-presets" aria-label="3D look presets">
+          <div
+            className="chip-3d-look-presets"
+            role="group"
+            aria-label={
+              authoringMode === 'mobile-presets' ? 'Mobile 3D look presets' : '3D look presets'
+            }
+          >
             {SCENE_3D_LOOK_PRESETS.map((preset) => (
               <button
                 key={preset.id}
@@ -176,7 +186,7 @@ export function Chip3DShowcase({
           </div>
         ) : null}
         {showLightingControls ? (
-          <div className="chip-3d-lighting" aria-label="3D lighting controls">
+          <div className="chip-3d-lighting" role="group" aria-label="3D lighting controls">
             <div className="chip-3d-lighting__presets">
               {SCENE_3D_LIGHTING_PRESETS.map((preset) => (
                 <button
@@ -213,7 +223,8 @@ export function Chip3DShowcase({
         {showMobileLightingPresets ? (
           <div
             className="chip-3d-lighting chip-3d-lighting--presets"
-            aria-label="3D lighting preset controls"
+            role="group"
+            aria-label="Mobile 3D lighting presets"
           >
             <div className="chip-3d-lighting__presets">
               {SCENE_3D_LIGHTING_PRESETS.map((preset) => (
@@ -230,7 +241,7 @@ export function Chip3DShowcase({
           </div>
         ) : null}
         {showEnvironmentControls ? (
-          <div className="chip-3d-environment" aria-label="3D environment controls">
+          <div className="chip-3d-environment" role="group" aria-label="3D environment controls">
             <div className="chip-3d-environment__presets">
               {ENVIRONMENT_PRESETS.map((preset) => (
                 <button

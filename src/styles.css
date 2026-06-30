@@ -1377,6 +1377,65 @@ button {
   bottom: 1rem;
 }
 
+@media (max-width: 767px) {
+  .chip-3d-showcase--mobile-presets {
+    padding: 0.75rem;
+  }
+
+  .chip-3d-showcase--mobile-presets .chip-3d-showcase__header {
+    flex-wrap: nowrap;
+    align-items: flex-start;
+    justify-content: flex-start;
+    gap: 0.5rem;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    padding: 0.65rem;
+    scroll-snap-type: x proximity;
+  }
+
+  .chip-3d-showcase--mobile-presets .chip-3d-showcase__header > div:first-child {
+    flex: 0 0 10rem;
+    min-width: 10rem;
+    scroll-snap-align: start;
+  }
+
+  .chip-3d-showcase--mobile-presets .chip-3d-look-presets,
+  .chip-3d-showcase--mobile-presets .chip-3d-lighting--presets {
+    flex: 0 0 auto;
+    min-width: max-content;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    gap: 0.35rem;
+    scroll-snap-align: start;
+  }
+
+  .chip-3d-showcase--mobile-presets .chip-3d-lighting--presets .chip-3d-lighting__presets {
+    flex-wrap: nowrap;
+  }
+
+  .chip-3d-showcase--mobile-presets .chip-3d-showcase__header button,
+  .chip-3d-showcase--mobile-presets .chip-3d-viewer__action,
+  .chip-3d-showcase--mobile-presets .chip-3d-viewer__play {
+    min-width: 44px;
+    min-height: 44px;
+    padding-right: 0.75rem;
+    padding-left: 0.75rem;
+  }
+
+  .chip-3d-showcase--mobile-presets .chip-3d-viewer__actions {
+    right: 0.75rem;
+    bottom: 0.75rem;
+    left: 0.75rem;
+    max-width: none;
+    justify-content: flex-end;
+  }
+
+  .chip-3d-showcase--mobile-presets .chip-3d-viewer__play {
+    left: 0.75rem;
+    bottom: 0.75rem;
+  }
+}
+
 .chip-3d-export {
   display: inline-flex;
   align-items: center;
