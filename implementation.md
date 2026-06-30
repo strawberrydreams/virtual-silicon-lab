@@ -144,3 +144,29 @@
   - `npm run build`: passed; only the known >500 kB chunk warning appeared.
   - `npm run typecheck:server`: passed.
   - `rg "three" dist/assets/index-*.js`: no output, so Three remains outside the core index bundle.
+
+## V11-M0 Mobile Authoring Surface Foundation
+
+- Renamed the working branch from `v11` to `codex/v11-m0` so the branch name matches the milestone and Codex branch convention.
+- Started v11 from `docs/superpowers/specs/2026-06-30-v11-mobile-3d-authoring-design.md` and executed the existing M0 plan in `docs/superpowers/plans/2026-06-30-v11-m0-mobile-authoring-surface.md`.
+- Added an optional `chip3dSlot` to `MobileEditorPreview`, rendered immediately under the mobile chip preview and before the fake spec section. When the slot is omitted, the read-only mobile surface remains the existing chip preview/spec/publish/export/desktop-CTA path.
+- Introduced `MobileEditor`, a store-backed mobile wrapper that creates the same `createEditorStore(project)` instance and `useAutosave(store, persist)` flow used by the desktop editor. This gives the mobile route the persistence/undo foundation needed by later v11 milestones without enabling 2D Konva authoring.
+- M0 uses the existing `isChip3DShowcaseAvailable(project)` gate exactly as specified. If the chip is interactive-3D capable, `MobileEditor` passes a viewer-only `Chip3DPreviewToggle` into the slot; otherwise it passes no slot and the static preview remains.
+- No 3D authoring callbacks are passed in M0. The mobile showcase can open the viewer, play/reset the view, and export MP4 through the existing viewer extras, but it does not expose look presets, lighting presets, camera save/reset-default, environment sliders, or animation controls.
+- Wired `App.tsx` so the mobile editor route renders `MobileEditor` with the same `persist={(nextProject) => void store.save(nextProject)}` shape as desktop `EditorPage`. Desktop routing remains unchanged.
+- Trade-off: the fallback/no-WebGL branch is covered by `MobileEditor.test.tsx` rather than browser-forced no-WebGL QA. The in-app browser's read-only evaluation context did not provide a stable way to disable WebGL or seed an over-budget project, so browser QA focused on the real 3D-capable path while component tests cover the unavailable path.
+- Bundle-check trade-off: the first slot wrapper class used `mobile-editor-preview__three`, which made `rg "three" dist/assets/index-*.js` fail even though the Three library was still lazy-loaded. Renamed the class to `mobile-editor-preview__showcase` to preserve the existing string-based gate.
+- Targeted TDD verification:
+  - RED: `npm run test:client -- src/features/editor/MobileEditorPreview.test.tsx` failed because the provided `chip3dSlot` button did not render.
+  - GREEN: `npm run test:client -- src/features/editor/MobileEditorPreview.test.tsx` passed with 3 tests.
+  - RED: `npm run test:client -- src/features/editor/MobileEditor.test.tsx` failed because `./MobileEditor` did not exist.
+  - GREEN: `npm run test:client -- src/features/editor/MobileEditor.test.tsx` passed with 2 tests.
+  - RED: `npm run test:client -- src/app/App.test.tsx` failed because the app still rendered the real `MobileEditorPreview` branch instead of the new `MobileEditor` mock, hitting Konva/ResizeObserver in jsdom.
+  - GREEN: `npm run test:client -- src/app/App.test.tsx` passed with 13 tests after the route swap.
+- Browser smoke on `http://127.0.0.1:5173/` at `390x844`: opened the dashboard, remixed `AURORA M5`, confirmed the mobile editor route showed chip preview, fake spec, publish controls, export controls, no desktop editor workspace, and exactly one `Open 3D showcase` button.
+- Browser 3D smoke: opened the mobile 3D showcase and confirmed a viewer-only modal labeled `AURORA M5 3D showcase`, a visible WebGL canvas (`356x628` CSS / `712x1256` backing), buttons limited to `Export turntable MP4`, `Close 3D showcase`, `Play turntable`, and `Reset view`, no range inputs, and no look/environment/animation/camera authoring text. Dragging the canvas kept the modal open; closing returned focus to `Open 3D showcase`; browser console warn/error logs were empty.
+- Final verification:
+  - `npm test`: client 120 files / 773 tests passed; server 70 files / 298 tests passed.
+  - `npm run build`: passed; only the known >500 kB chunk warning appeared.
+  - `npm run typecheck:server`: passed.
+  - `rg "three" dist/assets/index-*.js`: no output, so Three remains outside the core index bundle.
