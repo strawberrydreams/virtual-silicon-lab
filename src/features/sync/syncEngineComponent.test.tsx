@@ -5,8 +5,10 @@ import { createProject } from '../../domain/projectFactory'
 import type { ProjectRepository } from '../../storage/projectRepository'
 import { ProjectStoreProvider } from '../../stores/projectStoreContext'
 import type { SyncApi, SyncedProjectDto } from './syncApi'
+import { ServerUnreachableError } from './syncApi'
 import { SyncEngine } from './syncEngine'
 import type { SyncAuthGate } from './syncingRepository'
+import { createSyncStatusStore } from './syncStatusStore'
 
 const { authState } = vi.hoisted(() => ({ authState: { status: 'anonymous' as string } }))
 vi.mock('../../stores/authStoreContext', () => ({
@@ -38,10 +40,11 @@ describe('SyncEngine', () => {
     const local = memoryRepo()
     const api: SyncApi = { pull: vi.fn(async () => []), push: vi.fn(), remove: vi.fn() }
     const gate: SyncAuthGate = { authenticated: false }
+    const statusStore = createSyncStatusStore()
 
     render(
       <ProjectStoreProvider repository={local}>
-        <SyncEngine local={local} api={api} gate={gate} />
+        <SyncEngine local={local} api={api} gate={gate} statusStore={statusStore} />
       </ProjectStoreProvider>,
     )
 
@@ -59,15 +62,86 @@ describe('SyncEngine', () => {
       remove: vi.fn(),
     }
     const gate: SyncAuthGate = { authenticated: false }
+    const statusStore = createSyncStatusStore()
 
     render(
       <ProjectStoreProvider repository={local}>
-        <SyncEngine local={local} api={api} gate={gate} />
+        <SyncEngine local={local} api={api} gate={gate} statusStore={statusStore} />
       </ProjectStoreProvider>,
     )
 
     await waitFor(() => expect(gate.authenticated).toBe(true))
     await waitFor(async () => expect(await local.get('r1')).toEqual(remote))
     expect(api.pull).toHaveBeenCalledWith(0)
+  })
+})
+
+describe('SyncEngine status', () => {
+  it('reports synced after a successful pass', async () => {
+    authState.status = 'authenticated'
+    const local = memoryRepo()
+    const api: SyncApi = { pull: vi.fn(async () => []), push: vi.fn(), remove: vi.fn() }
+    const gate: SyncAuthGate = { authenticated: false }
+    const statusStore = createSyncStatusStore()
+
+    render(
+      <ProjectStoreProvider repository={local}>
+        <SyncEngine local={local} api={api} gate={gate} statusStore={statusStore} />
+      </ProjectStoreProvider>,
+    )
+
+    await waitFor(() => expect(statusStore.getState().status).toBe('synced'))
+  })
+
+  it('reports offline when the server is unreachable', async () => {
+    authState.status = 'authenticated'
+    const local = memoryRepo()
+    const api: SyncApi = {
+      pull: vi.fn(async () => {
+        throw new ServerUnreachableError()
+      }),
+      push: vi.fn(),
+      remove: vi.fn(),
+    }
+    const statusStore = createSyncStatusStore()
+
+    render(
+      <ProjectStoreProvider repository={local}>
+        <SyncEngine
+          local={local}
+          api={api}
+          gate={{ authenticated: false }}
+          statusStore={statusStore}
+        />
+      </ProjectStoreProvider>,
+    )
+
+    await waitFor(() => expect(statusStore.getState().status).toBe('offline'))
+  })
+
+  it('reports error on a non-network failure', async () => {
+    authState.status = 'authenticated'
+    const local = memoryRepo()
+    const api: SyncApi = {
+      pull: vi.fn(async () => {
+        throw new Error('boom')
+      }),
+      push: vi.fn(),
+      remove: vi.fn(),
+    }
+    const statusStore = createSyncStatusStore()
+
+    render(
+      <ProjectStoreProvider repository={local}>
+        <SyncEngine
+          local={local}
+          api={api}
+          gate={{ authenticated: false }}
+          statusStore={statusStore}
+        />
+      </ProjectStoreProvider>,
+    )
+
+    await waitFor(() => expect(statusStore.getState().status).toBe('error'))
   })
 })

@@ -3,7 +3,8 @@ import { reconcile, type SyncMeta } from '../../domain/sync/reconcile'
 import type { ProjectRepository } from '../../storage/projectRepository'
 import { useAuthStore } from '../../stores/authStoreContext'
 import { useProjectStoreApi } from '../../stores/projectStoreContext'
-import type { SyncApi } from './syncApi'
+import { ServerUnreachableError, type SyncApi } from './syncApi'
+import type { SyncStatusStore } from './syncStatusStore'
 import type { SyncAuthGate } from './syncingRepository'
 
 const SYNC_INTERVAL_MS = 30_000
@@ -44,10 +45,12 @@ export function SyncEngine({
   local,
   api,
   gate,
+  statusStore,
 }: {
   local: ProjectRepository
   api: SyncApi
   gate: SyncAuthGate
+  statusStore: SyncStatusStore
 }): null {
   const auth = useAuthStore()
   const projectStore = useProjectStoreApi()
@@ -58,15 +61,24 @@ export function SyncEngine({
   }, [authenticated, gate])
 
   useEffect(() => {
-    if (!authenticated) return
+    if (!authenticated) {
+      statusStore.setState({ status: 'idle' })
+      return
+    }
 
     let cancelled = false
     async function pass() {
+      statusStore.setState({ status: 'syncing' })
       try {
         await runSyncPass(local, api)
         if (!cancelled) await projectStore.getState().load()
-      } catch {
-        // Local state remains authoritative; the next foreground/interval pass retries.
+        if (!cancelled) statusStore.setState({ status: 'synced' })
+      } catch (error) {
+        if (!cancelled) {
+          statusStore.setState({
+            status: error instanceof ServerUnreachableError ? 'offline' : 'error',
+          })
+        }
       }
     }
 
@@ -82,7 +94,7 @@ export function SyncEngine({
       window.clearInterval(interval)
       document.removeEventListener('visibilitychange', onVisibility)
     }
-  }, [authenticated, local, api, projectStore])
+  }, [authenticated, local, api, projectStore, statusStore])
 
   return null
 }

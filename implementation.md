@@ -327,3 +327,19 @@
   - `npm run test:client -- src/features/sync/syncAdoption.test.ts`: 3/3 passing.
   - `npm test`: client 127 files / 814 tests passed; server 74 files / 321 tests passed.
   - `npm run build`: passed; only the known >500 kB chunk warning appeared.
+
+## V12-M5 Sync Status UI
+
+- Added a display-only sync status surface without changing sync behavior: `createSyncStatusStore` owns `idle | syncing | synced | offline | error`, `SyncStatusIndicator` renders active states with `role="status"` / `aria-live="polite"`, and `idle` renders no badge.
+- `SyncEngine` now accepts the status store and reports sync pass state: unauthenticated becomes `idle`, pass start becomes `syncing`, success becomes `synced`, `ServerUnreachableError` becomes `offline`, and all other failures become `error`. The engine still swallows failures after reporting status, preserving M3's local-first behavior.
+- App composition creates one stable status store and passes it both to `SyncEngine` and the header. The header renders the badge before the theme switcher so signed-in users get a compact global sync signal without adding controls or routes.
+- Decision: the syncing label uses ASCII `Syncing...` instead of a Unicode ellipsis to match the repository's default ASCII editing rule for new text.
+- Targeted TDD verification:
+  - RED/GREEN: `npm run test:client -- src/features/sync/SyncStatusIndicator.test.tsx` failed on the missing component/store, then passed with 2 tests after adding them.
+  - RED/GREEN: `npm run test:client -- src/features/sync/syncEngineComponent.test.tsx` failed while the engine left status at `idle`, then passed with 5 tests after wiring status transitions.
+  - Focused app/sync bundle passed: `npm run test:client -- src/features/sync/SyncStatusIndicator.test.tsx src/features/sync/syncEngineComponent.test.tsx src/app/App.test.tsx` with 3 files / 20 tests, and `npm run test:client -- src/features/sync/syncApi.test.ts src/features/sync/syncingRepository.test.ts src/features/sync/syncEngine.test.ts src/features/sync/syncAdoption.test.ts` with 4 files / 22 tests.
+- Browser QA on `http://localhost:5173/`: signed out showed no sync badge; signing in as the local `V12 M5 QA` account showed `Synced`; stopping the API server while keeping the signed-in SPA state changed the badge to `Offline` after the sync interval; restarting the API server changed it back to `Synced` after the next interval.
+- Browser console warn/error logs were empty after the M5 badge QA. Vite server logs showed expected proxy `ECONNREFUSED` entries while the API server was intentionally stopped for the offline-path check.
+- Final verification:
+  - `npm test`: client 128 files / 819 tests passed; server 74 files / 321 tests passed.
+  - `npm run build`: passed; only the known >500 kB chunk warning appeared.

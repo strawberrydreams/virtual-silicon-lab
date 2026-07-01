@@ -18,8 +18,10 @@ import { LandingPage } from '../features/landing/LandingPage'
 import { ProfilePage } from '../features/profile/ProfilePage'
 import { liveAiDraftApi } from '../features/projects/aiDraftApi'
 import { ProjectDashboard } from '../features/projects/ProjectDashboard'
+import { SyncStatusIndicator } from '../features/sync/SyncStatusIndicator'
 import { SyncEngine } from '../features/sync/syncEngine'
 import { liveSyncApi } from '../features/sync/syncApi'
+import { createSyncStatusStore, type SyncStatusStore } from '../features/sync/syncStatusStore'
 import { createSyncingRepository, type SyncAuthGate } from '../features/sync/syncingRepository'
 import { PRESET_CATALOG } from '../presets/presetCatalog'
 import { AuthStoreProvider, useAuthStore } from '../stores/authStoreContext'
@@ -190,6 +192,7 @@ export function App() {
   const [local] = useState(() => createDefaultRepository())
   const [gate] = useState<SyncAuthGate>(() => ({ authenticated: false }))
   const [syncingRepository] = useState(() => createSyncingRepository(local, liveSyncApi, gate))
+  const [syncStatusStore] = useState(() => createSyncStatusStore())
 
   return (
     <div
@@ -200,8 +203,12 @@ export function App() {
     >
       <ProjectStoreProvider repository={syncingRepository}>
         <AuthStoreProvider>
-          <SyncEngine local={local} api={liveSyncApi} gate={gate} />
-          <SiteHeader themeName={themeName} onThemeChange={setTheme} />
+          <SyncEngine local={local} api={liveSyncApi} gate={gate} statusStore={syncStatusStore} />
+          <SiteHeader
+            themeName={themeName}
+            onThemeChange={setTheme}
+            syncStatusStore={syncStatusStore}
+          />
           <div className="app-shell__route">
             <Routes>
               <Route path="/" element={<LandingRoute />} />
@@ -230,9 +237,11 @@ export function App() {
 function SiteHeader({
   themeName,
   onThemeChange,
+  syncStatusStore,
 }: {
   themeName: PageThemeName
   onThemeChange: (theme: PageThemeName) => void
+  syncStatusStore: SyncStatusStore
 }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const isMobile = useIsMobile()
@@ -301,6 +310,7 @@ function SiteHeader({
           <AccountNavLink onNavigate={closeMenu} />
           <AdminNavLink onNavigate={closeMenu} />
         </nav>
+        <SyncStatusIndicator store={syncStatusStore} />
         <ThemeSwitcher current={themeName} onChange={onThemeChange} />
       </div>
     </header>
