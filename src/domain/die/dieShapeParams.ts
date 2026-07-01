@@ -10,7 +10,7 @@ export const PARAMETRIC_DIE_SHAPES = [
   'plus',
 ] as const
 
-const DIE_SHAPES = [...LEGACY_DIE_SHAPES, ...PARAMETRIC_DIE_SHAPES] as const
+const DIE_SHAPES = [...LEGACY_DIE_SHAPES, ...PARAMETRIC_DIE_SHAPES, 'freeform'] as const
 const DIE_CORNERS = ['top-left', 'top-right', 'bottom-right', 'bottom-left'] as const
 
 export function isDieShape(value: unknown): value is DieShape {
