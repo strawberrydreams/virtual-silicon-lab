@@ -28,16 +28,24 @@ export function reconcile(local: SyncMeta[], remote: SyncMeta[]): ReconcilePlan 
       continue
     }
     if (!l && r) {
-      toApply.push(id)
+      // A remote-only live project arrives from another device; a remote-only
+      // tombstone has nothing local to remove, so ignore it.
+      if (!r.deleted) toApply.push(id)
       continue
     }
     if (l && r) {
-      if (r.updatedAt > l.updatedAt) {
+      if (r.deleted) {
+        if (r.updatedAt >= l.updatedAt) {
+          toDeleteLocal.push(id)
+        } else {
+          toPush.push(id)
+        }
+      } else if (r.updatedAt > l.updatedAt) {
         toApply.push(id)
       } else if (r.updatedAt < l.updatedAt) {
         toPush.push(id)
       }
-      // equal updatedAt: already in sync, no-op
+      // equal updatedAt on a live pair: already in sync, no-op
       continue
     }
   }

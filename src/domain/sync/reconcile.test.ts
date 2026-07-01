@@ -40,3 +40,29 @@ describe('reconcile — last-write-wins on both sides', () => {
     expect(plan).toEqual({ toPush: [], toApply: [], toDeleteLocal: [] })
   })
 })
+
+describe('reconcile — tombstones', () => {
+  it('deletes locally when the server tombstone is newer or equal', () => {
+    const plan = reconcile(
+      [{ id: 'a', updatedAt: 100 }],
+      [{ id: 'a', updatedAt: 150, deleted: true }],
+    )
+
+    expect(plan).toEqual({ toPush: [], toApply: [], toDeleteLocal: ['a'] })
+  })
+
+  it('pushes the local copy when it is newer than the server tombstone', () => {
+    const plan = reconcile(
+      [{ id: 'a', updatedAt: 200 }],
+      [{ id: 'a', updatedAt: 150, deleted: true }],
+    )
+
+    expect(plan).toEqual({ toPush: ['a'], toApply: [], toDeleteLocal: [] })
+  })
+
+  it('ignores a remote-only tombstone with nothing local to delete', () => {
+    const plan = reconcile([], [{ id: 'a', updatedAt: 150, deleted: true }])
+
+    expect(plan).toEqual({ toPush: [], toApply: [], toDeleteLocal: [] })
+  })
+})
