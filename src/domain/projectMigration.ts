@@ -7,11 +7,12 @@ import {
   type RemixOrigin,
 } from './project'
 import { isDieShape, isParametricDieShape, resolveDieShapeParams } from './die/dieShapeParams'
+import { resolveFreeformVertices } from './die/freeformVertices'
 import { isChipFinish, resolveChipFinish } from './material/chipFinish'
 import { cloneStudioState, createDefaultStudioState } from './studioDefaults'
 import { normalizeScene3DSettings } from './scene3d/scene3d'
 
-const SUPPORTED_SCHEMA_VERSIONS = new Set([1, 2, 3, 4, 5, 6, 7, 8, CURRENT_SCHEMA_VERSION])
+const SUPPORTED_SCHEMA_VERSIONS = new Set([1, 2, 3, 4, 5, 6, 7, 8, 9, CURRENT_SCHEMA_VERSION])
 
 export function migrateProject(value: unknown): Project {
   if (
@@ -92,7 +93,9 @@ function normalizePersistedDie(value: unknown): Die {
     height: candidate.height,
     background: candidate.background,
   }
-  if (isParametricDieShape(die.shape)) {
+  if (die.shape === 'freeform') {
+    die.freeform = { vertices: resolveFreeformVertices(candidate.freeform) }
+  } else if (isParametricDieShape(die.shape)) {
     die.dieShapeParams = resolveDieShapeParams(die.shape, candidate.dieShapeParams)
   }
   return die

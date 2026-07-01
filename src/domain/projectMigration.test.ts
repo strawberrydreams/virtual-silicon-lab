@@ -248,7 +248,7 @@ describe('migrateProject', () => {
       studio: undefined,
     })
 
-    expect(migrated.schemaVersion).toBe(9)
+    expect(migrated.schemaVersion).toBe(10)
     expect(migrated.finish).toBe('gloss')
     expect(migrated.die).toEqual({
       shape: 'rect',
@@ -283,7 +283,7 @@ describe('migrateProject', () => {
       studio: undefined,
     })
 
-    expect(migrated.schemaVersion).toBe(9)
+    expect(migrated.schemaVersion).toBe(10)
     expect(migrated.finish).toBe('matte')
     expect(migrated.finish).toBe(defaultFinishForTheme('military'))
   })
@@ -297,7 +297,7 @@ describe('migrateProject', () => {
       studio: undefined,
     })
 
-    expect(migrated.schemaVersion).toBe(9)
+    expect(migrated.schemaVersion).toBe(10)
     expect(migrated.finish).toBe('metallic')
   })
 
@@ -347,7 +347,7 @@ describe('migrateProject', () => {
       ],
     })
 
-    expect(migrated.schemaVersion).toBe(9)
+    expect(migrated.schemaVersion).toBe(10)
     expect(migrated.blocks[0]).not.toHaveProperty('finish')
   })
 
@@ -411,7 +411,7 @@ describe('migrateProject', () => {
       studio: undefined,
     })
 
-    expect(migrated.schemaVersion).toBe(9)
+    expect(migrated.schemaVersion).toBe(10)
     expect(migrated).not.toHaveProperty('scene3d')
   })
 
@@ -619,6 +619,42 @@ describe('migrateProject', () => {
 
   it('rejects a right-version record with a structurally invalid shape', () => {
     expect(() => migrateProject({ schemaVersion: 1, id: 'x' })).toThrow('Corrupt project record')
+  })
+
+  it('normalizes a freeform die and stamps the current schema version', () => {
+    const migrated = migrateProject({
+      ...validProject('freeform-project'),
+      schemaVersion: 10,
+      die: {
+        shape: 'freeform',
+        width: 960,
+        height: 640,
+        background: 'grid-cyan',
+        freeform: {
+          vertices: [
+            { x: 0, y: 0 },
+            { x: 1.5, y: 0 },
+            { x: 0.5, y: 1 },
+          ],
+        },
+      },
+    })
+    expect(migrated.schemaVersion).toBe(10)
+    expect(migrated.die.shape).toBe('freeform')
+    expect(migrated.die.freeform).toEqual({
+      vertices: [
+        { x: 0, y: 0 },
+        { x: 1, y: 0 },
+        { x: 0.5, y: 1 },
+      ],
+    })
+    expect(migrated.die.dieShapeParams).toBeUndefined()
+  })
+
+  it('still migrates a legacy schema-9 rectangle project to version 10', () => {
+    const migrated = migrateProject({ ...validProject('legacy-schema-9'), schemaVersion: 9 })
+    expect(migrated.schemaVersion).toBe(10)
+    expect(migrated.die.freeform).toBeUndefined()
   })
 
   it('migrateProjects keeps valid records and skips unreadable ones', () => {

@@ -1,7 +1,7 @@
 import type { ChipFinish } from './material/chipFinish'
 import type { Scene3DSettings } from './scene3d/scene3d'
 
-export const CURRENT_SCHEMA_VERSION = 9 as const
+export const CURRENT_SCHEMA_VERSION = 10 as const
 
 export type DieShape =
   | 'rect'
