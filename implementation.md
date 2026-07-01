@@ -262,3 +262,19 @@
   - `npm run test:client -- src/domain/sync/reconcile.test.ts`: 9/9 passing.
   - `npm test`: client 122 files / 789 tests passed; server 70 files / 298 tests passed.
   - `npm run build`: passed; only the known >500 kB chunk warning appeared.
+
+## V12-M1 Server Sync Table + Routes
+
+- Added the server side of v12 "Continuum" multi-device sync: a per-user `synced_projects` table plus `/api/sync/projects` routes, so a signed-in user's local projects can be mirrored/reconciled across devices. This is the first v12 milestone to touch the backend (schema + routes), by design.
+- Migration `014_synced_projects` (append-only, follows `013_ai`): `(user_id, project_id, project_json, updated_at, deleted_at)` with composite `PRIMARY KEY (user_id, project_id)`, FK `user_id → users(id) ON DELETE CASCADE`, and index `idx_synced_projects_user_updated` on `(user_id, updated_at)` for delta pulls. Mirrors the existing `published_chips` per-user pattern.
+- `server/src/sync/service.ts` holds the last-write-wins persistence: `pushSyncedProject` stores only when `updatedAt >= stored.updated_at` (clearing any tombstone via `ON CONFLICT ... DO UPDATE SET deleted_at = NULL`) and always returns the stored winner; `deleteSyncedProject` writes/keeps a tombstone (`deleted_at`, `updated_at = deletedAt`) when `deletedAt >= stored.updated_at` or no row exists (a never-pushed project gets an empty-json tombstone) and never hard-deletes the row; `listSyncedProjectsSince` returns rows with `updated_at > since` ascending (tombstones included so deletions propagate). Every statement is scoped by `user_id`.
+- Decision: the `>=` push/tombstone acceptance boundary matches the M0 client `reconcile` (`updatedAt >= stored` / tombstone-newer-or-equal → delete), so a client re-pushing its own latest is idempotent and the two sides cannot oscillate.
+- `server/src/sync/validation.ts` (`validateSyncPush`) guards the PUT body: rejects non-objects/arrays, an `id` that does not match the URL, and a non-finite `updatedAt`; on success returns the serialized `projectJson` and numeric `updatedAt`. Mirrors the `publish/validation.ts` result-object style.
+- `server/src/sync/routes.ts` (`syncRoutes`) mounts under `/api` in `app.ts`, reusing the `publish/routes.ts` auth pattern verbatim: signed `vsl_session` cookie → `getSessionUserWithStatus`; 401 `UNAUTHORIZED` without a session, 403 `ACCOUNT_BANNED` for banned users; 400 `INVALID_INPUT` on a bad push body. Wire format per record is `{ projectId, updatedAt, deleted, project }` where `project` is the parsed project JSON for a live record and `null` for a tombstone — giving M2's `SyncApi` the `{ id, updatedAt, deleted }` metadata `reconcile` needs plus the body for `toApply` (only field adaptation for M2 is `projectId → id`).
+- Cross-user isolation is proven end-to-end by test (a second user cannot see or overwrite the first user's rows).
+- Deferred (noted for later milestones): `since` is not clamped to non-negative integers server-side (M2 should send clean values); the push body is not size-capped (revisit alongside real payloads in M4, consistent with the publish path's `uploadMaxBytes`).
+- No client code changed in M1. `published_chips` and all other tables/routes are untouched.
+- Final verification:
+  - `npm test`: client 122 passed; server 321 passed.
+  - `npm run typecheck:server`: passed.
+  - `npm run build`: passed; only the known >500 kB chunk warning appeared.
