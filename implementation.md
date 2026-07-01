@@ -343,3 +343,43 @@
 - Final verification:
   - `npm test`: client 128 files / 819 tests passed; server 74 files / 321 tests passed.
   - `npm run build`: passed; only the known >500 kB chunk warning appeared.
+
+## V12-M6 Final QA & Release
+
+- Release milestone for v12 "Continuum" multi-device sync. Bumped the version line to `0.10 v12`
+  (`README.md` + `README.kr.md`), corrected the launch-status note to record that v12 is the first
+  client authoring milestone to add server state (per-user `synced_projects` + `/api/sync/*`), and
+  added the QA release pack `docs/ops/v12-continuum-sync-qa.md`.
+- Rewrote `tests/releaseDocs.test.ts` from the v11 contract to the v12 contract (version line, v12
+  overview, QA pack); confirmed RED before the doc edits and GREEN after with 1 file / 3 tests.
+- Browser QA used `VSL_PUBLIC_BASE_URL=http://127.0.0.1:5173`, the API server on `127.0.0.1:8787`,
+  and dev origins `localhost:5173` / `127.0.0.1:5174`. The in-app browser could not keep a stable
+  third independent anonymous host (`127.0.0.2` timed out and left an internal error page), so the
+  signed-out/no-badge path is covered by M5 browser QA and the anonymous/local-only behavior is
+  covered by the M3/M4 sync tests.
+- Browser QA results:
+  - Anonymous stays local: signed-out header/no-badge path verified in M5; no new browser evidence of
+    `/api/sync/*` from an independent anonymous storage context because the available browser host set
+    could not provide a stable third origin.
+  - First-login adoption: covered by `syncAdoption.test.ts` and the full regression suite; no new
+    production code changed in M6.
+  - Multi-device round-trip: same-account remote pull path was verified by inserting server project
+    `remote-v12-m6-browser` for the QA user; the logged-in dashboard pulled it through the sync pass
+    and displayed `REMOTE V12 M6 QA` with the badge at `Synced`.
+  - Sync status badge / offline resilience: with the logged-in dashboard open, stopping the API server
+    changed the badge to `Offline` while the pulled local project remained visible; restarting the
+    server changed the badge back to `Synced`.
+  - Publish/gallery/share unchanged: existing public chip `/s/aurora-m5-630e2ac5` rendered the share
+    page with poster image and 3D link; `/gallery/aurora-m5-630e2ac5?view=3d` rendered the published
+    gallery detail with a WebGL canvas.
+  - Export parity: no export code changed in v12-M6; full regression/build passed and the publish/share
+    smoke confirmed the existing 2D/3D read surfaces still render.
+- Browser console warn/error logs were empty for the sync dashboard, share, and gallery QA tabs. Vite
+  server logs showed expected proxy `ECONNREFUSED` entries only while the API server was intentionally
+  stopped for the offline-path check.
+- Final verification:
+  - `npm run test:client -- tests/releaseDocs.test.ts`: passed with 1 file / 3 tests.
+  - `npm test`: client 128 files / 819 tests passed; server 74 files / 321 tests passed.
+  - `npm run build`: passed; only the known >500 kB chunk warning appeared.
+  - `npm run typecheck:server`: passed.
+  - `rg "three" dist/assets/index-*.js`: no output, so Three remains outside the core index bundle.
