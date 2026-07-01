@@ -45,6 +45,7 @@ export function isChip3DShapeSupported(shape: DieShape): boolean {
     case 'keyed':
     case 'l-shape':
     case 'plus':
+    case 'freeform':
       return true
     default: {
       const unhandledShape: never = shape

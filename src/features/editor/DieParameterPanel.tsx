@@ -34,6 +34,7 @@ const SHAPE_LABELS: Record<Die['shape'], string> = {
   keyed: 'Keyed',
   'l-shape': 'L-Shape',
   plus: 'Plus',
+  freeform: 'Freeform',
 }
 
 const COMMIT_KEYS = new Set([

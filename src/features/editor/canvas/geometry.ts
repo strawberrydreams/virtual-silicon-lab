@@ -104,7 +104,8 @@ export function clampBlockToDie(block: BlockRect, die: Die): BlockRect {
     case 'chamfered-rect':
     case 'keyed':
     case 'l-shape':
-    case 'plus': {
+    case 'plus':
+    case 'freeform': {
       const outline = resolveDieOutline(die)
       return clampBlockToPolygon(block, outlineToPolygon(outline), outline.centroid)
     }

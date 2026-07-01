@@ -126,6 +126,30 @@ describe('clampBlockToDie', () => {
 
     expect(rotatedCorners(result).every((corner) => pointInPolygon(corner, polygon))).toBe(true)
   })
+
+  it('clamps a block through the polygon path for a freeform die', () => {
+    const clamped = clampBlockToDie(
+      { x: -50, y: -50, w: 20, h: 20 },
+      {
+        shape: 'freeform',
+        width: 100,
+        height: 100,
+        background: 'grid-cyan',
+        freeform: {
+          vertices: [
+            { x: 0, y: 0 },
+            { x: 1, y: 0 },
+            { x: 1, y: 1 },
+            { x: 0, y: 1 },
+          ],
+        },
+      },
+    )
+    expect(clamped.x).toBeGreaterThanOrEqual(0)
+    expect(clamped.y).toBeGreaterThanOrEqual(0)
+    expect(clamped.x + clamped.w).toBeLessThanOrEqual(100)
+    expect(clamped.y + clamped.h).toBeLessThanOrEqual(100)
+  })
 })
 
 describe('normalizeDie', () => {

@@ -1,5 +1,6 @@
 import type { Die, DieCorner } from '../project'
 import { resolveDieShapeParams } from './dieShapeParams'
+import { resolveFreeformVertices } from './freeformVertices'
 
 export type Point = { x: number; y: number }
 
@@ -295,6 +296,21 @@ export function resolveDieOutline(die: Die): DieOutline {
     case 'plus': {
       const params = resolveDieShapeParams(die.shape, die.dieShapeParams)
       return plusOutline(die.width, die.height, params?.armWidth ?? 0.36)
+    }
+    case 'freeform': {
+      const vertices = resolveFreeformVertices(die.freeform)
+      const points = vertices.map((vertex) => ({
+        x: vertex.x * die.width,
+        y: vertex.y * die.height,
+      }))
+      const centroid = points.reduce(
+        (accumulator, point) => ({
+          x: accumulator.x + point.x / points.length,
+          y: accumulator.y + point.y / points.length,
+        }),
+        { x: 0, y: 0 },
+      )
+      return polygonOutline(points, centroid)
     }
   }
 }

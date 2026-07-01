@@ -14,6 +14,7 @@ describe('dieShapePreviewClass', () => {
     'keyed',
     'l-shape',
     'plus',
+    'freeform',
   ])('returns a preview class for %s', (shape) => {
     expect(dieShapePreviewClass(shape)).toContain('aspect-')
   })

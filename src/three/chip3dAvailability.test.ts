@@ -19,6 +19,7 @@ const ALL_DIE_SHAPES = [
   'keyed',
   'l-shape',
   'plus',
+  'freeform',
 ] as const satisfies readonly DieShape[]
 
 describe('webglAvailable', () => {

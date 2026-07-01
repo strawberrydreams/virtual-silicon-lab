@@ -98,6 +98,44 @@ describe('resolveDieOutline', () => {
       ),
     ).toBe(true)
   })
+
+  it('resolves a freeform shape by scaling normalized vertices to width and height', () => {
+    const outline = resolveDieOutline(
+      die({
+        shape: 'freeform',
+        width: 100,
+        height: 200,
+        freeform: {
+          vertices: [
+            { x: 0, y: 0 },
+            { x: 1, y: 0 },
+            { x: 0.5, y: 1 },
+          ],
+        },
+      }),
+    )
+    expect(outline.centroid).toEqual({ x: 50, y: 200 / 3 })
+    expect(outline.segments).toEqual([
+      { kind: 'line', from: { x: 0, y: 0 }, to: { x: 100, y: 0 } },
+      { kind: 'line', from: { x: 100, y: 0 }, to: { x: 50, y: 200 } },
+      { kind: 'line', from: { x: 50, y: 200 }, to: { x: 0, y: 0 } },
+    ])
+    expect(outlineToPolygon(outline)).toEqual([
+      { x: 0, y: 0 },
+      { x: 100, y: 0 },
+      { x: 50, y: 200 },
+    ])
+  })
+
+  it('falls back to a full-frame rectangle when freeform data is missing', () => {
+    const outline = resolveDieOutline(die({ shape: 'freeform', width: 100, height: 200 }))
+    expect(outlineToPolygon(outline)).toEqual([
+      { x: 0, y: 0 },
+      { x: 100, y: 0 },
+      { x: 100, y: 200 },
+      { x: 0, y: 200 },
+    ])
+  })
 })
 
 describe('outlineToPolygon', () => {
