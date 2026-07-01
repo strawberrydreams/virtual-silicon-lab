@@ -31,6 +31,15 @@ export function reconcile(local: SyncMeta[], remote: SyncMeta[]): ReconcilePlan 
       toApply.push(id)
       continue
     }
+    if (l && r) {
+      if (r.updatedAt > l.updatedAt) {
+        toApply.push(id)
+      } else if (r.updatedAt < l.updatedAt) {
+        toPush.push(id)
+      }
+      // equal updatedAt: already in sync, no-op
+      continue
+    }
   }
 
   const asc = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0)

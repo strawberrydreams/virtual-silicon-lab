@@ -20,3 +20,23 @@ describe('reconcile — new project routing', () => {
     expect(plan.toPush).toEqual(['m', 'z'])
   })
 })
+
+describe('reconcile — last-write-wins on both sides', () => {
+  it('applies the server copy when it is newer', () => {
+    const plan = reconcile([{ id: 'a', updatedAt: 100 }], [{ id: 'a', updatedAt: 200 }])
+
+    expect(plan).toEqual({ toPush: [], toApply: ['a'], toDeleteLocal: [] })
+  })
+
+  it('pushes the local copy when it is newer', () => {
+    const plan = reconcile([{ id: 'a', updatedAt: 300 }], [{ id: 'a', updatedAt: 200 }])
+
+    expect(plan).toEqual({ toPush: ['a'], toApply: [], toDeleteLocal: [] })
+  })
+
+  it('does nothing when both sides share the same updatedAt', () => {
+    const plan = reconcile([{ id: 'a', updatedAt: 200 }], [{ id: 'a', updatedAt: 200 }])
+
+    expect(plan).toEqual({ toPush: [], toApply: [], toDeleteLocal: [] })
+  })
+})
