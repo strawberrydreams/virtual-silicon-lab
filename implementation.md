@@ -247,3 +247,18 @@
   - `npm run build`: passed; only the known >500 kB chunk warning appeared.
   - `npm run typecheck:server`: passed.
   - `rg "three" dist/assets/index-*.js`: no output, so Three remains outside the core index bundle.
+
+## V12-M0 Sync Reconcile Core
+
+- Started v12 "Continuum" multi-device sync with a pure `src/domain/sync/reconcile.ts` decision function — the last-write-wins core that later milestones (server routes, SyncApi, SyncEngine) build on. It imports nothing from Three, React, Konva, browser APIs, storage, network, or Zustand, keeping `src/domain/` reusable and unit-testable in isolation (matches the `src/domain/scene3d/` purity rule).
+- `reconcile(local, remote)` takes two `SyncMeta[]` lists (`{ id, updatedAt, deleted? }`) and returns a `ReconcilePlan` of project-id lists: `toPush` (send local to server), `toApply` (upsert remote locally), `toDeleteLocal` (remove locally).
+- Decision: `remote` is treated as the complete server snapshot for the user, so the LWW decision is defined against a full snapshot; the `?since=` delta-pull optimization is a later engine concern, not part of `reconcile`.
+- Conflict rule is last-write-wins by `updatedAt`: for a project present on both sides and live, server-newer resolves to `toApply`, local-newer to `toPush`, and equal `updatedAt` is a no-op (already in sync).
+- Deletions propagate via tombstones (a remote entry with `deleted: true`): a tombstone that is newer than or equal to the local copy (`>=`) resolves to `toDeleteLocal`; a strictly-newer local copy (a revive/edit after the delete) resolves to `toPush`; a remote-only tombstone with nothing local to remove is ignored.
+- Decision: output arrays are sorted ascending by id so results are deterministic regardless of input order, which keeps the tests and downstream engine behavior stable.
+- Built via three TDD slices (new-project routing, both-present LWW, tombstones), landing 9 unit tests in `src/domain/sync/reconcile.test.ts`.
+- No backend/route/SQLite/schema change in M0 — this is pure client domain code; the server `synced_projects` table and `/api/sync/*` routes are V12-M1.
+- Final verification:
+  - `npm run test:client -- src/domain/sync/reconcile.test.ts`: 9/9 passing.
+  - `npm test`: client 122 files / 789 tests passed; server 70 files / 298 tests passed.
+  - `npm run build`: passed; only the known >500 kB chunk warning appeared.
