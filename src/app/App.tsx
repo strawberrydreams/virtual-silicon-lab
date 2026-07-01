@@ -18,9 +18,16 @@ import { LandingPage } from '../features/landing/LandingPage'
 import { ProfilePage } from '../features/profile/ProfilePage'
 import { liveAiDraftApi } from '../features/projects/aiDraftApi'
 import { ProjectDashboard } from '../features/projects/ProjectDashboard'
+import { SyncEngine } from '../features/sync/syncEngine'
+import { liveSyncApi } from '../features/sync/syncApi'
+import { createSyncingRepository, type SyncAuthGate } from '../features/sync/syncingRepository'
 import { PRESET_CATALOG } from '../presets/presetCatalog'
 import { AuthStoreProvider, useAuthStore } from '../stores/authStoreContext'
-import { ProjectStoreProvider, useProjectStore } from '../stores/projectStoreContext'
+import {
+  createDefaultRepository,
+  ProjectStoreProvider,
+  useProjectStore,
+} from '../stores/projectStoreContext'
 import { resolveHeroSetForProject } from '../visual/heroSetCatalog'
 import {
   PAGE_THEME_NAMES,
@@ -180,6 +187,9 @@ function ContestDetailRoute() {
 export function App() {
   const [themeName, setTheme] = usePageTheme()
   const pageTheme = resolvePageTheme(themeName)
+  const [local] = useState(() => createDefaultRepository())
+  const [gate] = useState<SyncAuthGate>(() => ({ authenticated: false }))
+  const [syncingRepository] = useState(() => createSyncingRepository(local, liveSyncApi, gate))
 
   return (
     <div
@@ -188,8 +198,9 @@ export function App() {
       data-testid="app-shell"
       style={pageTheme.cssVariables}
     >
-      <ProjectStoreProvider>
+      <ProjectStoreProvider repository={syncingRepository}>
         <AuthStoreProvider>
+          <SyncEngine local={local} api={liveSyncApi} gate={gate} />
           <SiteHeader themeName={themeName} onThemeChange={setTheme} />
           <div className="app-shell__route">
             <Routes>

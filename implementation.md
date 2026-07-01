@@ -295,3 +295,22 @@
 - Final verification:
   - `npm test`: client 123 files / 799 tests passed; server 74 files / 321 tests passed.
   - `npm run build`: passed; only the known >500 kB chunk warning appeared.
+
+## V12-M3 Sync Engine Wiring
+
+- Wired the client sync layer with three pieces: `createSyncingRepository(local, api, gate)`, `runSyncPass(local, api)`, and the renderless `SyncEngine` component mounted inside the app's auth provider. No server, SQLite migration, project schema, export, publish, or gallery path changed in M3.
+- Local-first remains the invariant: the syncing repository always writes/removes from the local `ProjectRepository` first, then mirrors `push`/`remove` to the server only when `gate.authenticated` is true. Server/network/auth errors are swallowed so offline or expired-session states cannot break local saves.
+- `runSyncPass` intentionally calls `api.pull(0)` for a complete server snapshot, maps `SyncedProjectDto.projectId` into `SyncMeta.id`, runs the M0 `reconcile`, applies remote live records/tombstones to the raw local repository, and only then pushes local winners. There is no `lastPulledAt` watermark in v12; the M3 plan superseded the original design-spec wording because full snapshots keep `reconcile` correct and are simpler at current single-user scale.
+- App composition now creates one raw local repository, one shared auth gate, and one syncing decorator in stable React state. `ProjectStoreProvider` receives the decorator, while `SyncEngine` receives the raw local repo so pulled records do not echo back as redundant pushes.
+- Implementation trade-off: on this macOS workspace, `syncEngine.ts` and `SyncEngine.tsx` (and matching tests) collide under case-insensitive path resolution. To avoid ambiguous Vitest/Vite resolution and Git confusion, the renderless `SyncEngine` component is exported from `syncEngine.ts`, and its focused test is named `syncEngineComponent.test.tsx`.
+- Browser QA used local dev servers with the API restarted as `VSL_ACCESS_MODE=open` for account creation. Signed-in sync pushed existing local projects to `synced_projects`, creating a new project added a live server row, deleting it wrote a tombstone, and a server-injected remote project appeared on dashboard reload through the authenticated full-snapshot pull. A true second isolated browser storage context was not available in the in-app browser, so the remote-device pull path was simulated by inserting the server row directly for the QA account.
+- Browser console warn/error logs were empty during the M3 QA pass.
+- Targeted TDD verification:
+  - RED/GREEN: `syncingRepository.test.ts` failed on missing module, then passed with 5 tests after adding the decorator.
+  - RED/GREEN: `syncEngine.test.ts` failed on missing module, then passed with 5 tests after adding `runSyncPass`.
+  - RED/GREEN: `syncEngineComponent.test.tsx` failed on missing/ambiguous component export, then passed with 2 tests after adding `SyncEngine` and provider store access.
+  - Focused sync bundle: `npm run test:client -- src/features/sync/syncingRepository.test.ts src/features/sync/syncEngine.test.ts src/features/sync/syncEngineComponent.test.tsx src/features/sync/syncApi.test.ts` passed with 4 files / 21 tests.
+- Final verification:
+  - `npm test`: client 126 files / 811 tests passed; server 74 files / 321 tests passed.
+  - `npm run build`: passed; only the known >500 kB chunk warning appeared.
+  - `npm run typecheck:server`: passed.
