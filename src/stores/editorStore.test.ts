@@ -342,6 +342,17 @@ describe('editor store commands', () => {
     expect(store.getState().project.die.freeform!.vertices[0]).toEqual({ x: 0.3, y: 0.3 })
   })
 
+  it('starts a new undo step when a different vertex is moved', () => {
+    const store = freeformStore()
+    const pastBefore = store.getState().past.length
+    store.getState().moveFreeformVertex(0, { x: 0.1, y: 0.1 })
+    store.getState().moveFreeformVertex(0, { x: 0.2, y: 0.2 })
+    // A different vertex uses a different coalesce tag, so this does NOT collapse
+    // into the first vertex's drag — it becomes its own undo step.
+    store.getState().moveFreeformVertex(1, { x: 0.3, y: 0.3 })
+    expect(store.getState().past).toHaveLength(pastBefore + 2)
+  })
+
   it('clamps a moved vertex to the unit square and ignores out-of-range indices', () => {
     const store = freeformStore()
     const count = store.getState().project.die.freeform!.vertices.length
