@@ -7,6 +7,7 @@ import type {
   DieShapeParams,
   DieShape,
   FakeSpec,
+  FreeformVertex,
   Project,
   StudioColorPaint,
   StudioColorTarget,
@@ -25,6 +26,7 @@ import type {
 } from '../domain/scene3d/scene3d'
 import { buildBlock, nextZIndex } from '../domain/blockFactory'
 import { buildDecoration, type DecorationKind } from '../domain/decorationFactory'
+import { resolveFreeformVertices } from '../domain/die/freeformVertices'
 import { isParametricDieShape, resolveDieShapeParams } from '../domain/die/dieShapeParams'
 import type { ChipFinish } from '../domain/material/chipFinish'
 import { clampBlockToDie, normalizeDie } from '../features/editor/canvas/geometry'
@@ -103,6 +105,8 @@ export type EditorState = {
   commitDieShapeParamEdit: () => void
   cancelDieShapeParamEdit: () => void
   setDieShapeParams: (params: DieShapeParams) => void
+  addFreeformVertex: (index: number, point: FreeformVertex) => void
+  deleteFreeformVertex: (index: number) => void
   setTheme: (theme: StyleTheme) => void
   setFinish: (finish: ChipFinish) => void
   setBlockFinish: (id: string, finish: ChipFinish | undefined) => void
@@ -259,6 +263,16 @@ export function createEditorStore(initialProject: Project, options: Options = {}
       const dieShapeParams = resolveDieShapeParams(baseline.die.shape, value)
       if (sameDieShapeParams(current, dieShapeParams)) return baseline
       const die = { ...baseline.die, dieShapeParams }
+      const blocks = baseline.blocks.map((block) => ({
+        ...block,
+        ...clampBlockToDie(block, die),
+      }))
+      return { ...baseline, die, blocks }
+    }
+
+    function projectWithFreeformVertices(baseline: Project, vertices: FreeformVertex[]): Project {
+      if (baseline.die.shape !== 'freeform') return baseline
+      const die = { ...baseline.die, freeform: { vertices: resolveFreeformVertices({ vertices }) } }
       const blocks = baseline.blocks.map((block) => ({
         ...block,
         ...clampBlockToDie(block, die),
@@ -762,6 +776,25 @@ export function createEditorStore(initialProject: Project, options: Options = {}
         const next = projectWithDieShapeParams(project, params)
         if (next === project) return
         commit(next)
+      },
+
+      addFreeformVertex(index, point) {
+        const { project } = get()
+        if (project.die.shape !== 'freeform') return
+        const current = resolveFreeformVertices(project.die.freeform)
+        const at = Math.min(Math.max(0, index), current.length)
+        const vertices = [...current.slice(0, at), point, ...current.slice(at)]
+        commit(projectWithFreeformVertices(project, vertices))
+      },
+
+      deleteFreeformVertex(index) {
+        const { project } = get()
+        if (project.die.shape !== 'freeform') return
+        const current = resolveFreeformVertices(project.die.freeform)
+        if (index < 0 || index >= current.length) return
+        if (current.length - 1 < 3) return
+        const vertices = [...current.slice(0, index), ...current.slice(index + 1)]
+        commit(projectWithFreeformVertices(project, vertices))
       },
 
       setTheme(theme) {

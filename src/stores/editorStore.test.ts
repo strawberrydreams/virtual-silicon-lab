@@ -282,6 +282,49 @@ describe('editor store commands', () => {
     expect(store.getState().past).toHaveLength(0)
   })
 
+  function freeformStore() {
+    const store = createEditorStore(seededProject())
+    store.getState().setDieShape('freeform')
+    return store
+  }
+
+  it('adds a freeform vertex at the given index and pushes one undo step', () => {
+    const store = freeformStore()
+    const before = store.getState().project.die.freeform!.vertices.length
+    const pastBefore = store.getState().past.length
+    store.getState().addFreeformVertex(1, { x: 0.5, y: 0 })
+    const vertices = store.getState().project.die.freeform!.vertices
+    expect(vertices).toHaveLength(before + 1)
+    expect(vertices[1]).toEqual({ x: 0.5, y: 0 })
+    expect(store.getState().past).toHaveLength(pastBefore + 1)
+  })
+
+  it('clamps an added vertex to the unit square', () => {
+    const store = freeformStore()
+    store.getState().addFreeformVertex(0, { x: 1.4, y: -0.2 })
+    expect(store.getState().project.die.freeform!.vertices[0]).toEqual({ x: 1, y: 0 })
+  })
+
+  it('deletes a freeform vertex but refuses to drop below three', () => {
+    const store = freeformStore()
+    // Reduce to exactly 3 vertices first.
+    while (store.getState().project.die.freeform!.vertices.length > 3) {
+      store.getState().deleteFreeformVertex(0)
+    }
+    expect(store.getState().project.die.freeform!.vertices).toHaveLength(3)
+    const pastBefore = store.getState().past.length
+    store.getState().deleteFreeformVertex(0)
+    expect(store.getState().project.die.freeform!.vertices).toHaveLength(3)
+    expect(store.getState().past).toHaveLength(pastBefore)
+  })
+
+  it('ignores freeform vertex commands when the die is not freeform', () => {
+    const store = createEditorStore(seededProject())
+    store.getState().addFreeformVertex(0, { x: 0.5, y: 0.5 })
+    expect(store.getState().project.die.freeform).toBeUndefined()
+    expect(store.getState().past).toHaveLength(0)
+  })
+
   it('previews die parameters without history and commits the gesture once', () => {
     const project = parameterProject()
     const store = createEditorStore(project)
