@@ -278,3 +278,20 @@
   - `npm test`: client 122 passed; server 321 passed.
   - `npm run typecheck:server`: passed.
   - `npm run build`: passed; only the known >500 kB chunk warning appeared.
+
+## V12-M2 Client SyncApi
+
+- Added the client `SyncApi` wrapper in `src/features/sync/syncApi.ts` with `pull(since)`, `push(project)`, and `remove(projectId)` over the V12-M1 `/api/sync/projects` routes. M2 is intentionally only the HTTP client: no store, engine, UI, repository, schema, server, or publish-path change.
+- Kept the server wire DTO shape as `{ projectId, updatedAt, deleted, project }` in `SyncedProjectDto`. The `projectId -> id` mapping for the pure `reconcile` metadata stays deferred to V12-M3 `SyncEngine`, as planned.
+- `pull(since)` clamps client-supplied watermarks before making the request: finite values become `Math.max(0, Math.floor(since))`, while non-finite values become `0`. This compensates for the M1 decision not to clamp `since` server-side.
+- `push` sends the full project JSON as the PUT body to `/api/sync/projects/:id`; `remove` calls DELETE on the same encoded id path. Both parse the returned `{ project }` DTO so the later engine can observe the server-side LWW winner or tombstone.
+- Error handling mirrors the existing client API modules: fetch rejection and 502/503/504 gateway responses become `ServerUnreachableError`; non-ok JSON error bodies become `SyncApiError` with the server code; no explicit `credentials` option is passed, so same-origin session cookies use the browser default behavior.
+- TDD note: the initial `pull` test reused one mocked `Response` across three fetch calls, which failed because a `Response` body can only be consumed once. The test fixture now returns a fresh `Response` per mocked fetch call; production code did not need a workaround.
+- Targeted TDD verification:
+  - RED: `npm run test:client -- src/features/sync/syncApi.test.ts` failed because `./syncApi` did not exist.
+  - GREEN: the same command passed with 5 tests after adding types, error scaffolding, request handling, and `pull`.
+  - RED: the same command failed on `push`/`remove` because the Task 1 placeholders threw `NOT_IMPLEMENTED`.
+  - GREEN: the same command passed with 9 tests after adding `jsonInit`, PUT, and DELETE.
+- Final verification:
+  - `npm test`: client 123 files / 799 tests passed; server 74 files / 321 tests passed.
+  - `npm run build`: passed; only the known >500 kB chunk warning appeared.
