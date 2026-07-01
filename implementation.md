@@ -228,3 +228,22 @@
   - `npm run build`: passed; only the known >500 kB chunk warning appeared.
   - `npm run typecheck:server`: passed.
   - `rg "three" dist/assets/index-*.js`: no output, so Three remains outside the core index bundle.
+
+## V11-M4 Final QA & Release
+
+- Closed v11 as the `0.9 v11` release line and updated the English/Korean READMEs to describe Mobile 3D Authoring as a frontend-only extension of the existing `scene3d` authoring path.
+- Added `docs/ops/v11-mobile-3d-authoring-qa.md` as the v11 release pack covering mobile look presets, lighting chips, camera touch authoring, available/unavailable fallback coverage, round-trip, share, MP4, and export parity. Because `/docs/` is ignored for new files, this file must be force-added when staging.
+- Updated `tests/releaseDocs.test.ts` from the previous v10 release contract to the v11 release contract. RED confirmed the README version lines still said `0.8 v10` and the v11 QA pack was missing; GREEN passed after the docs update.
+- Browser mobile available-path QA on `http://127.0.0.1:5173/` at `390x844`: remixed `AURORA M5`, confirmed the mobile editor route rendered the preview/spec/publish/export/edit-on-desktop surface instead of the desktop Konva workspace, opened the 3D showcase, and confirmed mobile look presets, lighting chips, `Save current view`, `Reset 3D default`, MP4 export control, compact rail `overflow-x: auto`, preset `nowrap`, 44px tap targets, mobile ARIA group labels, zero range inputs, and a rendered WebGL canvas.
+- Browser persistence QA: applied `Inspection`, selected `Neon noir`, saved the camera view, reloaded the mobile editor route, reopened the 3D showcase, and confirmed `Neon noir` was still pressed. The published gallery JSON retained `scene3d.camera`, `lighting.preset = neon-noir`, and the look-preset environment values.
+- Browser round-trip/share QA: signed up a local QA account, published the mobile-authored `AURORA M5` snapshot, made it public at `/s/aurora-m5-630e2ac5`, opened `/gallery/aurora-m5-630e2ac5?view=3d`, and confirmed a viewer-only 3D modal with no authoring controls, zero range inputs, and a `356x684` CSS / `712x1368` backing WebGL canvas. The `/s/` share page rendered the poster and linked `View in 3D` to `http://127.0.0.1:5173/gallery/aurora-m5-630e2ac5?view=3d`.
+- Export parity QA used the actual published PNGs captured by the mobile publish panel: `v1-die.png` was `3680x2400` for the `920x600` AURORA M5 die (`x4`), and `v1-poster.png` was `3200x1800`. MP4 browser QA verified the editor 3D showcase still exposes `Export turntable MP4`; recorder/capture contracts remain covered by automated tests.
+- Unavailable fallback browser limitation: the in-app browser evaluation context exposed neither `indexedDB` nor `fetch`, so I could not safely seed an over-budget local project for a browser-only fallback check. This branch remains covered by `MobileEditor.test.tsx` and the release pack records it as an acceptance checklist item.
+- QA note: the first API dev-server start failed inside the sandbox because `tsx watch` could not open its temporary IPC pipe; rerunning with escalation started the server. The email verification route showed an invalid-token page during the UI signup flow, but development publish still allowed the verified/not-live local QA account path and the publish/share round-trip completed.
+- Browser console warn/error logs were empty after the mobile authoring, gallery, and share checks.
+- Final verification:
+  - `npm run test:client -- tests/releaseDocs.test.ts`: passed with 1 file / 3 tests.
+  - `npm test`: client 121 files / 780 tests passed; server 70 files / 298 tests passed.
+  - `npm run build`: passed; only the known >500 kB chunk warning appeared.
+  - `npm run typecheck:server`: passed.
+  - `rg "three" dist/assets/index-*.js`: no output, so Three remains outside the core index bundle.

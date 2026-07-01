@@ -1,4 +1,4 @@
-# Virtual Silicon Lab 0.8 v10
+# Virtual Silicon Lab 0.9 v11
 
 [![한국어](https://img.shields.io/badge/README-한국어-0A66C2?style=for-the-badge)](README.kr.md)
 
@@ -12,15 +12,17 @@ preview responsive (mobile); v7 added a **Visual Depth** layer that shows finish
 3D showcase (turntable orbit + in-browser MP4 export); **v8 added server-only AI-Assisted Creation**
 (prompt → chip, naming/spec copy, layout suggestions, variations); **v9 "Deep Canvas" pushed the 2D
 authoring surface past rectangles with parametric die shapes, shared 2D/3D material finishes, and
-subtle in-editor ambient motion**; and **v10 3D Authoring** turns the derived 3D showcase into a
+subtle in-editor ambient motion**; **v10 3D Authoring** turns the derived 3D showcase into a
 persisted presentation surface with camera, lighting, environment, animation, and full-scene look
-presets.
+presets; and **v11 Mobile 3D Authoring** brings mobile look presets, lighting chips, and touch
+camera save/reset to the phone-width editor without enabling mobile 2D canvas authoring.
 
-> Version line: the `0.8` line of this repo corresponds to v10 (3D Authoring); `0.7` was v9
-> (Deep Canvas), `0.6` was v8 (AI-Assisted Creation), `0.5` was v7 (Visual Depth), `0.4` was v6
-> (mobile/responsive), and `0.3` was v5 (public-launch prep). The 2D Konva authoring + PNG export
-> contract is unchanged across all of them; v10's `scene3d` authoring data is additive client-side
-> project JSON that rides along in publish snapshots. The public-launch gate is still **not** live —
+> Version line: the `0.9` line of this repo corresponds to v11 (Mobile 3D Authoring); `0.8` was v10
+> (3D Authoring), `0.7` was v9 (Deep Canvas), `0.6` was v8 (AI-Assisted Creation), `0.5` was v7
+> (Visual Depth), `0.4` was v6 (mobile/responsive), and `0.3` was v5 (public-launch prep). The 2D
+> Konva authoring + PNG export contract is unchanged across all of them; v11's mobile authoring
+> writes the same additive client-side `scene3d` project JSON that rides along in publish snapshots.
+> The public-launch gate is still **not** live —
 > flipping it to production is a separate ops decision (see "Launch Status").
 
 ## Release Overview
@@ -65,6 +67,11 @@ presets.
   deterministic turntable/glow animation settings, and one-click full-scene look presets. The same
   pure `resolveScene3D` descriptor feeds editor, gallery, share deep links, and MP4 capture, while the
   2D die/poster PNG contracts remain unchanged. Final QA: `docs/ops/v10-3d-authoring-qa.md`.
+- **v11 Mobile 3D Authoring** — the mobile editor route now uses the same local editor store and
+  persistence path for a curated 3D subset: mobile look presets, lighting chips, touch orbit camera
+  save/reset, compact accessible control rails, and the existing unavailable fallback. 2D Konva
+  authoring remains desktop-only; no backend route, SQLite migration, or schema change was added.
+  Final QA: `docs/ops/v11-mobile-3d-authoring-qa.md`.
 
 ## Key Features
 
@@ -118,6 +125,20 @@ presets.
   authored animation when appropriate.
 - **Export parity** — MP4 uses the same resolved scene descriptor as the live showcase; 2D exports stay
   fixed at die-only `pixelRatio: 4` and poster `3200x1800`.
+
+### Mobile 3D Authoring (v11)
+
+- v11 ships mobile look presets, lighting chips, and touch camera save/reset.
+- **Store-backed mobile 3D surface** — phone-width editor routes keep the 2D canvas read-only, but the
+  3D showcase now uses the same editor store, undoable commands, and autosave path as desktop.
+- **Curated mobile controls** — mobile exposes one-tap look presets, lighting chips, touch orbit,
+  `Save current view`, and `Reset 3D default`; precision lighting, environment, and animation sliders
+  remain desktop-only.
+- **Responsive control rail** — the mobile showcase uses compact horizontally scrollable preset rails
+  with accessible group labels and 44px tap targets while the desktop control rail remains unchanged.
+- **Round-trip parity** — mobile-authored `scene3d` flows through gallery, share, and MP4 via the same
+  resolved scene descriptor as desktop. Export contracts stay fixed at die-only `pixelRatio: 4`,
+  poster `3200x1800`, and MP4 `1280x720` / `30fps` / `8s`.
 
 ### AI-Assisted Creation (v8 server)
 
@@ -194,11 +215,12 @@ is intentional for now and is a candidate for later code-splitting.
 v5 is **launch-ready, not live**. The automated gates (`npm test`, `npm run build`, server typecheck,
 lint) are all green, and the admin ops UI plus the invite → verify → publish → moderate → ban →
 profile/SEO → reset flow are covered by unit/integration tests and browser QA. v8 (AI), v9 (Deep
-Canvas), and v10 (3D Authoring) do not change the launch gate: AI is server-only behind an explicit
-provider/key, while v9/v10 are client-side authoring with no new server route or SQLite migration.
+Canvas), v10 (3D Authoring), and v11 (Mobile 3D Authoring) do not change the launch gate: AI is
+server-only behind an explicit provider/key, while v9/v10/v11 are client-side authoring with no new
+server route or SQLite migration.
 Flipping the real production switch (`VSL_ACCESS_MODE=invite`) is left as an ops action after the
 deploy environment is set up and the owner signs off. Ops docs live under `docs/ops/` (runbook,
-backup/restore, QA checklist, and v10 3D authoring release QA).
+backup/restore, QA checklist, and v11 mobile 3D authoring release QA).
 
 > Email caveat: the server currently uses only a console-output `ConsoleEmailProvider`. Email
 > verification and password-reset links are **printed to the server log only** and are not actually
