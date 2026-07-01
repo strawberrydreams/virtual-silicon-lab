@@ -74,6 +74,39 @@ button {
   gap: 1rem;
 }
 
+.sync-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  padding: 0.15em 0.6em;
+  border: 1px solid var(--v2-border, rgba(255, 255, 255, 0.2));
+  border-radius: 999px;
+  color: var(--v2-text, #e8eef7);
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.sync-status[data-status='syncing'] {
+  opacity: 0.75;
+}
+
+.sync-status[data-status='synced'] {
+  border-color: rgba(80, 220, 160, 0.6);
+  color: rgb(120, 235, 180);
+}
+
+.sync-status[data-status='offline'] {
+  border-color: rgba(230, 190, 90, 0.6);
+  color: rgb(240, 205, 120);
+}
+
+.sync-status[data-status='error'] {
+  border-color: rgba(240, 110, 110, 0.6);
+  color: rgb(250, 140, 140);
+}
+
 .site-header__nav a {
   display: inline-flex;
   min-height: 34px;

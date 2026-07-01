@@ -247,3 +247,139 @@
   - `npm run build`: passed; only the known >500 kB chunk warning appeared.
   - `npm run typecheck:server`: passed.
   - `rg "three" dist/assets/index-*.js`: no output, so Three remains outside the core index bundle.
+
+## V12-M0 Sync Reconcile Core
+
+- Started v12 "Continuum" multi-device sync with a pure `src/domain/sync/reconcile.ts` decision function — the last-write-wins core that later milestones (server routes, SyncApi, SyncEngine) build on. It imports nothing from Three, React, Konva, browser APIs, storage, network, or Zustand, keeping `src/domain/` reusable and unit-testable in isolation (matches the `src/domain/scene3d/` purity rule).
+- `reconcile(local, remote)` takes two `SyncMeta[]` lists (`{ id, updatedAt, deleted? }`) and returns a `ReconcilePlan` of project-id lists: `toPush` (send local to server), `toApply` (upsert remote locally), `toDeleteLocal` (remove locally).
+- Decision: `remote` is treated as the complete server snapshot for the user, so the LWW decision is defined against a full snapshot; the `?since=` delta-pull optimization is a later engine concern, not part of `reconcile`.
+- Conflict rule is last-write-wins by `updatedAt`: for a project present on both sides and live, server-newer resolves to `toApply`, local-newer to `toPush`, and equal `updatedAt` is a no-op (already in sync).
+- Deletions propagate via tombstones (a remote entry with `deleted: true`): a tombstone that is newer than or equal to the local copy (`>=`) resolves to `toDeleteLocal`; a strictly-newer local copy (a revive/edit after the delete) resolves to `toPush`; a remote-only tombstone with nothing local to remove is ignored.
+- Decision: output arrays are sorted ascending by id so results are deterministic regardless of input order, which keeps the tests and downstream engine behavior stable.
+- Built via three TDD slices (new-project routing, both-present LWW, tombstones), landing 9 unit tests in `src/domain/sync/reconcile.test.ts`.
+- No backend/route/SQLite/schema change in M0 — this is pure client domain code; the server `synced_projects` table and `/api/sync/*` routes are V12-M1.
+- Final verification:
+  - `npm run test:client -- src/domain/sync/reconcile.test.ts`: 9/9 passing.
+  - `npm test`: client 122 files / 789 tests passed; server 70 files / 298 tests passed.
+  - `npm run build`: passed; only the known >500 kB chunk warning appeared.
+
+## V12-M1 Server Sync Table + Routes
+
+- Added the server side of v12 "Continuum" multi-device sync: a per-user `synced_projects` table plus `/api/sync/projects` routes, so a signed-in user's local projects can be mirrored/reconciled across devices. This is the first v12 milestone to touch the backend (schema + routes), by design.
+- Migration `014_synced_projects` (append-only, follows `013_ai`): `(user_id, project_id, project_json, updated_at, deleted_at)` with composite `PRIMARY KEY (user_id, project_id)`, FK `user_id → users(id) ON DELETE CASCADE`, and index `idx_synced_projects_user_updated` on `(user_id, updated_at)` for delta pulls. Mirrors the existing `published_chips` per-user pattern.
+- `server/src/sync/service.ts` holds the last-write-wins persistence: `pushSyncedProject` stores only when `updatedAt >= stored.updated_at` (clearing any tombstone via `ON CONFLICT ... DO UPDATE SET deleted_at = NULL`) and always returns the stored winner; `deleteSyncedProject` writes/keeps a tombstone (`deleted_at`, `updated_at = deletedAt`) when `deletedAt >= stored.updated_at` or no row exists (a never-pushed project gets an empty-json tombstone) and never hard-deletes the row; `listSyncedProjectsSince` returns rows with `updated_at > since` ascending (tombstones included so deletions propagate). Every statement is scoped by `user_id`.
+- Decision: the `>=` push/tombstone acceptance boundary matches the M0 client `reconcile` (`updatedAt >= stored` / tombstone-newer-or-equal → delete), so a client re-pushing its own latest is idempotent and the two sides cannot oscillate.
+- `server/src/sync/validation.ts` (`validateSyncPush`) guards the PUT body: rejects non-objects/arrays, an `id` that does not match the URL, and a non-finite `updatedAt`; on success returns the serialized `projectJson` and numeric `updatedAt`. Mirrors the `publish/validation.ts` result-object style.
+- `server/src/sync/routes.ts` (`syncRoutes`) mounts under `/api` in `app.ts`, reusing the `publish/routes.ts` auth pattern verbatim: signed `vsl_session` cookie → `getSessionUserWithStatus`; 401 `UNAUTHORIZED` without a session, 403 `ACCOUNT_BANNED` for banned users; 400 `INVALID_INPUT` on a bad push body. Wire format per record is `{ projectId, updatedAt, deleted, project }` where `project` is the parsed project JSON for a live record and `null` for a tombstone — giving M2's `SyncApi` the `{ id, updatedAt, deleted }` metadata `reconcile` needs plus the body for `toApply` (only field adaptation for M2 is `projectId → id`).
+- Cross-user isolation is proven end-to-end by test (a second user cannot see or overwrite the first user's rows).
+- Deferred (noted for later milestones): `since` is not clamped to non-negative integers server-side (M2 should send clean values); the push body is not size-capped (revisit alongside real payloads in M4, consistent with the publish path's `uploadMaxBytes`).
+- No client code changed in M1. `published_chips` and all other tables/routes are untouched.
+- Final verification:
+  - `npm test`: client 122 passed; server 321 passed.
+  - `npm run typecheck:server`: passed.
+  - `npm run build`: passed; only the known >500 kB chunk warning appeared.
+
+## V12-M2 Client SyncApi
+
+- Added the client `SyncApi` wrapper in `src/features/sync/syncApi.ts` with `pull(since)`, `push(project)`, and `remove(projectId)` over the V12-M1 `/api/sync/projects` routes. M2 is intentionally only the HTTP client: no store, engine, UI, repository, schema, server, or publish-path change.
+- Kept the server wire DTO shape as `{ projectId, updatedAt, deleted, project }` in `SyncedProjectDto`. The `projectId -> id` mapping for the pure `reconcile` metadata stays deferred to V12-M3 `SyncEngine`, as planned.
+- `pull(since)` clamps client-supplied watermarks before making the request: finite values become `Math.max(0, Math.floor(since))`, while non-finite values become `0`. This compensates for the M1 decision not to clamp `since` server-side.
+- `push` sends the full project JSON as the PUT body to `/api/sync/projects/:id`; `remove` calls DELETE on the same encoded id path. Both parse the returned `{ project }` DTO so the later engine can observe the server-side LWW winner or tombstone.
+- Error handling mirrors the existing client API modules: fetch rejection and 502/503/504 gateway responses become `ServerUnreachableError`; non-ok JSON error bodies become `SyncApiError` with the server code; no explicit `credentials` option is passed, so same-origin session cookies use the browser default behavior.
+- TDD note: the initial `pull` test reused one mocked `Response` across three fetch calls, which failed because a `Response` body can only be consumed once. The test fixture now returns a fresh `Response` per mocked fetch call; production code did not need a workaround.
+- Targeted TDD verification:
+  - RED: `npm run test:client -- src/features/sync/syncApi.test.ts` failed because `./syncApi` did not exist.
+  - GREEN: the same command passed with 5 tests after adding types, error scaffolding, request handling, and `pull`.
+  - RED: the same command failed on `push`/`remove` because the Task 1 placeholders threw `NOT_IMPLEMENTED`.
+  - GREEN: the same command passed with 9 tests after adding `jsonInit`, PUT, and DELETE.
+- Final verification:
+  - `npm test`: client 123 files / 799 tests passed; server 74 files / 321 tests passed.
+  - `npm run build`: passed; only the known >500 kB chunk warning appeared.
+
+## V12-M3 Sync Engine Wiring
+
+- Wired the client sync layer with three pieces: `createSyncingRepository(local, api, gate)`, `runSyncPass(local, api)`, and the renderless `SyncEngine` component mounted inside the app's auth provider. No server, SQLite migration, project schema, export, publish, or gallery path changed in M3.
+- Local-first remains the invariant: the syncing repository always writes/removes from the local `ProjectRepository` first, then mirrors `push`/`remove` to the server only when `gate.authenticated` is true. Server/network/auth errors are swallowed so offline or expired-session states cannot break local saves.
+- `runSyncPass` intentionally calls `api.pull(0)` for a complete server snapshot, maps `SyncedProjectDto.projectId` into `SyncMeta.id`, runs the M0 `reconcile`, applies remote live records/tombstones to the raw local repository, and only then pushes local winners. There is no `lastPulledAt` watermark in v12; the M3 plan superseded the original design-spec wording because full snapshots keep `reconcile` correct and are simpler at current single-user scale.
+- App composition now creates one raw local repository, one shared auth gate, and one syncing decorator in stable React state. `ProjectStoreProvider` receives the decorator, while `SyncEngine` receives the raw local repo so pulled records do not echo back as redundant pushes.
+- Implementation trade-off: on this macOS workspace, `syncEngine.ts` and `SyncEngine.tsx` (and matching tests) collide under case-insensitive path resolution. To avoid ambiguous Vitest/Vite resolution and Git confusion, the renderless `SyncEngine` component is exported from `syncEngine.ts`, and its focused test is named `syncEngineComponent.test.tsx`.
+- Browser QA used local dev servers with the API restarted as `VSL_ACCESS_MODE=open` for account creation. Signed-in sync pushed existing local projects to `synced_projects`, creating a new project added a live server row, deleting it wrote a tombstone, and a server-injected remote project appeared on dashboard reload through the authenticated full-snapshot pull. A true second isolated browser storage context was not available in the in-app browser, so the remote-device pull path was simulated by inserting the server row directly for the QA account.
+- Browser console warn/error logs were empty during the M3 QA pass.
+- Targeted TDD verification:
+  - RED/GREEN: `syncingRepository.test.ts` failed on missing module, then passed with 5 tests after adding the decorator.
+  - RED/GREEN: `syncEngine.test.ts` failed on missing module, then passed with 5 tests after adding `runSyncPass`.
+  - RED/GREEN: `syncEngineComponent.test.tsx` failed on missing/ambiguous component export, then passed with 2 tests after adding `SyncEngine` and provider store access.
+  - Focused sync bundle: `npm run test:client -- src/features/sync/syncingRepository.test.ts src/features/sync/syncEngine.test.ts src/features/sync/syncEngineComponent.test.tsx src/features/sync/syncApi.test.ts` passed with 4 files / 21 tests.
+- Final verification:
+  - `npm test`: client 126 files / 811 tests passed; server 74 files / 321 tests passed.
+  - `npm run build`: passed; only the known >500 kB chunk warning appeared.
+  - `npm run typecheck:server`: passed.
+
+## V12-M4 First-Login Adoption
+
+- Verification milestone: no new production code. First-login adoption was already implemented by M3's `runSyncPass` — `reconcile` classifies an anonymous local-only project as `toPush`, so the first authenticated sync uploads it, and equal-`updatedAt` on later passes is a no-op (idempotent). M4 locks this in with explicit end-to-end tests.
+- Added `src/features/sync/syncAdoption.test.ts` driving the real `runSyncPass` through a stateful in-memory server (push stores with LWW, pull returns all rows, remove tombstones):
+  - Empty server + multiple anonymous local projects → every local project is pushed; local state is unchanged (nothing deleted).
+  - Local-only + server-only projects together → the local project uploads and the server project applies locally; neither is lost.
+  - Idempotency → a second `runSyncPass` pushes nothing new and leaves local state stable.
+- Decision: kept M4 as a verification milestone rather than adding a separate `adoptLocalProjects` pass, because a dedicated force-upload would duplicate `runSyncPass`'s `toPush` behavior (YAGNI). The tests give the adoption/idempotency guarantee the v12 spec's M4 called for.
+- Final verification:
+  - `npm run test:client -- src/features/sync/syncAdoption.test.ts`: 3/3 passing.
+  - `npm test`: client 127 files / 814 tests passed; server 74 files / 321 tests passed.
+  - `npm run build`: passed; only the known >500 kB chunk warning appeared.
+
+## V12-M5 Sync Status UI
+
+- Added a display-only sync status surface without changing sync behavior: `createSyncStatusStore` owns `idle | syncing | synced | offline | error`, `SyncStatusIndicator` renders active states with `role="status"` / `aria-live="polite"`, and `idle` renders no badge.
+- `SyncEngine` now accepts the status store and reports sync pass state: unauthenticated becomes `idle`, pass start becomes `syncing`, success becomes `synced`, `ServerUnreachableError` becomes `offline`, and all other failures become `error`. The engine still swallows failures after reporting status, preserving M3's local-first behavior.
+- App composition creates one stable status store and passes it both to `SyncEngine` and the header. The header renders the badge before the theme switcher so signed-in users get a compact global sync signal without adding controls or routes.
+- Decision: the syncing label uses ASCII `Syncing...` instead of a Unicode ellipsis to match the repository's default ASCII editing rule for new text.
+- Targeted TDD verification:
+  - RED/GREEN: `npm run test:client -- src/features/sync/SyncStatusIndicator.test.tsx` failed on the missing component/store, then passed with 2 tests after adding them.
+  - RED/GREEN: `npm run test:client -- src/features/sync/syncEngineComponent.test.tsx` failed while the engine left status at `idle`, then passed with 5 tests after wiring status transitions.
+  - Focused app/sync bundle passed: `npm run test:client -- src/features/sync/SyncStatusIndicator.test.tsx src/features/sync/syncEngineComponent.test.tsx src/app/App.test.tsx` with 3 files / 20 tests, and `npm run test:client -- src/features/sync/syncApi.test.ts src/features/sync/syncingRepository.test.ts src/features/sync/syncEngine.test.ts src/features/sync/syncAdoption.test.ts` with 4 files / 22 tests.
+- Browser QA on `http://localhost:5173/`: signed out showed no sync badge; signing in as the local `V12 M5 QA` account showed `Synced`; stopping the API server while keeping the signed-in SPA state changed the badge to `Offline` after the sync interval; restarting the API server changed it back to `Synced` after the next interval.
+- Browser console warn/error logs were empty after the M5 badge QA. Vite server logs showed expected proxy `ECONNREFUSED` entries while the API server was intentionally stopped for the offline-path check.
+- Final verification:
+  - `npm test`: client 128 files / 819 tests passed; server 74 files / 321 tests passed.
+  - `npm run build`: passed; only the known >500 kB chunk warning appeared.
+
+## V12-M6 Final QA & Release
+
+- Release milestone for v12 "Continuum" multi-device sync. Bumped the version line to `0.10 v12`
+  (`README.md` + `README.kr.md`), corrected the launch-status note to record that v12 is the first
+  client authoring milestone to add server state (per-user `synced_projects` + `/api/sync/*`), and
+  added the QA release pack `docs/ops/v12-continuum-sync-qa.md`.
+- Rewrote `tests/releaseDocs.test.ts` from the v11 contract to the v12 contract (version line, v12
+  overview, QA pack); confirmed RED before the doc edits and GREEN after with 1 file / 3 tests.
+- Browser QA used `VSL_PUBLIC_BASE_URL=http://127.0.0.1:5173`, the API server on `127.0.0.1:8787`,
+  and dev origins `localhost:5173` / `127.0.0.1:5174`. The in-app browser could not keep a stable
+  third independent anonymous host (`127.0.0.2` timed out and left an internal error page), so the
+  signed-out/no-badge path is covered by M5 browser QA and the anonymous/local-only behavior is
+  covered by the M3/M4 sync tests.
+- Browser QA results:
+  - Anonymous stays local: signed-out header/no-badge path verified in M5; no new browser evidence of
+    `/api/sync/*` from an independent anonymous storage context because the available browser host set
+    could not provide a stable third origin.
+  - First-login adoption: covered by `syncAdoption.test.ts` and the full regression suite; no new
+    production code changed in M6.
+  - Multi-device round-trip: same-account remote pull path was verified by inserting server project
+    `remote-v12-m6-browser` for the QA user; the logged-in dashboard pulled it through the sync pass
+    and displayed `REMOTE V12 M6 QA` with the badge at `Synced`.
+  - Sync status badge / offline resilience: with the logged-in dashboard open, stopping the API server
+    changed the badge to `Offline` while the pulled local project remained visible; restarting the
+    server changed the badge back to `Synced`.
+  - Publish/gallery/share unchanged: existing public chip `/s/aurora-m5-630e2ac5` rendered the share
+    page with poster image and 3D link; `/gallery/aurora-m5-630e2ac5?view=3d` rendered the published
+    gallery detail with a WebGL canvas.
+  - Export parity: no export code changed in v12-M6; full regression/build passed and the publish/share
+    smoke confirmed the existing 2D/3D read surfaces still render.
+- Browser console warn/error logs were empty for the sync dashboard, share, and gallery QA tabs. Vite
+  server logs showed expected proxy `ECONNREFUSED` entries only while the API server was intentionally
+  stopped for the offline-path check.
+- Final verification:
+  - `npm run test:client -- tests/releaseDocs.test.ts`: passed with 1 file / 3 tests.
+  - `npm test`: client 128 files / 819 tests passed; server 74 files / 321 tests passed.
+  - `npm run build`: passed; only the known >500 kB chunk warning appeared.
+  - `npm run typecheck:server`: passed.
+  - `rg "three" dist/assets/index-*.js`: no output, so Three remains outside the core index bundle.

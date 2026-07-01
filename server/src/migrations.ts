@@ -242,4 +242,20 @@ export const migrations: Migration[] = [
       `)
     },
   },
+  {
+    id: '014_synced_projects',
+    up: (db) => {
+      db.exec(`
+        CREATE TABLE synced_projects (
+          user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          project_id TEXT NOT NULL,
+          project_json TEXT NOT NULL,
+          updated_at INTEGER NOT NULL,
+          deleted_at INTEGER,
+          PRIMARY KEY (user_id, project_id)
+        );
+        CREATE INDEX idx_synced_projects_user_updated ON synced_projects(user_id, updated_at);
+      `)
+    },
+  },
 ]

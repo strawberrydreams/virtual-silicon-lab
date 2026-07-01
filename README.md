@@ -1,4 +1,4 @@
-# Virtual Silicon Lab 0.9 v11
+# Virtual Silicon Lab 0.10 v12
 
 [![한국어](https://img.shields.io/badge/README-한국어-0A66C2?style=for-the-badge)](README.kr.md)
 
@@ -15,15 +15,16 @@ authoring surface past rectangles with parametric die shapes, shared 2D/3D mater
 subtle in-editor ambient motion**; **v10 3D Authoring** turns the derived 3D showcase into a
 persisted presentation surface with camera, lighting, environment, animation, and full-scene look
 presets; and **v11 Mobile 3D Authoring** brings mobile look presets, lighting chips, and touch
-camera save/reset to the phone-width editor without enabling mobile 2D canvas authoring.
+camera save/reset to the phone-width editor without enabling mobile 2D canvas authoring. Now
+**v12 Continuum Sync** adds opt-in multi-device sync: a signed-in user's local projects follow them
+across devices, while anonymous use stays fully local.
 
-> Version line: the `0.9` line of this repo corresponds to v11 (Mobile 3D Authoring); `0.8` was v10
-> (3D Authoring), `0.7` was v9 (Deep Canvas), `0.6` was v8 (AI-Assisted Creation), `0.5` was v7
+> Version line: the `0.10` line of this repo corresponds to v12 (Continuum Sync); `0.9` was v11,
+> `0.8` was v10, `0.7` was v9 (Deep Canvas), `0.6` was v8 (AI-Assisted Creation), `0.5` was v7
 > (Visual Depth), `0.4` was v6 (mobile/responsive), and `0.3` was v5 (public-launch prep). The 2D
-> Konva authoring + PNG export contract is unchanged across all of them; v11's mobile authoring
-> writes the same additive client-side `scene3d` project JSON that rides along in publish snapshots.
-> The public-launch gate is still **not** live —
-> flipping it to production is a separate ops decision (see "Launch Status").
+> Konva authoring + PNG export contract is unchanged across all of them; v12 sync mirrors local
+> project JSON for signed-in users only. The public-launch gate is still **not** live — flipping it
+> to production is a separate ops decision (see "Launch Status").
 
 ## Release Overview
 
@@ -72,6 +73,10 @@ camera save/reset to the phone-width editor without enabling mobile 2D canvas au
   save/reset, compact accessible control rails, and the existing unavailable fallback. 2D Konva
   authoring remains desktop-only; no backend route, SQLite migration, or schema change was added.
   Final QA: `docs/ops/v11-mobile-3d-authoring-qa.md`.
+- **v12 Continuum Sync** — signed-in users get last-write-wins multi-device sync of their local
+  projects via a new per-user `synced_projects` table and `/api/sync/*` routes; anonymous users are
+  unchanged (pure local), and a header badge reports sync status. Final QA:
+  `docs/ops/v12-continuum-sync-qa.md`.
 
 ## Key Features
 
@@ -139,6 +144,17 @@ camera save/reset to the phone-width editor without enabling mobile 2D canvas au
 - **Round-trip parity** — mobile-authored `scene3d` flows through gallery, share, and MP4 via the same
   resolved scene descriptor as desktop. Export contracts stay fixed at die-only `pixelRatio: 4`,
   poster `3200x1800`, and MP4 `1280x720` / `30fps` / `8s`.
+
+### Continuum Sync (v12)
+
+- Opt-in, sign-in-only: a `SyncingRepository` mirrors local saves/deletes to the server, and a
+  `SyncEngine` runs a full-snapshot reconcile (last-write-wins by `updatedAt`, tombstone deletes) on
+  sign-in, on an interval, and on tab refocus.
+- Local-first preserved: IndexedDB stays the source of truth; server calls are best-effort, so
+  offline and anonymous use are unaffected. First sign-in adopts existing local projects by uploading
+  them.
+- A header badge shows syncing / synced / offline / error. No change to the 2D editor, PNG/MP4
+  export, or the publish/gallery surfaces. Final QA: `docs/ops/v12-continuum-sync-qa.md`.
 
 ### AI-Assisted Creation (v8 server)
 
@@ -215,9 +231,11 @@ is intentional for now and is a candidate for later code-splitting.
 v5 is **launch-ready, not live**. The automated gates (`npm test`, `npm run build`, server typecheck,
 lint) are all green, and the admin ops UI plus the invite → verify → publish → moderate → ban →
 profile/SEO → reset flow are covered by unit/integration tests and browser QA. v8 (AI), v9 (Deep
-Canvas), v10 (3D Authoring), and v11 (Mobile 3D Authoring) do not change the launch gate: AI is
-server-only behind an explicit provider/key, while v9/v10/v11 are client-side authoring with no new
-server route or SQLite migration.
+Canvas), v10 (3D Authoring), and v11 (Mobile 3D Authoring) did not change the launch gate: AI is
+server-only behind an explicit provider/key, while v9/v10/v11 added no server route or SQLite
+migration. v12 adds an authenticated, per-user server sync surface (`synced_projects` +
+`/api/sync/*`) so signed-in projects can follow an account across devices; it remains invite-paced,
+SQLite-backed, and best-effort, while anonymous use stays fully local.
 Flipping the real production switch (`VSL_ACCESS_MODE=invite`) is left as an ops action after the
 deploy environment is set up and the owner signs off. Ops docs live under `docs/ops/` (runbook,
 backup/restore, QA checklist, and v11 mobile 3D authoring release QA).

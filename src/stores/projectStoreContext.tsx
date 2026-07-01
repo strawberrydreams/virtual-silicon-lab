@@ -6,7 +6,7 @@ import type { ProjectRepository } from '../storage/projectRepository'
 import { createResilientProjectRepository } from '../storage/resilientProjectRepository'
 import { createProjectStore } from './projectStore'
 
-function createDefaultRepository(): ProjectRepository {
+export function createDefaultRepository(): ProjectRepository {
   return createResilientProjectRepository(
     createIndexedDbProjectRepository(),
     createLocalStorageProjectRepository(),
@@ -40,4 +40,11 @@ export function useProjectStore() {
   if (store === undefined) throw new Error('ProjectStoreProvider is missing')
 
   return useStore(store)
+}
+
+// eslint-disable-next-line react-refresh/only-export-components -- context hook is intentionally colocated with its provider; fast-refresh boundary is acceptable
+export function useProjectStoreApi() {
+  const store = useContext(ProjectStoreContext)
+  if (store === undefined) throw new Error('ProjectStoreProvider is missing')
+  return store
 }
