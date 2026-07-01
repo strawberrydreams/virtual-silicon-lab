@@ -39,4 +39,11 @@ describe('validateSyncPush', () => {
       message: 'Project updatedAt must be a finite number.',
     })
   })
+
+  it('rejects a NaN updatedAt', () => {
+    expect(validateSyncPush({ id: 'p1', updatedAt: Number.NaN }, 'p1')).toEqual({
+      ok: false,
+      message: 'Project updatedAt must be a finite number.',
+    })
+  })
 })

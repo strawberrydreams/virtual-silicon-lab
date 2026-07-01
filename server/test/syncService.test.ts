@@ -106,4 +106,16 @@ describe('sync service', () => {
       { projectId: 'p1', projectJson: '{"owner":"u1"}', updatedAt: 100, deleted: false },
     ])
   })
+
+  it('rejects a stale delete (older deletedAt) and leaves the newer row intact', () => {
+    const db = freshDb()
+    pushSyncedProject(db, 'u1', 'p1', '{"v":2}', 200)
+    const result = deleteSyncedProject(db, 'u1', 'p1', 100)
+    expect(result).toEqual({
+      projectId: 'p1',
+      projectJson: '{"v":2}',
+      updatedAt: 200,
+      deleted: false,
+    })
+  })
 })
