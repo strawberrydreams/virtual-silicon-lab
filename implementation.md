@@ -314,3 +314,16 @@
   - `npm test`: client 126 files / 811 tests passed; server 74 files / 321 tests passed.
   - `npm run build`: passed; only the known >500 kB chunk warning appeared.
   - `npm run typecheck:server`: passed.
+
+## V12-M4 First-Login Adoption
+
+- Verification milestone: no new production code. First-login adoption was already implemented by M3's `runSyncPass` — `reconcile` classifies an anonymous local-only project as `toPush`, so the first authenticated sync uploads it, and equal-`updatedAt` on later passes is a no-op (idempotent). M4 locks this in with explicit end-to-end tests.
+- Added `src/features/sync/syncAdoption.test.ts` driving the real `runSyncPass` through a stateful in-memory server (push stores with LWW, pull returns all rows, remove tombstones):
+  - Empty server + multiple anonymous local projects → every local project is pushed; local state is unchanged (nothing deleted).
+  - Local-only + server-only projects together → the local project uploads and the server project applies locally; neither is lost.
+  - Idempotency → a second `runSyncPass` pushes nothing new and leaves local state stable.
+- Decision: kept M4 as a verification milestone rather than adding a separate `adoptLocalProjects` pass, because a dedicated force-upload would duplicate `runSyncPass`'s `toPush` behavior (YAGNI). The tests give the adoption/idempotency guarantee the v12 spec's M4 called for.
+- Final verification:
+  - `npm run test:client -- src/features/sync/syncAdoption.test.ts`: 3/3 passing.
+  - `npm test`: client 127 files / 814 tests passed; server 74 files / 321 tests passed.
+  - `npm run build`: passed; only the known >500 kB chunk warning appeared.
