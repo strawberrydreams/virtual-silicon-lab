@@ -10,6 +10,7 @@ import {
 import { AdminPage } from '../features/admin/AdminPage'
 import { ContestDetailPage } from '../features/contests/ContestDetailPage'
 import { ContestsPage } from '../features/contests/ContestsPage'
+import { MobileEditor } from '../features/editor/MobileEditor'
 import { EditorPage } from '../features/editor/EditorPage'
 import { GalleryDetailPage } from '../features/gallery/GalleryDetailPage'
 import { GalleryPage } from '../features/gallery/GalleryPage'
@@ -28,7 +29,6 @@ import {
   type PageThemeName,
 } from '../visual/pageThemes'
 import { usePageTheme } from '../visual/pageThemeStore'
-import { MobileEditorPreview } from '../features/editor/MobileEditorPreview'
 import { useIsMobile } from './useIsMobile'
 
 function LandingRoute() {
@@ -123,7 +123,14 @@ function EditorRoute() {
     )
   }
 
-  if (isMobile) return <MobileEditorPreview project={project} />
+  if (isMobile)
+    return (
+      <MobileEditor
+        key={project.id}
+        project={project}
+        persist={(nextProject) => void store.save(nextProject)}
+      />
+    )
 
   return (
     <EditorPage

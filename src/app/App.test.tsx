@@ -10,11 +10,10 @@ vi.mock('../features/editor/EditorPage', () => ({
   ),
 }))
 
-// The mobile editor preview embeds a Konva stage + publish/export panels; mock it
-// so the App-level test verifies only the EditorRoute branch (its real content is
-// covered by MobileEditorPreview's own component test).
-vi.mock('../features/editor/MobileEditorPreview', () => ({
-  MobileEditorPreview: ({ project }: { project: { name: string } }) => (
+// The mobile editor wrapper owns store setup and heavy preview/showcase children,
+// so the App-level test verifies only the EditorRoute branch.
+vi.mock('../features/editor/MobileEditor', () => ({
+  MobileEditor: ({ project }: { project: { name: string } }) => (
     <main aria-label="Chip preview">{project.name} — edit on desktop</main>
   ),
 }))

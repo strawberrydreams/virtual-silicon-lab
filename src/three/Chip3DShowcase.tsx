@@ -58,6 +58,7 @@ class ShowcaseErrorBoundary extends Component<{ children: ReactNode }, { failed:
 
 export function Chip3DShowcase({
   project,
+  authoringMode = 'desktop',
   onClose,
   renderExtras,
   onSaveCamera,
@@ -71,6 +72,7 @@ export function Chip3DShowcase({
   onResetAnimation,
 }: {
   project: Project
+  authoringMode?: 'desktop' | 'mobile-presets'
   onClose: () => void
   renderExtras?: (model: Chip3DModel) => ReactNode
   onSaveCamera?: (camera: Scene3DCameraSettings) => void
@@ -110,10 +112,20 @@ export function Chip3DShowcase({
   const lighting = project.scene3d?.lighting ?? { preset: 'studio', intensity: 1 }
   const environment = project.scene3d?.environment ?? model.environment
   const animation = project.scene3d?.animation ?? SCENE_3D_DEFAULT_ANIMATION
-  const showLightingControls = onSetLighting !== undefined || onResetLighting !== undefined
-  const showEnvironmentControls = onSetEnvironment !== undefined || onResetEnvironment !== undefined
+  const showLightingControls =
+    authoringMode === 'desktop' && (onSetLighting !== undefined || onResetLighting !== undefined)
+  const showMobileLightingPresets = authoringMode === 'mobile-presets' && onSetLighting !== undefined
+  const showEnvironmentControls =
+    authoringMode === 'desktop' &&
+    (onSetEnvironment !== undefined || onResetEnvironment !== undefined)
   const showLookControls = onApplyLook !== undefined
-  const showAnimationControls = onSetAnimation !== undefined || onResetAnimation !== undefined
+  const showAnimationControls =
+    authoringMode === 'desktop' && (onSetAnimation !== undefined || onResetAnimation !== undefined)
+  const showCameraControls = authoringMode === 'desktop' || authoringMode === 'mobile-presets'
+  const showcaseClassName =
+    authoringMode === 'mobile-presets'
+      ? 'chip-3d-showcase chip-3d-showcase--mobile-presets'
+      : 'chip-3d-showcase'
 
   const setEnvironment = (patch: Partial<Scene3DEnvironmentSettings>) => {
     onSetEnvironment?.({
@@ -145,7 +157,7 @@ export function Chip3DShowcase({
     <section
       aria-label={`${project.name} 3D showcase`}
       aria-modal="true"
-      className="chip-3d-showcase"
+      className={showcaseClassName}
       role="dialog"
     >
       <header className="chip-3d-showcase__header">
@@ -155,7 +167,13 @@ export function Chip3DShowcase({
         </div>
         {interactive && renderExtras ? renderExtras(model) : null}
         {showLookControls ? (
-          <div className="chip-3d-look-presets" aria-label="3D look presets">
+          <div
+            className="chip-3d-look-presets"
+            role="group"
+            aria-label={
+              authoringMode === 'mobile-presets' ? 'Mobile 3D look presets' : '3D look presets'
+            }
+          >
             {SCENE_3D_LOOK_PRESETS.map((preset) => (
               <button
                 key={preset.id}
@@ -168,7 +186,7 @@ export function Chip3DShowcase({
           </div>
         ) : null}
         {showLightingControls ? (
-          <div className="chip-3d-lighting" aria-label="3D lighting controls">
+          <div className="chip-3d-lighting" role="group" aria-label="3D lighting controls">
             <div className="chip-3d-lighting__presets">
               {SCENE_3D_LIGHTING_PRESETS.map((preset) => (
                 <button
@@ -202,8 +220,28 @@ export function Chip3DShowcase({
             </button>
           </div>
         ) : null}
+        {showMobileLightingPresets ? (
+          <div
+            className="chip-3d-lighting chip-3d-lighting--presets"
+            role="group"
+            aria-label="Mobile 3D lighting presets"
+          >
+            <div className="chip-3d-lighting__presets">
+              {SCENE_3D_LIGHTING_PRESETS.map((preset) => (
+                <button
+                  key={preset}
+                  type="button"
+                  aria-pressed={lighting.preset === preset}
+                  onClick={() => onSetLighting?.({ preset, intensity: lighting.intensity })}
+                >
+                  {LIGHTING_LABELS[preset]}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
         {showEnvironmentControls ? (
-          <div className="chip-3d-environment" aria-label="3D environment controls">
+          <div className="chip-3d-environment" role="group" aria-label="3D environment controls">
             <div className="chip-3d-environment__presets">
               {ENVIRONMENT_PRESETS.map((preset) => (
                 <button
@@ -331,8 +369,8 @@ export function Chip3DShowcase({
           <Suspense fallback={<p>Loading 3D showcase…</p>}>
             <Chip3DViewer
               model={model}
-              onSaveCamera={onSaveCamera}
-              onResetCamera={onResetCamera}
+              onSaveCamera={showCameraControls ? onSaveCamera : undefined}
+              onResetCamera={showCameraControls ? onResetCamera : undefined}
             />
           </Suspense>
         </ShowcaseErrorBoundary>

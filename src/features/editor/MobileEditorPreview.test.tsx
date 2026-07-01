@@ -32,4 +32,29 @@ describe('MobileEditorPreview', () => {
     // Spec brand surfaced from project.spec
     expect(screen.getByText(project.spec.brand, { exact: false })).toBeInTheDocument()
   })
+
+  it('renders a provided 3D slot under the chip preview', () => {
+    const project = createProject('Pocket Chip')
+    render(
+      <MemoryRouter>
+        <MobileEditorPreview
+          project={project}
+          chip3dSlot={<button type="button">Open 3D showcase</button>}
+        />
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByRole('button', { name: 'Open 3D showcase' })).toBeInTheDocument()
+  })
+
+  it('omits the 3D slot region when none is provided', () => {
+    const project = createProject('Pocket Chip')
+    render(
+      <MemoryRouter>
+        <MobileEditorPreview project={project} />
+      </MemoryRouter>,
+    )
+
+    expect(screen.queryByRole('button', { name: 'Open 3D showcase' })).not.toBeInTheDocument()
+  })
 })

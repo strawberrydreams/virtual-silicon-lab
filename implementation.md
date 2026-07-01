@@ -144,3 +144,106 @@
   - `npm run build`: passed; only the known >500 kB chunk warning appeared.
   - `npm run typecheck:server`: passed.
   - `rg "three" dist/assets/index-*.js`: no output, so Three remains outside the core index bundle.
+
+## V11-M0 Mobile Authoring Surface Foundation
+
+- Renamed the working branch from `v11` to `codex/v11-m0` so the branch name matches the milestone and Codex branch convention.
+- Started v11 from `docs/superpowers/specs/2026-06-30-v11-mobile-3d-authoring-design.md` and executed the existing M0 plan in `docs/superpowers/plans/2026-06-30-v11-m0-mobile-authoring-surface.md`.
+- Added an optional `chip3dSlot` to `MobileEditorPreview`, rendered immediately under the mobile chip preview and before the fake spec section. When the slot is omitted, the read-only mobile surface remains the existing chip preview/spec/publish/export/desktop-CTA path.
+- Introduced `MobileEditor`, a store-backed mobile wrapper that creates the same `createEditorStore(project)` instance and `useAutosave(store, persist)` flow used by the desktop editor. This gives the mobile route the persistence/undo foundation needed by later v11 milestones without enabling 2D Konva authoring.
+- M0 uses the existing `isChip3DShowcaseAvailable(project)` gate exactly as specified. If the chip is interactive-3D capable, `MobileEditor` passes a viewer-only `Chip3DPreviewToggle` into the slot; otherwise it passes no slot and the static preview remains.
+- No 3D authoring callbacks are passed in M0. The mobile showcase can open the viewer, play/reset the view, and export MP4 through the existing viewer extras, but it does not expose look presets, lighting presets, camera save/reset-default, environment sliders, or animation controls.
+- Wired `App.tsx` so the mobile editor route renders `MobileEditor` with the same `persist={(nextProject) => void store.save(nextProject)}` shape as desktop `EditorPage`. Desktop routing remains unchanged.
+- Trade-off: the fallback/no-WebGL branch is covered by `MobileEditor.test.tsx` rather than browser-forced no-WebGL QA. The in-app browser's read-only evaluation context did not provide a stable way to disable WebGL or seed an over-budget project, so browser QA focused on the real 3D-capable path while component tests cover the unavailable path.
+- Bundle-check trade-off: the first slot wrapper class used `mobile-editor-preview__three`, which made `rg "three" dist/assets/index-*.js` fail even though the Three library was still lazy-loaded. Renamed the class to `mobile-editor-preview__showcase` to preserve the existing string-based gate.
+- Targeted TDD verification:
+  - RED: `npm run test:client -- src/features/editor/MobileEditorPreview.test.tsx` failed because the provided `chip3dSlot` button did not render.
+  - GREEN: `npm run test:client -- src/features/editor/MobileEditorPreview.test.tsx` passed with 3 tests.
+  - RED: `npm run test:client -- src/features/editor/MobileEditor.test.tsx` failed because `./MobileEditor` did not exist.
+  - GREEN: `npm run test:client -- src/features/editor/MobileEditor.test.tsx` passed with 2 tests.
+  - RED: `npm run test:client -- src/app/App.test.tsx` failed because the app still rendered the real `MobileEditorPreview` branch instead of the new `MobileEditor` mock, hitting Konva/ResizeObserver in jsdom.
+  - GREEN: `npm run test:client -- src/app/App.test.tsx` passed with 13 tests after the route swap.
+- Browser smoke on `http://127.0.0.1:5173/` at `390x844`: opened the dashboard, remixed `AURORA M5`, confirmed the mobile editor route showed chip preview, fake spec, publish controls, export controls, no desktop editor workspace, and exactly one `Open 3D showcase` button.
+- Browser 3D smoke: opened the mobile 3D showcase and confirmed a viewer-only modal labeled `AURORA M5 3D showcase`, a visible WebGL canvas (`356x628` CSS / `712x1256` backing), buttons limited to `Export turntable MP4`, `Close 3D showcase`, `Play turntable`, and `Reset view`, no range inputs, and no look/environment/animation/camera authoring text. Dragging the canvas kept the modal open; closing returned focus to `Open 3D showcase`; browser console warn/error logs were empty.
+- Final verification:
+  - `npm test`: client 120 files / 773 tests passed; server 70 files / 298 tests passed.
+  - `npm run build`: passed; only the known >500 kB chunk warning appeared.
+  - `npm run typecheck:server`: passed.
+  - `rg "three" dist/assets/index-*.js`: no output, so Three remains outside the core index bundle.
+
+## V11-M1 Mobile Look + Lighting Preset Chips
+
+- Renamed the branch from `codex/v11-m0` to `v11-mobile-3d-authoring` before starting M1, matching the broader v11 feature name requested by the user.
+- Implemented M1 as an explicit `authoringMode` on `Chip3DPreviewToggle` / `Chip3DShowcase`: default `desktop` preserves the existing full desktop controls, while `mobile-presets` exposes only look presets and lighting preset buttons.
+- `mobile-presets` intentionally hides desktop-only controls even if their callbacks exist: lighting intensity slider, reset lighting, environment presets/sliders, animation controls, and camera save/reset-default do not render. `Reset view`, play/pause, MP4 export, and close remain viewer controls.
+- Wired `MobileEditor` to pass `authoringMode="mobile-presets"`, `state.applyScene3DLook`, and `state.setScene3DLighting` into the mobile 3D toggle. These reuse the existing editor store commands and autosave path; no schema, backend, route, SQLite, or publish snapshot change was needed.
+- Lighting preset taps preserve the current lighting intensity, matching desktop preset behavior. This lets mobile change the preset without exposing the precision intensity slider that the v11 spec keeps desktop-only.
+- Targeted TDD verification:
+  - RED: `npm run test:client -- src/features/editor/Chip3DPreviewToggle.test.tsx` failed because `authoringMode="mobile-presets"` still rendered the `Lighting intensity` range.
+  - GREEN: `npm run test:client -- src/features/editor/Chip3DPreviewToggle.test.tsx` passed with 16 tests after adding the preset-only mode.
+  - RED: `npm run test:client -- src/features/editor/MobileEditor.test.tsx` failed because `MobileEditor` did not pass `mobile-presets` mode or preset callbacks into the toggle.
+  - GREEN: `npm run test:client -- src/features/editor/MobileEditor.test.tsx` passed with 3 tests after wiring the store commands.
+- Browser smoke on `http://127.0.0.1:5173/` at `390x844`: remixed `AURORA M5`, opened the mobile 3D showcase, and confirmed the modal showed `Orbit hero`, `Inspection`, `Dramatic closeup`, `Studio`, `Neon noir`, `Daylight`, and `Dramatic`, with zero range inputs and no desktop-only text for lighting intensity, exposure, bloom, turntable timing, save current view, or reset 3D default.
+- Browser persistence smoke: tapped `Inspection`, then `Neon noir`; `Neon noir` became the pressed lighting preset while the WebGL canvas remained present. After closing the modal, reloading the editor route, and reopening the showcase, `Neon noir` was still pressed, confirming the mobile preset change traveled through autosave. Browser console warn/error logs were empty.
+- QA note: local Vite server logs still show expected `/api/me` and `/api/health` proxy `ECONNREFUSED` entries when the API server is not running; no browser console warnings/errors were produced during the M1 interactions.
+- Final verification:
+  - `npm test`: client 120 files / 775 tests passed; server 70 files / 298 tests passed.
+  - `npm run build`: passed; only the known >500 kB chunk warning appeared.
+  - `npm run typecheck:server`: passed.
+  - `rg "three" dist/assets/index-*.js`: no output, so Three remains outside the core index bundle.
+
+## V11-M2 Camera Touch Authoring
+
+- Added mobile camera authoring by allowing `authoringMode="mobile-presets"` to pass camera callbacks through to `Chip3DViewer`. This keeps the mobile mode's look + lighting preset subset from M1, but now also exposes the existing viewer-level `Save current view` and `Reset 3D default` actions when callbacks are supplied.
+- Wired `MobileEditor` to pass `state.setScene3DCamera` and `state.resetScene3DCamera` into the mobile 3D toggle. These reuse the same schema 9 `scene3d.camera` payload and autosave path as desktop camera authoring.
+- Kept desktop-only controls hidden on mobile: lighting intensity, lighting reset, environment controls, animation controls, and raw sliders remain absent. `Reset view` remains a viewer-only transient camera reset; `Reset 3D default` removes persisted camera settings.
+- Added `touch-action: none` to `.chip-3d-viewer` and its canvas so touch orbit gestures are handled by the WebGL viewer instead of triggering page scroll/pinch handling on the page.
+- Added `tests/mobile3dCss.test.ts` as a small CSS contract test because the touch behavior is otherwise browser-only and easy to regress during layout cleanup.
+- Targeted TDD verification:
+  - RED: `npm run test:client -- src/features/editor/Chip3DPreviewToggle.test.tsx src/features/editor/MobileEditor.test.tsx tests/mobile3dCss.test.ts` failed because mobile mode blocked mocked camera save/reset buttons, MobileEditor did not pass camera callbacks, and the viewer CSS lacked `touch-action: none`.
+  - GREEN: the same command passed with 3 files / 22 tests after wiring camera callbacks and the CSS guard.
+- Browser smoke on `http://127.0.0.1:5173/` at `390x844`: remixed `AURORA M5`, opened the mobile 3D showcase, confirmed `Save current view` and `Reset 3D default` now render alongside look/lighting presets, confirmed zero range inputs and no desktop-only slider text, and confirmed computed `touch-action` is `none` on both `.chip-3d-viewer` and the WebGL canvas.
+- Browser camera smoke: dragged the canvas, clicked `Save current view`, closed and reloaded the editor route, reopened the showcase, and clicked `Reset 3D default`. The modal stayed live with a rendered canvas throughout and browser console warn/error logs were empty.
+- QA note: local Vite server logs still show expected `/api/me` and `/api/health` proxy `ECONNREFUSED` entries when the API server is not running; no browser console warnings/errors were produced during the M2 interactions.
+- Final verification:
+  - `npm test`: client 121 files / 778 tests passed; server 70 files / 298 tests passed.
+  - `npm run build`: passed; only the known >500 kB chunk warning appeared.
+  - `npm run typecheck:server`: passed.
+  - `rg "three" dist/assets/index-*.js`: no output, so Three remains outside the core index bundle.
+
+## V11-M3 Responsive Control Layout & A11y
+
+- Implemented M3 as a mobile-only layout polish on the existing `authoringMode="mobile-presets"` showcase rather than introducing a separate mobile control component. `Chip3DShowcase` now adds `chip-3d-showcase--mobile-presets` only for the mobile authoring mode, so the desktop control rail keeps the original `chip-3d-showcase` class and desktop look preset label.
+- Added explicit ARIA groups for look, lighting, and environment controls. Mobile mode labels the exposed preset rails as `Mobile 3D look presets` and `Mobile 3D lighting presets`; desktop keeps `3D look presets`, `3D lighting controls`, and `3D environment controls`.
+- Added a `max-width: 767px` CSS contract for mobile preset showcases: the modal header becomes a compact horizontal chip rail with `overflow-x: auto`, preset groups stay `nowrap`, and all header/viewer action buttons get at least `44px` width and height.
+- Viewer actions now expand across the bottom of the mobile modal under the mobile class only. This keeps `Save current view` and `Reset 3D default` reachable without reintroducing desktop sliders or changing the desktop rail.
+- Trade-off: the compact rail intentionally scrolls horizontally instead of wrapping into multiple rows. This preserves vertical space for the WebGL viewer on phone screens, at the cost of requiring horizontal swipe for the full preset set.
+- Targeted TDD verification:
+  - RED: `npm run test:client -- src/features/editor/Chip3DPreviewToggle.test.tsx tests/mobile3dCss.test.ts` failed because the mobile showcase lacked the mobile layout class and CSS breakpoint rules.
+  - GREEN: the same command passed with 2 files / 20 tests after adding the mobile class, ARIA groups, and compact rail CSS.
+- Browser QA on `http://127.0.0.1:5173/` at `390x844`: remixed `AURORA M5`, opened the mobile 3D showcase, and confirmed `chip-3d-showcase--mobile-presets`, header `overflow-x: auto`, look/lighting preset `flex-wrap: nowrap`, minimum action size `44x44`, mobile ARIA group labels, visible `Save current view` and `Reset 3D default`, zero range inputs, and no browser console warnings/errors.
+- QA note: local Vite server logs still show expected `/api/me` and `/api/health` proxy `ECONNREFUSED` entries when the API server is not running; no browser console warnings/errors were produced during the M3 interactions.
+- Final verification:
+  - `npm test`: client 121 files / 780 tests passed; server 70 files / 298 tests passed.
+  - `npm run build`: passed; only the known >500 kB chunk warning appeared.
+  - `npm run typecheck:server`: passed.
+  - `rg "three" dist/assets/index-*.js`: no output, so Three remains outside the core index bundle.
+
+## V11-M4 Final QA & Release
+
+- Closed v11 as the `0.9 v11` release line and updated the English/Korean READMEs to describe Mobile 3D Authoring as a frontend-only extension of the existing `scene3d` authoring path.
+- Added `docs/ops/v11-mobile-3d-authoring-qa.md` as the v11 release pack covering mobile look presets, lighting chips, camera touch authoring, available/unavailable fallback coverage, round-trip, share, MP4, and export parity. Because `/docs/` is ignored for new files, this file must be force-added when staging.
+- Updated `tests/releaseDocs.test.ts` from the previous v10 release contract to the v11 release contract. RED confirmed the README version lines still said `0.8 v10` and the v11 QA pack was missing; GREEN passed after the docs update.
+- Browser mobile available-path QA on `http://127.0.0.1:5173/` at `390x844`: remixed `AURORA M5`, confirmed the mobile editor route rendered the preview/spec/publish/export/edit-on-desktop surface instead of the desktop Konva workspace, opened the 3D showcase, and confirmed mobile look presets, lighting chips, `Save current view`, `Reset 3D default`, MP4 export control, compact rail `overflow-x: auto`, preset `nowrap`, 44px tap targets, mobile ARIA group labels, zero range inputs, and a rendered WebGL canvas.
+- Browser persistence QA: applied `Inspection`, selected `Neon noir`, saved the camera view, reloaded the mobile editor route, reopened the 3D showcase, and confirmed `Neon noir` was still pressed. The published gallery JSON retained `scene3d.camera`, `lighting.preset = neon-noir`, and the look-preset environment values.
+- Browser round-trip/share QA: signed up a local QA account, published the mobile-authored `AURORA M5` snapshot, made it public at `/s/aurora-m5-630e2ac5`, opened `/gallery/aurora-m5-630e2ac5?view=3d`, and confirmed a viewer-only 3D modal with no authoring controls, zero range inputs, and a `356x684` CSS / `712x1368` backing WebGL canvas. The `/s/` share page rendered the poster and linked `View in 3D` to `http://127.0.0.1:5173/gallery/aurora-m5-630e2ac5?view=3d`.
+- Export parity QA used the actual published PNGs captured by the mobile publish panel: `v1-die.png` was `3680x2400` for the `920x600` AURORA M5 die (`x4`), and `v1-poster.png` was `3200x1800`. MP4 browser QA verified the editor 3D showcase still exposes `Export turntable MP4`; recorder/capture contracts remain covered by automated tests.
+- Unavailable fallback browser limitation: the in-app browser evaluation context exposed neither `indexedDB` nor `fetch`, so I could not safely seed an over-budget local project for a browser-only fallback check. This branch remains covered by `MobileEditor.test.tsx` and the release pack records it as an acceptance checklist item.
+- QA note: the first API dev-server start failed inside the sandbox because `tsx watch` could not open its temporary IPC pipe; rerunning with escalation started the server. The email verification route showed an invalid-token page during the UI signup flow, but development publish still allowed the verified/not-live local QA account path and the publish/share round-trip completed.
+- Browser console warn/error logs were empty after the mobile authoring, gallery, and share checks.
+- Final verification:
+  - `npm run test:client -- tests/releaseDocs.test.ts`: passed with 1 file / 3 tests.
+  - `npm test`: client 121 files / 780 tests passed; server 70 files / 298 tests passed.
+  - `npm run build`: passed; only the known >500 kB chunk warning appeared.
+  - `npm run typecheck:server`: passed.
+  - `rg "three" dist/assets/index-*.js`: no output, so Three remains outside the core index bundle.
