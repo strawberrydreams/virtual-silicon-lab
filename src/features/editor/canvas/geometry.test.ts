@@ -196,4 +196,34 @@ describe('normalizeDie', () => {
       background: 'grid-cyan',
     })
   })
+
+  it('seeds freeform vertices from the current outline and keeps dimensions', () => {
+    const rect: Die = { shape: 'rect', width: 120, height: 80, background: 'grid-cyan' }
+    const next = normalizeDie(rect, 'freeform')
+    expect(next.shape).toBe('freeform')
+    expect(next.width).toBe(120)
+    expect(next.height).toBe(80)
+    expect(next.dieShapeParams).toBeUndefined()
+    expect(next.freeform).toEqual({
+      vertices: [
+        { x: 0, y: 0 },
+        { x: 1, y: 0 },
+        { x: 1, y: 1 },
+        { x: 0, y: 1 },
+      ],
+    })
+  })
+
+  it('drops a stale freeform field when switching to a non-freeform shape', () => {
+    const freeform: Die = {
+      shape: 'freeform',
+      width: 100,
+      height: 100,
+      background: 'grid-cyan',
+      freeform: { vertices: [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 0.5, y: 1 }] },
+    }
+    const next = normalizeDie(freeform, 'rect')
+    expect(next.shape).toBe('rect')
+    expect(next.freeform).toBeUndefined()
+  })
 })

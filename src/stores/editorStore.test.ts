@@ -263,6 +263,19 @@ describe('editor store commands', () => {
     expect(store.getState().project).toEqual(project)
   })
 
+  it('seeds a freeform die and re-clamps blocks when switching shape', () => {
+    const store = createEditorStore(seededProject())
+    store.getState().setDieShape('freeform')
+    const die = store.getState().project.die
+    expect(die.shape).toBe('freeform')
+    expect(die.freeform?.vertices.length).toBeGreaterThanOrEqual(3)
+    expect(store.getState().past).toHaveLength(1)
+    const polygon = outlineToPolygon(resolveDieOutline(die))
+    for (const block of store.getState().project.blocks) {
+      expect(pointInPolygon({ x: block.x, y: block.y }, polygon)).toBe(true)
+    }
+  })
+
   it('does not create history when selecting the active die shape', () => {
     const store = createEditorStore(seededProject())
     store.getState().setDieShape('rect')
