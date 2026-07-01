@@ -107,6 +107,7 @@ export type EditorState = {
   setDieShapeParams: (params: DieShapeParams) => void
   addFreeformVertex: (index: number, point: FreeformVertex) => void
   deleteFreeformVertex: (index: number) => void
+  moveFreeformVertex: (index: number, point: FreeformVertex) => void
   setTheme: (theme: StyleTheme) => void
   setFinish: (finish: ChipFinish) => void
   setBlockFinish: (id: string, finish: ChipFinish | undefined) => void
@@ -795,6 +796,15 @@ export function createEditorStore(initialProject: Project, options: Options = {}
         if (current.length - 1 < 3) return
         const vertices = [...current.slice(0, index), ...current.slice(index + 1)]
         commit(projectWithFreeformVertices(project, vertices))
+      },
+
+      moveFreeformVertex(index, point) {
+        const { project } = get()
+        if (project.die.shape !== 'freeform') return
+        const current = resolveFreeformVertices(project.die.freeform)
+        if (index < 0 || index >= current.length) return
+        const vertices = current.map((vertex, i) => (i === index ? point : vertex))
+        commit(projectWithFreeformVertices(project, vertices), {}, `freeform-vertex-move:${index}`)
       },
 
       setTheme(theme) {

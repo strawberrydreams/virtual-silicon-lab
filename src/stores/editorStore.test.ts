@@ -325,6 +325,33 @@ describe('editor store commands', () => {
     expect(store.getState().past).toHaveLength(0)
   })
 
+  it('moves a freeform vertex and coalesces a drag into one undo step', () => {
+    const store = freeformStore()
+    const pastBefore = store.getState().past.length
+    const original = store.getState().project.die.freeform!.vertices[0]
+    store.getState().moveFreeformVertex(0, { x: 0.1, y: 0.1 })
+    store.getState().moveFreeformVertex(0, { x: 0.2, y: 0.2 })
+    store.getState().moveFreeformVertex(0, { x: 0.3, y: 0.3 })
+    expect(store.getState().project.die.freeform!.vertices[0]).toEqual({ x: 0.3, y: 0.3 })
+    expect(store.getState().past).toHaveLength(pastBefore + 1)
+
+    store.getState().undo()
+    expect(store.getState().project.die.freeform!.vertices[0]).toEqual(original)
+
+    store.getState().redo()
+    expect(store.getState().project.die.freeform!.vertices[0]).toEqual({ x: 0.3, y: 0.3 })
+  })
+
+  it('clamps a moved vertex to the unit square and ignores out-of-range indices', () => {
+    const store = freeformStore()
+    const count = store.getState().project.die.freeform!.vertices.length
+    store.getState().moveFreeformVertex(0, { x: 2, y: -1 })
+    expect(store.getState().project.die.freeform!.vertices[0]).toEqual({ x: 1, y: 0 })
+    const snapshot = store.getState().project
+    store.getState().moveFreeformVertex(count + 5, { x: 0.5, y: 0.5 })
+    expect(store.getState().project).toBe(snapshot)
+  })
+
   it('previews die parameters without history and commits the gesture once', () => {
     const project = parameterProject()
     const store = createEditorStore(project)
