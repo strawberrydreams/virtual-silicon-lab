@@ -65,4 +65,13 @@ describe('reconcile — tombstones', () => {
 
     expect(plan).toEqual({ toPush: [], toApply: [], toDeleteLocal: [] })
   })
+
+  it('deletes locally when the server tombstone has the same updatedAt', () => {
+    const plan = reconcile(
+      [{ id: 'a', updatedAt: 150 }],
+      [{ id: 'a', updatedAt: 150, deleted: true }],
+    )
+
+    expect(plan).toEqual({ toPush: [], toApply: [], toDeleteLocal: ['a'] })
+  })
 })
