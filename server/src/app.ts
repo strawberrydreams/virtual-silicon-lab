@@ -19,6 +19,7 @@ import { reactionsRoutes } from './reactions/routes'
 import { seoRoutes } from './seo/routes'
 import { createRateLimiter, type RateLimitOptions } from './rateLimit'
 import { shareRoutes } from './share/routes'
+import { syncRoutes } from './sync/routes'
 
 export type AppDeps = {
   db: Database.Database
@@ -126,6 +127,7 @@ export function createApp(deps: AppDeps) {
   app.route('/api', aiRoutes(deps))
   app.route('/api', inviteRoutes(deps))
   app.route('/api', publishRoutes(deps))
+  app.route('/api', syncRoutes(deps))
   app.route('/api', moderationRoutes(deps))
   app.route('/api', reactionsRoutes(deps))
   app.route('/api', contestRoutes(deps))
