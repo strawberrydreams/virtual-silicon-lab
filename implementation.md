@@ -410,3 +410,73 @@
 - Out of scope for M1, confirmed unchanged: Konva vertex handles for interactive add/move/delete on the 2D canvas, the palette `Freeform` entry that would let a user reach `setDieShape('freeform')` from the UI, and `ChipArtwork.tsx` 2D rendering of freeform dies (still falls through to the full-frame rect noted in the M0 caveat above). These remain M2.
 - Final verification:
   - `npm run test:client`: 130 files / 843 tests passed (whole client suite).
+
+## V13-M2 Canvas Authoring UI
+
+- Started M2 from the existing v13 spec and M0/M1 implementation. Added the milestone plan at `docs/superpowers/plans/2026-07-02-v13-m2-canvas-authoring-ui.md` because no M2 plan file existed yet.
+- Scope decision: M2 will expose the already-implemented store commands through the editor surface only. It will not add server/sync/storage changes, curved freeform edges, boolean CSG, or a blank pen tool.
+- Planned implementation slices are toolbar conversion, 2D freeform outline rendering in `ChipArtwork`, Konva vertex handles/add/delete interactions in `ChipStage`, `EditorPage` store wiring, then focused/full test and browser QA.
+- Added a first-class `Freeform` button to the editor shape controls (`EditorToolbar`). It calls the existing `setDieShape('freeform')` path from M1, so conversion still seeds vertices from the current die and re-clamps blocks through store logic. Decision: keep it beside the legacy one-click shapes rather than inside the parametric menu because freeform is not parametric and is a primary authoring mode.
+- Wired freeform 2D rendering through the same outline trace path as parametric shapes in `ChipArtwork`: clipping, die base rendering, and seal rings now use `traceDieOutline(resolveDieOutline(die))` for `die.shape === 'freeform'`. Legacy primitive branches for rect/square/circle/hexagon remain unchanged.
+- Added a freeform vertex editor overlay in `ChipStage`. When the die is freeform it renders an outline guide, transparent edge hit targets, and draggable circular vertex handles. Dragging a handle calls `onMoveFreeformVertex(index, normalizedPoint)`, double-clicking an edge inserts a midpoint after that edge via `onAddFreeformVertex(index + 1, normalizedPoint)`, and selecting a handle then pressing Delete/Backspace calls `onDeleteFreeformVertex(index)` while respecting the store's min-3 enforcement.
+- `EditorPage` now passes `state.addFreeformVertex`, `state.moveFreeformVertex`, and `state.deleteFreeformVertex` into `ChipStage`. No separate UI history stack was introduced; every mutation still goes through M1's store commands and existing undo/redo behavior.
+- Testing trade-off: jsdom cannot perform real Konva canvas hit testing, so the `react-konva` mock in `ChipStage.test.tsx` exposes enough event callbacks to verify normalized callback wiring. Real pointer behavior was browser-verified with the in-app Browser on the Vite dev server.
+- Browser QA on `http://127.0.0.1:5173/`: created an AURORA M5 project from the landing page, opened `/editor/da14d850-fcad-49b9-b907-d05fd8f1ec50`, clicked `Freeform`, verified the Freeform button had `aria-pressed="true"`, confirmed visible vertex handles on the canvas, dragged the top-left handle, double-clicked the top edge, selected a handle and pressed Delete, and confirmed browser console warn/error logs were empty. The generated spec metrics changed after the outline edit, which confirmed the project reacted to the edited freeform geometry.
+- Final verification:
+  - RED: `npm run test:client -- src/features/editor/EditorToolbar.test.tsx` failed because the `Freeform` button did not exist.
+  - GREEN: the same toolbar test passed after adding the shape control.
+  - RED: `npm run test:client -- src/features/editor/canvas/ChipArtwork.test.tsx` failed because freeform rendered through the rect fallback.
+  - GREEN: the same artwork test passed after routing freeform through the outline trace path.
+  - RED: `npm run test:client -- src/features/editor/canvas/ChipStage.test.tsx src/features/editor/EditorPage.test.tsx` failed because no overlay or store wiring existed.
+  - GREEN: the same stage/page tests passed after adding the overlay and callbacks.
+  - Focused suite: `npm run test:client -- src/features/editor/EditorToolbar.test.tsx src/features/editor/canvas/ChipArtwork.test.tsx src/features/editor/canvas/ChipStage.test.tsx src/features/editor/EditorPage.test.tsx`: 4 files / 42 tests passed.
+  - `npm run test:client`: 130 files / 850 tests passed.
+  - `npm run build`: passed; Vite emitted the existing >500 kB chunk warning.
+  - `npm test`: client 130 files / 850 tests passed; server 74 files / 321 tests passed.
+  - `npx eslint src/features/editor/canvas/ChipStage.tsx --report-unused-disable-directives --max-warnings 0`: passed after replacing the synchronous selection-reset effect with a derived active selection.
+  - `npm run lint`: failed on pre-existing unrelated files (`src/features/gallery/GalleryDetailPage.tsx` `react-hooks/set-state-in-effect`, `src/features/sync/syncEngine.ts` `react-hooks/immutability`, and `src/stores/projectStoreContext.tsx` `react-refresh/only-export-components`). No M2-touched file remains in the lint output.
+
+## V13-M3 3D + Export Parity Verification
+
+- Started M3 as a verification milestone on top of the uncommitted M2 worktree. Added the plan at `docs/superpowers/plans/2026-07-02-v13-m3-3d-export-parity.md`.
+- Scope decision: M3 should add regression/characterization coverage and browser QA for freeform 3D, die PNG, poster PNG, and MP4 handoff. Production code should change only if those tests reveal a real pipeline gap.
+- Added 3D model parity coverage in `src/visual/chip3d/chip3dModel.test.ts`: `freeform` now participates in the shared die-shape footprint matrix, and targeted arbitrary + concave freeform tests assert the die-base footprint equals `outlineToPolygon(resolveDieOutline(die), 64)`. No production 3D code changed; the tests passed against the existing polygon pipeline.
+- Added die/poster export parity coverage:
+  - `DieExportStage.test.tsx` now verifies a freeform project keeps exact die stage dimensions, passes `project.die.shape === 'freeform'` into shared `ChipArtwork`, and uses `renderMode="die-only"`.
+  - `PosterExportStage.test.tsx` now covers all poster formats and verifies freeform projects still render through shared `ChipArtwork` inside the poster composition.
+- Added MP4 handoff coverage in `VideoExportPanel.test.tsx`: a model containing a freeform polygon die-base footprint is passed unchanged to `recordTurntableMp4`, confirming the MP4 UI does not inspect or special-case `die.shape`.
+- Browser QA on `http://127.0.0.1:5173/`: created an AURORA M5 project, switched to `Freeform`, opened the 3D showcase, confirmed a rendered WebGL canvas plus `Export turntable MP4`, closed the showcase, confirmed die/poster/share export controls remained present for the freeform project, and confirmed browser console warn/error logs were empty throughout.
+- M3 added no production code. The milestone result is regression coverage + browser evidence that M0-M2's shared outline/model/artwork paths already carry freeform through 3D and exports.
+- Final verification:
+  - `npm run test:client -- src/visual/chip3d/chip3dModel.test.ts`: 1 file / 28 tests passed.
+  - `npm run test:client -- src/features/export/DieExportStage.test.tsx src/features/export/PosterExportStage.test.tsx`: 2 files / 3 tests passed.
+  - `npm run test:client -- src/features/export/VideoExportPanel.test.tsx`: 1 file / 4 tests passed.
+  - Focused M3 suite: `npm run test:client -- src/visual/chip3d/chip3dModel.test.ts src/features/export/DieExportStage.test.tsx src/features/export/PosterExportStage.test.tsx src/features/export/VideoExportPanel.test.tsx`: 4 files / 35 tests passed.
+  - `npm run test:client`: 131 files / 856 tests passed.
+  - `npm run build`: passed; Vite emitted the existing >500 kB chunk warning.
+  - `npm test`: client 131 files / 856 tests passed; server 74 files / 321 tests passed.
+  - `npx eslint src/visual/chip3d/chip3dModel.test.ts src/features/export/DieExportStage.test.tsx src/features/export/PosterExportStage.test.tsx src/features/export/VideoExportPanel.test.tsx --report-unused-disable-directives --max-warnings 0`: passed.
+
+## V13-M4 Final QA & Release
+
+- Started M4 as the v13 release-close milestone. Added the plan at `docs/superpowers/plans/2026-07-02-v13-m4-final-qa-release.md`.
+- Scope decision: M4 is documentation + verification only unless final QA exposes a release-blocking defect. It should bump the public release docs to `0.11 v13`, add the v13 QA pack, and update the release docs contract test.
+- Rewrote `tests/releaseDocs.test.ts` from the v12 contract to the v13 Freeform contract and confirmed the expected RED state first: English/Korean README files still said `0.10 v12`, and `docs/ops/v13-freeform-qa.md` did not exist. After the docs work, the same release-doc test passed with 1 file / 3 tests.
+- Updated `README.md` and `README.kr.md` to `0.11 v13`, added release-overview entries for `v13 Freeform`, updated the editor shape count to include freeform, and added `Freeform Die Authoring (v13)` sections covering vertex handles, block re-clamp, and 3D/export parity.
+- Added `docs/ops/v13-freeform-qa.md` as the release QA pack. It records the manual checklist for Freeform conversion, Vertex add / move / delete, Block re-clamp, 2D rendering, 3D showcase, Die PNG, Poster PNG, MP4 export, and the "No server or sync change" invariant.
+- Final browser QA exposed a real release blocker: both Vite dev and production preview opened the 3D showcase modal for a freeform project, but the lazy `Chip3DViewer` stayed on `Loading 3D showcase...` indefinitely while console warn/error logs stayed empty. The MP4 and authoring controls rendered, but the WebGL viewer never mounted.
+- Fixed that blocker by setting `build.modulePreload = false` in `vite.config.ts`. This keeps `Chip3DViewer`, `chip3dStage`, recorder, and `mp4-muxer` in lazy chunks, but removes Vite's modulepreload wrapper/hints from the production build. Trade-off: 3D lazy chunks no longer get proactive modulepreload hints, so the first 3D open may do a little less speculative loading; the payoff is a simpler native dynamic-import path that resolved reliably in the in-app Browser release QA. `rg "three" dist/assets/index-*.js` still has no output, so Three remains out of the core index bundle.
+- Browser QA after the fix used production preview at `http://127.0.0.1:4173/`: started `AURORA M5`, clicked `Freeform`, opened the 3D showcase, confirmed the WebGL canvas rendered, confirmed `Export turntable MP4`, `Play turntable`, `Reset view`, `Save current view`, and `Reset 3D default` were present, closed the modal, and confirmed `Download Die PNG`, `Download Poster PNG`, and `Share Poster` remained available. Browser console warn/error logs were empty after the fixed run.
+- Local dev-server logs still show expected `/api/me` and `/api/health` proxy `ECONNREFUSED` entries when the API server is not running; they did not surface as browser console warn/error logs and are unchanged from previous frontend-only QA.
+- Final verification:
+  - `npm run test:client -- tests/releaseDocs.test.ts`: 1 file / 3 tests passed.
+  - `npm run test:client`: 131 files / 856 tests passed.
+  - `npm run build`: passed; Vite emitted the known >500 kB chunk warning, and lazy 3D chunks remained split.
+  - `npm test`: client 131 files / 856 tests passed; server 74 files / 321 tests passed.
+  - `npx eslint tests/releaseDocs.test.ts src/features/export/PosterExportStage.test.tsx src/features/export/DieExportStage.test.tsx src/features/export/VideoExportPanel.test.tsx src/visual/chip3d/chip3dModel.test.ts vite.config.ts --report-unused-disable-directives --max-warnings 0`: passed.
+  - `npm run lint`: still fails only on the pre-existing unrelated baseline (`src/features/gallery/GalleryDetailPage.tsx` `react-hooks/set-state-in-effect`, `src/features/sync/syncEngine.ts` `react-hooks/immutability`, and `src/stores/projectStoreContext.tsx` `react-refresh/only-export-components`).
+  - `rg "three" dist/assets/index-*.js`: no output.
+- Follow-up README simplification: removed the long v3-v13 change-history paragraph and version-line callout from both README files, rewrote the release overview as short plain-language entries, removed version numbers from Key Features section headings, and deleted the bottom Launch Status / server deploy memo sections. This intentionally makes the README more product-facing and less operations-heavy.
+- Updated `tests/releaseDocs.test.ts` to assert the new concise README contract, including negative checks for the removed version-line callout, versioned Key Features headings, launch-status section, and server deploy memo.
+- Verification after the README simplification:
+  - `npm run test:client -- tests/releaseDocs.test.ts`: 1 file / 3 tests passed.

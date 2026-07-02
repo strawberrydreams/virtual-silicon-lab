@@ -1,4 +1,4 @@
-import { act, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createProject } from '../../../domain/projectFactory'
@@ -11,13 +11,37 @@ vi.mock('react-konva', async () => {
       className,
       name,
       text,
+      x,
+      y,
+      onClick,
+      onDblClick,
+      onDragEnd,
     }: {
       children?: import('react').ReactNode
       className?: string
       name?: string
       text?: string
+      x?: number
+      y?: number
+      onClick?: () => void
+      onDblClick?: () => void
+      onDragEnd?: (event: { target: { x: () => number; y: () => number } }) => void
     }) => (
-      <div className={className} data-konva={type} data-name={name}>
+      <div
+        className={className}
+        data-konva={type}
+        data-name={name}
+        onClick={onClick}
+        onDoubleClick={onDblClick}
+        onMouseUp={() =>
+          name === 'freeform-vertex-handle'
+            ? onDragEnd?.({ target: { x: () => 120, y: () => 80 } })
+            : undefined
+        }
+        tabIndex={name === 'freeform-vertex-handle' ? 0 : undefined}
+        data-x={x}
+        data-y={y}
+      >
         {text}
         {children}
       </div>
@@ -44,6 +68,25 @@ afterEach(() => {
 })
 
 describe('ChipStage canvas chrome', () => {
+  function freeformProject() {
+    const project = createProject('Freeform Stage', 'freeform-stage', 1700000000000)
+    project.die = {
+      ...project.die,
+      width: 240,
+      height: 160,
+      shape: 'freeform',
+      freeform: {
+        vertices: [
+          { x: 0, y: 0 },
+          { x: 1, y: 0 },
+          { x: 0.75, y: 1 },
+          { x: 0.1, y: 0.8 },
+        ],
+      },
+    }
+    return project
+  }
+
   it('renders coordinate gutters, zoom controls, and canvas status readouts', async () => {
     const user = userEvent.setup()
     const project = createProject('Coordinate Chrome', 'coordinate-chrome', 1700000000000)
@@ -173,5 +216,59 @@ describe('ChipStage canvas chrome', () => {
     expect(screen.getByRole('region', { name: 'Canvas status readouts' })).toHaveTextContent(
       'MOTION OFF',
     )
+  })
+
+  it('renders freeform vertex handles and edge insertion targets', () => {
+    render(
+      <ChipStage
+        project={freeformProject()}
+        selectedBlockId={null}
+        selectedStudioItem={null}
+        onSelectBlock={vi.fn()}
+        onSelectStudioItem={vi.fn()}
+        onTransformBlock={vi.fn()}
+        onTransformSticker={vi.fn()}
+        onTransformSpray={vi.fn()}
+      />,
+    )
+
+    expect(document.querySelectorAll('[data-name="freeform-vertex-handle"]')).toHaveLength(4)
+    expect(document.querySelectorAll('[data-name="freeform-edge-target"]')).toHaveLength(4)
+  })
+
+  it('moves, adds, and deletes freeform vertices through normalized callbacks', async () => {
+    const user = userEvent.setup()
+    const onMoveFreeformVertex = vi.fn()
+    const onAddFreeformVertex = vi.fn()
+    const onDeleteFreeformVertex = vi.fn()
+    render(
+      <ChipStage
+        project={freeformProject()}
+        selectedBlockId={null}
+        selectedStudioItem={null}
+        onSelectBlock={vi.fn()}
+        onSelectStudioItem={vi.fn()}
+        onTransformBlock={vi.fn()}
+        onTransformSticker={vi.fn()}
+        onTransformSpray={vi.fn()}
+        onMoveFreeformVertex={onMoveFreeformVertex}
+        onAddFreeformVertex={onAddFreeformVertex}
+        onDeleteFreeformVertex={onDeleteFreeformVertex}
+      />,
+    )
+
+    const firstHandle = document.querySelector('[data-name="freeform-vertex-handle"]')
+    expect(firstHandle).toBeInTheDocument()
+    fireEvent.mouseUp(firstHandle!)
+    expect(onMoveFreeformVertex).toHaveBeenCalledWith(0, { x: 0.5, y: 0.5 })
+
+    const firstEdge = document.querySelector('[data-name="freeform-edge-target"]')
+    expect(firstEdge).toBeInTheDocument()
+    fireEvent.doubleClick(firstEdge!)
+    expect(onAddFreeformVertex).toHaveBeenCalledWith(1, { x: 0.5, y: 0 })
+
+    await user.click(firstHandle!)
+    await user.keyboard('{Delete}')
+    expect(onDeleteFreeformVertex).toHaveBeenCalledWith(0)
   })
 })

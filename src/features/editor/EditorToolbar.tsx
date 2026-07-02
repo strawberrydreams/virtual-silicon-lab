@@ -27,6 +27,7 @@ const SHAPES: { shape: DieShape; label: string }[] = [
   { shape: 'square', label: 'Square' },
   { shape: 'circle', label: 'Circle' },
   { shape: 'hexagon', label: 'Hexagon' },
+  { shape: 'freeform', label: 'Freeform' },
 ]
 
 const PARAMETRIC_SHAPES: { shape: DieShape; label: string }[] = [

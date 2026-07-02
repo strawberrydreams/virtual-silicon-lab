@@ -70,7 +70,7 @@ function clipForDie(context: Konva.Context, die: Die) {
     context.closePath()
     return
   }
-  if (isParametricDieShape(die.shape)) {
+  if (die.shape === 'freeform' || isParametricDieShape(die.shape)) {
     traceDieOutline(context, resolveDieOutline(die))
     return
   }
@@ -137,7 +137,7 @@ function DieShape({
       />
     )
   }
-  if (isParametricDieShape(die.shape)) {
+  if (die.shape === 'freeform' || isParametricDieShape(die.shape)) {
     const outline = resolveDieOutline(die)
     return (
       <Shape
@@ -281,7 +281,7 @@ function SealRingLayer({ die, color }: { die: Die; color: string }) {
       </Group>
     )
   }
-  if (isParametricDieShape(die.shape)) {
+  if (die.shape === 'freeform' || isParametricDieShape(die.shape)) {
     const outline = resolveDieOutline(die)
     const shapeRing = (ringInset: number, strokeWidth: number, opacity: number) => (
       <Group

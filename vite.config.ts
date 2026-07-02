@@ -10,6 +10,9 @@ const serverProxy = {
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  build: {
+    modulePreload: false,
+  },
   server: {
     // Keep local API, share pages, and published images on the frontend origin during dev QA.
     proxy: serverProxy,

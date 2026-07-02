@@ -182,6 +182,9 @@ export function EditorPage({ project, persist, onSaveVariation }: Props) {
               onTransformBlock={state.transformBlock}
               onTransformSticker={state.transformSticker}
               onTransformSpray={state.transformSpray}
+              onAddFreeformVertex={state.addFreeformVertex}
+              onMoveFreeformVertex={state.moveFreeformVertex}
+              onDeleteFreeformVertex={state.deleteFreeformVertex}
             />
           </div>
           <div aria-label="Editor status bar" className="editor-statusbar" role="region">
