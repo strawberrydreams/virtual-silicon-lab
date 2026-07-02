@@ -1,7 +1,7 @@
 import type { ChipFinish } from './material/chipFinish'
 import type { Scene3DSettings } from './scene3d/scene3d'
 
-export const CURRENT_SCHEMA_VERSION = 9 as const
+export const CURRENT_SCHEMA_VERSION = 10 as const
 
 export type DieShape =
   | 'rect'
@@ -14,7 +14,9 @@ export type DieShape =
   | 'keyed'
   | 'l-shape'
   | 'plus'
+  | 'freeform'
 export type DieCorner = 'top-left' | 'top-right' | 'bottom-right' | 'bottom-left'
+export type FreeformVertex = { x: number; y: number }
 export type DieShapeParams = {
   cornerRadius?: number
   chamfer?: number
@@ -52,6 +54,7 @@ export type Die = {
   height: number
   background: string
   dieShapeParams?: DieShapeParams
+  freeform?: { vertices: FreeformVertex[] }
 }
 
 export type Block = {

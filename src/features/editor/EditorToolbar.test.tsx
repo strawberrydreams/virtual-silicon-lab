@@ -33,6 +33,23 @@ describe('EditorToolbar', () => {
     expect(props.onSetDieShape).toHaveBeenCalledWith('circle')
   })
 
+  it('converts the current die to freeform from the shape controls', async () => {
+    const props = renderToolbar()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Freeform' }))
+
+    expect(props.onSetDieShape).toHaveBeenCalledWith('freeform')
+  })
+
+  it('marks the freeform shape as active when selected', () => {
+    renderToolbar({ dieShape: 'freeform' })
+
+    expect(screen.getByRole('button', { name: 'Freeform' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+  })
+
   it('selects a shape from the parametric menu', async () => {
     const user = userEvent.setup()
     const props = renderToolbar()

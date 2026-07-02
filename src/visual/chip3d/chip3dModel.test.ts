@@ -19,6 +19,7 @@ const DIE_SHAPES = [
   'keyed',
   'l-shape',
   'plus',
+  'freeform',
 ] as const satisfies readonly DieShape[]
 
 function rectProjectWithBlocks() {
@@ -184,6 +185,58 @@ describe('buildChip3DModel', () => {
   it.each(['l-shape', 'plus'] as const)('preserves the ordered concave %s outline', (shape) => {
     const project = rectProjectWithBlocks()
     project.die = { ...project.die, shape, width: 600, height: 600 }
+
+    expect(diePiece(project).footprint).toEqual({
+      type: 'polygon',
+      points: outlineToPolygon(resolveDieOutline(project.die), 64).map(
+        ({ x, y }): [number, number] => [x, y],
+      ),
+    })
+  })
+
+  it('preserves an arbitrary freeform footprint through the shared outline pipeline', () => {
+    const project = rectProjectWithBlocks()
+    project.die = {
+      ...project.die,
+      shape: 'freeform',
+      width: 800,
+      height: 500,
+      freeform: {
+        vertices: [
+          { x: 0.08, y: 0.04 },
+          { x: 0.88, y: 0.1 },
+          { x: 0.78, y: 0.92 },
+          { x: 0.18, y: 0.84 },
+        ],
+      },
+    }
+
+    expect(diePiece(project).footprint).toEqual({
+      type: 'polygon',
+      points: outlineToPolygon(resolveDieOutline(project.die), 64).map(
+        ({ x, y }): [number, number] => [x, y],
+      ),
+    })
+  })
+
+  it('preserves the ordered concave freeform outline', () => {
+    const project = rectProjectWithBlocks()
+    project.die = {
+      ...project.die,
+      shape: 'freeform',
+      width: 600,
+      height: 600,
+      freeform: {
+        vertices: [
+          { x: 0, y: 0 },
+          { x: 1, y: 0 },
+          { x: 1, y: 0.4 },
+          { x: 0.58, y: 0.4 },
+          { x: 0.58, y: 1 },
+          { x: 0, y: 1 },
+        ],
+      },
+    }
 
     expect(diePiece(project).footprint).toEqual({
       type: 'polygon',

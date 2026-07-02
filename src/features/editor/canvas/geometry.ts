@@ -1,6 +1,7 @@
 import type { Die, DieShape } from '../../../domain/project'
 import { outlineToPolygon, resolveDieOutline } from '../../../domain/die/dieOutline'
 import { clampBlockToPolygon } from '../../../domain/die/polygonClamp'
+import { seedFreeformFromDie } from '../../../domain/die/seedFreeform'
 
 type BlockRect = { x: number; y: number; w: number; h: number; rotation?: number }
 type DieRect = { width: number; height: number }
@@ -104,7 +105,8 @@ export function clampBlockToDie(block: BlockRect, die: Die): BlockRect {
     case 'chamfered-rect':
     case 'keyed':
     case 'l-shape':
-    case 'plus': {
+    case 'plus':
+    case 'freeform': {
       const outline = resolveDieOutline(die)
       return clampBlockToPolygon(block, outlineToPolygon(outline), outline.centroid)
     }
@@ -114,6 +116,10 @@ export function clampBlockToDie(block: BlockRect, die: Die): BlockRect {
 export function normalizeDie(die: Die, shape: DieShape): Die {
   const next = { ...die, shape }
   delete next.dieShapeParams
+  delete next.freeform
+  if (shape === 'freeform') {
+    return { ...next, freeform: { vertices: seedFreeformFromDie(die) } }
+  }
   if (
     shape === 'rect' ||
     shape === 'rounded-rect' ||

@@ -3,7 +3,7 @@ import { CURRENT_SCHEMA_VERSION, type RemixOrigin } from './project'
 
 describe('schema version', () => {
   it('is 9 for v10 camera pose authoring', () => {
-    expect(CURRENT_SCHEMA_VERSION).toBe(9)
+    expect(CURRENT_SCHEMA_VERSION).toBe(10)
   })
 
   it('RemixOrigin carries chip id, slug, and title', () => {

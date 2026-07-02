@@ -7,9 +7,32 @@ vi.mock('../../three/chip3dRecorder', () => ({ recordTurntableMp4: vi.fn() }))
 import { isMp4ExportSupported } from '../../three/chip3dEncoder'
 import { recordTurntableMp4 } from '../../three/chip3dRecorder'
 import { CAPTURE } from '../../visual/chip3d/chip3dCapture'
+import type { Chip3DModel } from '../../visual/chip3d/chip3dModel'
 import { VideoExportPanel } from './VideoExportPanel'
 
 const model = { pieces: [], center: [0, 0, 0], extent: [1, 1, 1], environment: {} } as never
+const freeformModel = {
+  pieces: [
+    {
+      kind: 'dieBase',
+      baseZ: 1,
+      depth: 0.08,
+      material: {},
+      footprint: {
+        type: 'polygon',
+        points: [
+          [40, 20],
+          [720, 50],
+          [650, 480],
+          [120, 430],
+        ],
+      },
+    },
+  ],
+  center: [400, 0, 250],
+  extent: [800, 1, 500],
+  environment: {},
+} as unknown as Chip3DModel
 
 beforeEach(() => {
   vi.mocked(isMp4ExportSupported).mockReturnValue(true)
@@ -51,6 +74,30 @@ describe('VideoExportPanel', () => {
     expect(createUrl).toHaveBeenCalled()
     expect(revokeUrl).toHaveBeenCalled()
     expect(downloadedName).toBe('N1 GREEN HORIZON-turntable.mp4')
+
+    createUrl.mockRestore()
+    revokeUrl.mockRestore()
+    click.mockRestore()
+  })
+
+  it('passes a freeform polygon model through to the MP4 recorder unchanged', async () => {
+    vi.mocked(recordTurntableMp4).mockResolvedValue(new Blob(['x'], { type: 'video/mp4' }))
+    const createUrl = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:mock-freeform')
+    const revokeUrl = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined)
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined)
+
+    render(<VideoExportPanel model={freeformModel} name="FREEFORM QA" />)
+    fireEvent.click(screen.getByRole('button', { name: /export turntable mp4/i }))
+
+    await waitFor(() =>
+      expect(recordTurntableMp4).toHaveBeenCalledWith(
+        freeformModel,
+        expect.objectContaining({
+          spec: CAPTURE,
+          onProgress: expect.any(Function),
+        }),
+      ),
+    )
 
     createUrl.mockRestore()
     revokeUrl.mockRestore()

@@ -263,10 +263,104 @@ describe('editor store commands', () => {
     expect(store.getState().project).toEqual(project)
   })
 
+  it('seeds a freeform die and re-clamps blocks when switching shape', () => {
+    const store = createEditorStore(seededProject())
+    store.getState().setDieShape('freeform')
+    const die = store.getState().project.die
+    expect(die.shape).toBe('freeform')
+    expect(die.freeform?.vertices.length).toBeGreaterThanOrEqual(3)
+    expect(store.getState().past).toHaveLength(1)
+    const polygon = outlineToPolygon(resolveDieOutline(die))
+    for (const block of store.getState().project.blocks) {
+      expect(pointInPolygon({ x: block.x, y: block.y }, polygon)).toBe(true)
+    }
+  })
+
   it('does not create history when selecting the active die shape', () => {
     const store = createEditorStore(seededProject())
     store.getState().setDieShape('rect')
     expect(store.getState().past).toHaveLength(0)
+  })
+
+  function freeformStore() {
+    const store = createEditorStore(seededProject())
+    store.getState().setDieShape('freeform')
+    return store
+  }
+
+  it('adds a freeform vertex at the given index and pushes one undo step', () => {
+    const store = freeformStore()
+    const before = store.getState().project.die.freeform!.vertices.length
+    const pastBefore = store.getState().past.length
+    store.getState().addFreeformVertex(1, { x: 0.5, y: 0 })
+    const vertices = store.getState().project.die.freeform!.vertices
+    expect(vertices).toHaveLength(before + 1)
+    expect(vertices[1]).toEqual({ x: 0.5, y: 0 })
+    expect(store.getState().past).toHaveLength(pastBefore + 1)
+  })
+
+  it('clamps an added vertex to the unit square', () => {
+    const store = freeformStore()
+    store.getState().addFreeformVertex(0, { x: 1.4, y: -0.2 })
+    expect(store.getState().project.die.freeform!.vertices[0]).toEqual({ x: 1, y: 0 })
+  })
+
+  it('deletes a freeform vertex but refuses to drop below three', () => {
+    const store = freeformStore()
+    // Reduce to exactly 3 vertices first.
+    while (store.getState().project.die.freeform!.vertices.length > 3) {
+      store.getState().deleteFreeformVertex(0)
+    }
+    expect(store.getState().project.die.freeform!.vertices).toHaveLength(3)
+    const pastBefore = store.getState().past.length
+    store.getState().deleteFreeformVertex(0)
+    expect(store.getState().project.die.freeform!.vertices).toHaveLength(3)
+    expect(store.getState().past).toHaveLength(pastBefore)
+  })
+
+  it('ignores freeform vertex commands when the die is not freeform', () => {
+    const store = createEditorStore(seededProject())
+    store.getState().addFreeformVertex(0, { x: 0.5, y: 0.5 })
+    expect(store.getState().project.die.freeform).toBeUndefined()
+    expect(store.getState().past).toHaveLength(0)
+  })
+
+  it('moves a freeform vertex and coalesces a drag into one undo step', () => {
+    const store = freeformStore()
+    const pastBefore = store.getState().past.length
+    const original = store.getState().project.die.freeform!.vertices[0]
+    store.getState().moveFreeformVertex(0, { x: 0.1, y: 0.1 })
+    store.getState().moveFreeformVertex(0, { x: 0.2, y: 0.2 })
+    store.getState().moveFreeformVertex(0, { x: 0.3, y: 0.3 })
+    expect(store.getState().project.die.freeform!.vertices[0]).toEqual({ x: 0.3, y: 0.3 })
+    expect(store.getState().past).toHaveLength(pastBefore + 1)
+
+    store.getState().undo()
+    expect(store.getState().project.die.freeform!.vertices[0]).toEqual(original)
+
+    store.getState().redo()
+    expect(store.getState().project.die.freeform!.vertices[0]).toEqual({ x: 0.3, y: 0.3 })
+  })
+
+  it('starts a new undo step when a different vertex is moved', () => {
+    const store = freeformStore()
+    const pastBefore = store.getState().past.length
+    store.getState().moveFreeformVertex(0, { x: 0.1, y: 0.1 })
+    store.getState().moveFreeformVertex(0, { x: 0.2, y: 0.2 })
+    // A different vertex uses a different coalesce tag, so this does NOT collapse
+    // into the first vertex's drag — it becomes its own undo step.
+    store.getState().moveFreeformVertex(1, { x: 0.3, y: 0.3 })
+    expect(store.getState().past).toHaveLength(pastBefore + 2)
+  })
+
+  it('clamps a moved vertex to the unit square and ignores out-of-range indices', () => {
+    const store = freeformStore()
+    const count = store.getState().project.die.freeform!.vertices.length
+    store.getState().moveFreeformVertex(0, { x: 2, y: -1 })
+    expect(store.getState().project.die.freeform!.vertices[0]).toEqual({ x: 1, y: 0 })
+    const snapshot = store.getState().project
+    store.getState().moveFreeformVertex(count + 5, { x: 0.5, y: 0.5 })
+    expect(store.getState().project).toBe(snapshot)
   })
 
   it('previews die parameters without history and commits the gesture once', () => {

@@ -9,12 +9,21 @@ vi.mock('./canvas/ChipStage', () => ({
   ChipStage: ({
     layerVisibility,
     ambientMotionEnabled,
+    onAddFreeformVertex,
+    onMoveFreeformVertex,
+    onDeleteFreeformVertex,
   }: {
     layerVisibility: { M2: boolean }
     ambientMotionEnabled: boolean
+    onAddFreeformVertex?: unknown
+    onMoveFreeformVertex?: unknown
+    onDeleteFreeformVertex?: unknown
   }) => (
     <div
       data-ambient-motion-enabled={String(ambientMotionEnabled)}
+      data-freeform-add-wired={String(typeof onAddFreeformVertex === 'function')}
+      data-freeform-delete-wired={String(typeof onDeleteFreeformVertex === 'function')}
+      data-freeform-move-wired={String(typeof onMoveFreeformVertex === 'function')}
       data-testid="chip-stage"
       data-m2-visible={String(layerVisibility.M2)}
     />
@@ -125,6 +134,22 @@ describe('EditorPage', () => {
     await user.click(screen.getByRole('button', { name: 'M2' }))
 
     expect(screen.getByTestId('chip-stage')).toHaveAttribute('data-m2-visible', 'false')
+  })
+
+  it('wires freeform vertex editing commands into the stage', () => {
+    render(
+      <MemoryRouter>
+        <EditorPage
+          project={createHeroChip('editor-freeform-wiring', 1700000000000)}
+          persist={vi.fn()}
+          onSaveVariation={vi.fn()}
+        />
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByTestId('chip-stage')).toHaveAttribute('data-freeform-add-wired', 'true')
+    expect(screen.getByTestId('chip-stage')).toHaveAttribute('data-freeform-move-wired', 'true')
+    expect(screen.getByTestId('chip-stage')).toHaveAttribute('data-freeform-delete-wired', 'true')
   })
 
   it('previews and commits die parameters through the editor store', async () => {

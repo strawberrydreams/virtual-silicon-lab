@@ -108,6 +108,28 @@ describe('ChipArtwork studio layers', () => {
     expect(document.querySelectorAll('[data-name="parametric-seal-ring"]')).toHaveLength(2)
   })
 
+  it('renders freeform dies and seal rings through shared outline shapes', () => {
+    const project = createProject('Freeform Artwork', 'freeform-artwork', 100)
+    project.die = {
+      ...project.die,
+      shape: 'freeform',
+      freeform: {
+        vertices: [
+          { x: 0.08, y: 0.02 },
+          { x: 0.9, y: 0.12 },
+          { x: 0.72, y: 0.88 },
+          { x: 0.16, y: 0.76 },
+        ],
+      },
+    }
+
+    render(<ChipArtwork project={project} />)
+
+    expect(document.querySelector('[data-name="parametric-die-shape"]')).toBeInTheDocument()
+    expect(document.querySelectorAll('[data-name="parametric-seal-ring"]')).toHaveLength(2)
+    expect(document.querySelector('[data-name="chip-die-base"][data-konva="Rect"]')).toBeNull()
+  })
+
   it('keeps legacy dies on their existing primitive branch', () => {
     render(<ChipArtwork project={createProject('Legacy Artwork', 'legacy-artwork', 100)} />)
     expect(document.querySelector('[data-name="parametric-die-shape"]')).not.toBeInTheDocument()

@@ -13,6 +13,11 @@ describe('die shape classification', () => {
     expect(isParametricDieShape('rounded-rect')).toBe(true)
     expect(isParametricDieShape('circle')).toBe(false)
   })
+
+  it('recognizes the freeform shape but does not treat it as parametric', () => {
+    expect(isDieShape('freeform')).toBe(true)
+    expect(isParametricDieShape('freeform')).toBe(false)
+  })
 })
 
 describe('resolveDieShapeParams', () => {

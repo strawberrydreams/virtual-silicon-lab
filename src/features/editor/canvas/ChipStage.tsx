@@ -1,7 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type Konva from 'konva'
-import { Layer, Stage, Transformer } from 'react-konva'
-import type { Block, Project, StudioSpray, StudioSticker } from '../../../domain/project'
+import { Circle, Group, Layer, Line, Stage, Transformer } from 'react-konva'
+import type {
+  Block,
+  FreeformVertex,
+  Project,
+  StudioSpray,
+  StudioSticker,
+} from '../../../domain/project'
 import { snapToGrid } from './geometry'
 import type { BlockTransform } from '../../../stores/editorStore'
 import { stepZoom, zoomAtPointer } from './viewport'
@@ -24,6 +30,7 @@ import {
 } from '../../../visual/ambientEditorAnimation'
 import { resolveTileDetail } from '../../../visual/tileDetail'
 import { DEFAULT_LAYER_VISIBILITY, type ChipLayerVisibility } from '../layerVisibility'
+import { resolveFreeformVertices } from '../../../domain/die/freeformVertices'
 
 const GRID = 16
 const MIN_BLOCK = 48
@@ -48,6 +55,9 @@ type Props = {
   onTransformBlock: (id: string, transform: BlockTransform) => void
   onTransformSticker: (id: string, transform: StickerTransform) => void
   onTransformSpray: (id: string, transform: SprayTransform) => void
+  onAddFreeformVertex?: (index: number, point: FreeformVertex) => void
+  onMoveFreeformVertex?: (index: number, point: FreeformVertex) => void
+  onDeleteFreeformVertex?: (index: number) => void
 }
 
 export function ChipStage({
@@ -62,11 +72,15 @@ export function ChipStage({
   onTransformBlock,
   onTransformSticker,
   onTransformSpray,
+  onAddFreeformVertex,
+  onMoveFreeformVertex,
+  onDeleteFreeformVertex,
 }: Props) {
   const [scale, setScale] = useState(1)
   const [position, setPosition] = useState({ x: 0, y: 0 })
   const [previewBlocks, setPreviewBlocks] = useState<Project['blocks'] | null>(null)
   const [ambientFrame, setAmbientFrame] = useState<AmbientAnimationFrame | null>(null)
+  const [selectedFreeformVertex, setSelectedFreeformVertex] = useState<number | null>(null)
   const budget = ambientMotionBudget ?? DEFAULT_AMBIENT_MOTION_BUDGET
   const runAmbientRaf = shouldRunAmbientRaf(Boolean(ambientMotionEnabled), budget)
   // Pointer-move events can outpace the display; coalesce the reflow + preview
@@ -124,6 +138,44 @@ export function ChipStage({
   ])
 
   const displayProject = previewBlocks === null ? project : { ...project, blocks: previewBlocks }
+  const freeformVertices = useMemo(
+    () =>
+      displayProject.die.shape === 'freeform'
+        ? resolveFreeformVertices(displayProject.die.freeform)
+        : [],
+    [displayProject.die],
+  )
+  const freeformPoints = useMemo(
+    () =>
+      freeformVertices.map((vertex) => ({
+        x: vertex.x * displayProject.die.width,
+        y: vertex.y * displayProject.die.height,
+      })),
+    [freeformVertices, displayProject.die.width, displayProject.die.height],
+  )
+  const activeFreeformVertex =
+    displayProject.die.shape === 'freeform' &&
+    selectedFreeformVertex !== null &&
+    selectedFreeformVertex < freeformVertices.length
+      ? selectedFreeformVertex
+      : null
+  useEffect(() => {
+    if (activeFreeformVertex === null || displayProject.die.shape !== 'freeform') return
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Delete' && event.key !== 'Backspace') return
+      if (freeformVertices.length <= 3) return
+      event.preventDefault()
+      onDeleteFreeformVertex?.(activeFreeformVertex)
+      setSelectedFreeformVertex(null)
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [
+    displayProject.die.shape,
+    activeFreeformVertex,
+    freeformVertices.length,
+    onDeleteFreeformVertex,
+  ])
   // Stickers are fixed-size (rotate only); sprays scale to a radius (no rotation);
   // blocks support both — so the shared Transformer adapts to what is selected.
   const transformerKind = selectedStudioItem?.kind ?? (selectedBlockId ? 'block' : null)
@@ -324,6 +376,11 @@ export function ChipStage({
     setScale(1)
     setPosition({ x: 0, y: 0 })
   }
+  const freeformAccent = tokens.accents[0] ?? tokens.selectStroke
+  const normalizeFreeformPoint = (point: { x: number; y: number }): FreeformVertex => ({
+    x: displayProject.die.width === 0 ? 0 : point.x / displayProject.die.width,
+    y: displayProject.die.height === 0 ? 0 : point.y / displayProject.die.height,
+  })
 
   return (
     <div
@@ -398,6 +455,78 @@ export function ChipStage({
                 renderStudioSpray={renderStudioSpray}
                 renderStudioSticker={renderStudioSticker}
               />
+              {displayProject.die.shape === 'freeform' ? (
+                <Group name="freeform-vertex-editor">
+                  <Line
+                    name="freeform-outline-guide"
+                    points={freeformPoints.flatMap((point) => [point.x, point.y])}
+                    closed
+                    stroke={freeformAccent}
+                    strokeWidth={2}
+                    opacity={0.5}
+                    listening={false}
+                  />
+                  {freeformPoints.map((point, index) => {
+                    const next = freeformPoints[(index + 1) % freeformPoints.length]
+                    if (next === undefined) return null
+                    return (
+                      <Line
+                        key={`edge-${index}`}
+                        name="freeform-edge-target"
+                        points={[point.x, point.y, next.x, next.y]}
+                        stroke={freeformAccent}
+                        strokeWidth={14}
+                        opacity={0.01}
+                        onDblClick={() => {
+                          onAddFreeformVertex?.(
+                            index + 1,
+                            normalizeFreeformPoint({
+                              x: (point.x + next.x) / 2,
+                              y: (point.y + next.y) / 2,
+                            }),
+                          )
+                        }}
+                        onDblTap={() => {
+                          onAddFreeformVertex?.(
+                            index + 1,
+                            normalizeFreeformPoint({
+                              x: (point.x + next.x) / 2,
+                              y: (point.y + next.y) / 2,
+                            }),
+                          )
+                        }}
+                      />
+                    )
+                  })}
+                  {freeformPoints.map((point, index) => {
+                    const selected = activeFreeformVertex === index
+                    const moveVertex = (event: Konva.KonvaEventObject<DragEvent>) => {
+                      onMoveFreeformVertex?.(
+                        index,
+                        normalizeFreeformPoint({ x: event.target.x(), y: event.target.y() }),
+                      )
+                    }
+                    return (
+                      <Circle
+                        key={`vertex-${index}`}
+                        name="freeform-vertex-handle"
+                        x={point.x}
+                        y={point.y}
+                        radius={selected ? 8 : 6}
+                        fill={selected ? '#ffffff' : freeformAccent}
+                        stroke="#07131f"
+                        strokeWidth={2}
+                        draggable
+                        onClick={() => setSelectedFreeformVertex(index)}
+                        onTap={() => setSelectedFreeformVertex(index)}
+                        onDragStart={() => setSelectedFreeformVertex(index)}
+                        onDragMove={moveVertex}
+                        onDragEnd={moveVertex}
+                      />
+                    )
+                  })}
+                </Group>
+              ) : null}
               <Transformer
                 ref={transformerRef}
                 rotateEnabled={transformerKind !== 'spray'}
