@@ -100,7 +100,7 @@ handles while keeping the existing image and video exports.
   offline and anonymous use are unaffected. First sign-in adopts existing local projects by uploading
   them.
 - A header badge shows syncing / synced / offline / error. No change to the 2D editor, PNG/MP4
-  export, or the publish/gallery surfaces. Final QA: `docs/ops/v12-continuum-sync-qa.md`.
+  export, or the publish/gallery surfaces.
 
 ### Freeform Die Authoring
 
@@ -112,7 +112,7 @@ handles while keeping the existing image and video exports.
   re-clamp so content remains inside the die.
 - 3D and export parity is preserved: the same freeform polygon feeds 2D rendering, 3D extrusion, Die
   PNG, Poster PNG, and MP4 export. No server route, SQLite migration, publish schema, or sync engine
-  change was added. Final QA: `docs/ops/v13-freeform-qa.md`.
+  change was added.
 
 ### AI-Assisted Creation
 

@@ -97,7 +97,7 @@
 - 로컬 우선 유지: IndexedDB가 계속 source of truth이며 서버 호출은 best-effort입니다. 오프라인과
   익명 사용은 영향을 받지 않고, 첫 로그인은 기존 로컬 프로젝트를 업로드해 adoption합니다.
 - Header badge가 syncing / synced / offline / error를 표시합니다. 2D 에디터, PNG/MP4 export,
-  publish/gallery 표면은 변경하지 않습니다. 최종 QA: `docs/ops/v12-continuum-sync-qa.md`.
+  publish/gallery 표면은 변경하지 않습니다.
 
 ### Freeform Die Authoring
 
@@ -107,7 +107,7 @@
   editor command path를 사용하고, polygon 변경 시 블록이 실시간으로 다시 clamp됩니다.
 - 3D와 내보내기 parity를 유지합니다. 동일한 freeform polygon이 2D 렌더링, 3D extrusion, Die PNG,
   Poster PNG, MP4 export에 사용되며 서버 route, SQLite migration, publish schema, sync engine 변경은
-  없습니다. 최종 QA: `docs/ops/v13-freeform-qa.md`.
+  없습니다.
 
 ### AI 보조 생성
 
